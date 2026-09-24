@@ -6,6 +6,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../core/models/brain_models.dart';
 import '../../core/state/brain_cubit.dart';
 import '../../core/widgets/demo_ads.dart';
+import '../../core/widgets/common.dart';
+import '../../app/theme/brain_theme.dart';
 
 class GameScreen extends StatefulWidget {
   const GameScreen({
@@ -51,12 +53,6 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
   bool reflexGo = false;
   final reactions = <int>[];
   DateTime? goAt;
-  static const colors = [
-    Colors.redAccent,
-    Colors.blueAccent,
-    Colors.green,
-    Colors.amber,
-  ];
   static const names = ['RED', 'BLUE', 'GREEN', 'YELLOW'];
   @override
   void initState() {
@@ -364,12 +360,12 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(
+              TitlePlaque(
                 result.normalized >= 80 ? 'Brilliant!' : 'Round complete',
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.w900,
-                ),
+                color: context.gameAccent(widget.type),
               ),
+              const SizedBox(height: 16),
+              Text('SCORE', style: Theme.of(context).textTheme.titleMedium),
               const SizedBox(height: 12),
               Text(
                 '${result.score}',
@@ -386,12 +382,15 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
                 Text('Personal best: ${widget.personalBest!.score}'),
               ],
               const SizedBox(height: 20),
-              FilledButton(
+              ArcadeButton(
+                expanded: true,
+                color: context.brain.success,
                 onPressed: () {
                   Navigator.pop(sheetContext);
                   Navigator.pop(context, result);
                 },
-                child: const Text('CONTINUE'),
+                icon: Icons.arrow_forward_rounded,
+                label: 'CONTINUE',
               ),
             ],
           ),
@@ -409,14 +408,28 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
       },
       child: Scaffold(
         appBar: AppBar(
-          title: Text(widget.type.title),
+          title: Text(
+            widget.type.title.toUpperCase(),
+            style: const TextStyle(fontSize: 20),
+          ),
           actions: [
+            Center(
+              child: EnergyHearts(
+                energy: context.watch<BrainCubit>().state.data.energy,
+                compact: true,
+              ),
+            ),
             if (timed)
               Padding(
                 padding: const EdgeInsets.all(16),
                 child: Text(
-                  '$timeLeft s',
-                  style: const TextStyle(fontWeight: FontWeight.w900),
+                  '$timeLeft S',
+                  style: TextStyle(
+                    fontFamily: 'Fredoka',
+                    color: context.rewardInk,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ),
           ],
@@ -481,7 +494,17 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
             ],
           ],
         ),
-        const SizedBox(height: 20),
+        const SizedBox(height: 16),
+        ResourceBar(
+          label: widget.mode == GameMode.official
+              ? 'Daily quest'
+              : widget.mode.name,
+          value: timed
+              ? timeLeft / (widget.modifier == 'Lightning' ? 24 : 30)
+              : min(1, correct / 10),
+          color: context.gameAccent(widget.type),
+        ),
+        const SizedBox(height: 16),
         Expanded(
           child: switch (widget.type) {
             GameType.colorClash => _color(),
@@ -502,8 +525,12 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
   Widget _pill(String t) => Container(
     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
     decoration: BoxDecoration(
-      color: Theme.of(context).colorScheme.surfaceContainerHighest,
-      borderRadius: BorderRadius.circular(30),
+      color: context.brain.hud,
+      borderRadius: BorderRadius.circular(12),
+      border: Border.all(color: context.brain.outline, width: 3),
+      boxShadow: [
+        BoxShadow(color: context.brain.shadow, offset: const Offset(0, 3)),
+      ],
     ),
     child: Text(t, style: const TextStyle(fontWeight: FontWeight.w800)),
   );
@@ -517,7 +544,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
         style: TextStyle(
           fontSize: 54,
           fontWeight: FontWeight.w900,
-          color: colors[colorIndex],
+          color: context.clashColor(colorIndex),
         ),
       ),
       const SizedBox(height: 38),
@@ -529,13 +556,10 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
         childAspectRatio: 2.2,
         children: List.generate(4, (position) {
           final i = widget.modifier == 'Reverse' ? 3 - position : position;
-          return FilledButton(
-            style: FilledButton.styleFrom(
-              backgroundColor: colors[i],
-              foregroundColor: i == 3 ? Colors.black : Colors.white,
-            ),
+          return ArcadeButton(
+            color: context.clashColor(i),
             onPressed: () => _answerColor(i),
-            child: Text('${['●', '◆', '■', '▲'][i]} ${names[i]}'),
+            label: '${['●', '◆', '■', '▲'][i]} ${names[i]}',
           );
         }),
       ),
@@ -554,16 +578,22 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
       Row(
         children: [
           Expanded(
-            child: FilledButton(
+            child: ArcadeButton(
+              expanded: true,
+              color: context.brain.success,
               onPressed: () => _answerMath(true),
-              child: const Text('TRUE'),
+              icon: Icons.check_rounded,
+              label: 'TRUE',
             ),
           ),
           const SizedBox(width: 14),
           Expanded(
-            child: FilledButton.tonal(
+            child: ArcadeButton(
+              expanded: true,
+              color: context.brain.danger,
               onPressed: () => _answerMath(false),
-              child: const Text('FALSE'),
+              icon: Icons.close_rounded,
+              label: 'FALSE',
             ),
           ),
         ],
@@ -605,6 +635,12 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
                         ? Theme.of(context).colorScheme.secondary
                         : Theme.of(context).colorScheme.surfaceContainerHighest,
                     borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: Theme.of(
+                        context,
+                      ).extension<BrainPalette>()!.outline,
+                      width: 3,
+                    ),
                     boxShadow: active
                         ? [
                             BoxShadow(
@@ -637,6 +673,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
           color: reflexGo
               ? Colors.greenAccent
               : Theme.of(context).colorScheme.surfaceContainerHighest,
+          border: Border.all(color: context.brain.outline, width: 5),
           boxShadow: reflexGo
               ? [const BoxShadow(color: Colors.greenAccent, blurRadius: 35)]
               : null,
@@ -676,6 +713,13 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
               decoration: BoxDecoration(
                 color: Theme.of(context).colorScheme.surfaceContainerHighest,
                 borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: context.brain.outline, width: 3),
+                boxShadow: [
+                  BoxShadow(
+                    color: context.brain.shadow,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
               ),
               alignment: Alignment.center,
               child: Transform.rotate(

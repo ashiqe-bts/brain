@@ -1,5 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import '../../app/theme/brain_theme.dart';
+import 'common.dart';
 
 class DemoBanner extends StatelessWidget {
   const DemoBanner({super.key});
@@ -10,10 +12,12 @@ class DemoBanner extends StatelessWidget {
       height: 48,
       margin: const EdgeInsets.fromLTRB(16, 6, 16, 8),
       decoration: BoxDecoration(
-        border: Border.all(
-          color: Theme.of(context).colorScheme.primary.withValues(alpha: .35),
-        ),
+        border: Border.all(color: context.brain.outline, width: 3),
         borderRadius: BorderRadius.circular(14),
+        color: context.brain.hud,
+        boxShadow: [
+          BoxShadow(color: context.brain.shadow, offset: const Offset(0, 3)),
+        ],
       ),
       child: const Row(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -78,8 +82,8 @@ class _DemoAdDialogState extends State<_DemoAdDialog> {
 
   @override
   Widget build(BuildContext context) => AlertDialog(
-    icon: const Icon(Icons.science, size: 44),
-    title: const Text('Demo Ad'),
+    icon: const Icon(Icons.campaign_rounded, size: 44),
+    title: const Center(child: TitlePlaque('Demo ad')),
     content: Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -97,9 +101,9 @@ class _DemoAdDialogState extends State<_DemoAdDialog> {
       ],
     ),
     actions: [
-      FilledButton(
+      ArcadeButton(
         onPressed: seconds <= 0 ? () => Navigator.pop(context, true) : null,
-        child: Text(seconds <= 0 ? 'Continue' : 'Continue in $seconds'),
+        label: seconds <= 0 ? 'CONTINUE' : 'CONTINUE IN $seconds',
       ),
     ],
   );

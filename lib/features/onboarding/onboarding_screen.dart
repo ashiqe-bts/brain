@@ -4,6 +4,8 @@ import '../../core/models/brain_models.dart';
 import '../../core/services/notification_service.dart';
 import '../../core/state/brain_cubit.dart';
 import '../brain_buddy/brain_buddy.dart';
+import '../../core/widgets/common.dart';
+import '../../app/theme/brain_theme.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -50,9 +52,15 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     child: const Text('BACK'),
                   ),
                 const Spacer(),
-                FilledButton(
+                ArcadeButton(
                   onPressed: _next,
-                  child: Text(page == 3 ? 'ENTER THE LAB' : 'CONTINUE'),
+                  color: page == 3
+                      ? context.brain.success
+                      : context.brain.primary,
+                  icon: page == 3
+                      ? Icons.rocket_launch_rounded
+                      : Icons.arrow_forward_rounded,
+                  label: page == 3 ? 'ENTER THE LAB' : 'CONTINUE',
                 ),
               ],
             ),
@@ -63,31 +71,33 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   );
   Widget _frame(String eyebrow, String title, String body, Widget child) =>
       Padding(
-        padding: const EdgeInsets.all(28),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              eyebrow,
-              style: TextStyle(
-                color: Theme.of(context).colorScheme.secondary,
-                fontWeight: FontWeight.w900,
-                letterSpacing: 1.4,
+        padding: const EdgeInsets.all(22),
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 620),
+            child: BrainCard(
+              style: GamePanelStyle.inset,
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  TitlePlaque(eyebrow),
+                  const SizedBox(height: 10),
+                  Text(
+                    title,
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Text(body, textAlign: TextAlign.center),
+                  const SizedBox(height: 30),
+                  child,
+                ],
               ),
             ),
-            const SizedBox(height: 10),
-            Text(
-              title,
-              textAlign: TextAlign.center,
-              style: Theme.of(
-                context,
-              ).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.w900),
-            ),
-            const SizedBox(height: 10),
-            Text(body, textAlign: TextAlign.center),
-            const SizedBox(height: 30),
-            child,
-          ],
+          ),
         ),
       );
   Widget _welcome() => _frame(
@@ -142,10 +152,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     'The word can be sneaky. This one is written in blue.',
     Column(
       children: [
-        const Text(
+        Text(
           'RED',
           style: TextStyle(
-            color: Colors.blueAccent,
+            color: context.clashColor(1),
             fontWeight: FontWeight.w900,
             fontSize: 52,
           ),
@@ -156,10 +166,13 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           runSpacing: 10,
           children: ['RED', 'BLUE', 'GREEN', 'YELLOW']
               .map(
-                (e) => FilledButton.tonal(
+                (e) => ArcadeButton(
+                  color: context.clashColor(
+                    const ['RED', 'BLUE', 'GREEN', 'YELLOW'].indexOf(e),
+                  ),
                   onPressed: () =>
                       setState(() => sampleScore += e == 'BLUE' ? 1 : 0),
-                  child: Text(e),
+                  label: e,
                 ),
               )
               .toList(),

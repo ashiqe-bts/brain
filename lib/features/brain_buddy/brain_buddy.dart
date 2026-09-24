@@ -94,9 +94,9 @@ class _BuddyPainter extends CustomPainter {
     }
     final brain = Paint()..color = const Color(0xFFFF78C8);
     final outline = Paint()
-      ..color = const Color(0xFF702D78)
+      ..color = p.outline
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 4;
+      ..strokeWidth = 5;
     final body = Path()
       ..moveTo(cx, cy + s.height * .28)
       ..cubicTo(
@@ -132,8 +132,20 @@ class _BuddyPainter extends CustomPainter {
         cy + s.height * .28,
       )
       ..close();
+    canvas.save();
+    canvas.translate(0, 8);
+    canvas.drawPath(body, Paint()..color = p.shadow.withValues(alpha: .7));
+    canvas.restore();
     canvas.drawPath(body, brain);
     canvas.drawPath(body, outline);
+    canvas.drawOval(
+      Rect.fromCenter(
+        center: Offset(cx - s.width * .15, cy - s.height * .2),
+        width: s.width * .13,
+        height: s.height * .06,
+      ),
+      Paint()..color = Colors.white.withValues(alpha: .45),
+    );
     final fold = Paint()
       ..color = const Color(0xFFC84C9F)
       ..style = PaintingStyle.stroke
@@ -170,7 +182,7 @@ class _BuddyPainter extends CustomPainter {
       );
     }
     final mouth = Paint()
-      ..color = const Color(0xFF702D78)
+      ..color = p.outline
       ..style = PaintingStyle.stroke
       ..strokeWidth = 4
       ..strokeCap = StrokeCap.round;
@@ -194,7 +206,7 @@ class _BuddyPainter extends CustomPainter {
       mouth,
     );
     final limb = Paint()
-      ..color = const Color(0xFF702D78)
+      ..color = p.outline
       ..style = PaintingStyle.stroke
       ..strokeWidth = 5
       ..strokeCap = StrokeCap.round;

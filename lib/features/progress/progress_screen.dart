@@ -8,6 +8,7 @@ import '../../core/models/brain_models.dart';
 import '../../core/state/brain_cubit.dart';
 import '../../core/widgets/common.dart';
 import '../../core/widgets/demo_ads.dart';
+import '../../app/theme/brain_theme.dart';
 
 class ProgressScreen extends StatefulWidget {
   const ProgressScreen({super.key});
@@ -22,61 +23,67 @@ class _ProgressScreenState extends State<ProgressScreen> {
   Widget build(BuildContext context) {
     final d = context.watch<BrainCubit>().state.data;
     return Scaffold(
-      appBar: AppBar(
-        title: const Text(
-          'Your Progress',
-          style: TextStyle(fontWeight: FontWeight.w900),
-        ),
-      ),
+      appBar: AppBar(toolbarHeight: 70, title: const Text('PLAYER STATS')),
       body: SafeArea(
         bottom: false,
         child: Column(
           children: [
             Expanded(
               child: ListView(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.fromLTRB(16, 4, 16, 20),
                 children: [
-                  Row(
-                    children: [
-                      StatPill(
-                        icon: Icons.local_fire_department,
-                        label: 'current streak',
-                        value: '${d.currentStreak}',
+                  Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 820),
+                      child: Column(
+                        children: [
+                          const TitlePlaque('Progress board'),
+                          const SizedBox(height: 18),
+                          Row(
+                            children: [
+                              StatPill(
+                                icon: Icons.local_fire_department,
+                                label: 'current streak',
+                                value: '${d.currentStreak}',
+                              ),
+                              const SizedBox(width: 10),
+                              StatPill(
+                                icon: Icons.emoji_events,
+                                label: 'best streak',
+                                value: '${d.longestStreak}',
+                              ),
+                              const SizedBox(width: 10),
+                              StatPill(
+                                icon: Icons.fitness_center,
+                                label: 'workouts',
+                                value: '${d.workouts}',
+                              ),
+                            ],
+                          ),
+                          const SectionTitle('Activity calendar'),
+                          BrainCard(child: _calendar(context, d)),
+                          const SectionTitle('Personal records'),
+                          _records(context, d),
+                          const SectionTitle('Achievements'),
+                          _achievements(context, d),
+                          if (d.daily.length >= 7) ...[
+                            const SectionTitle('Your Brain Week'),
+                            RepaintBoundary(
+                              key: recapKey,
+                              child: _recapCard(context, d),
+                            ),
+                            const SizedBox(height: 10),
+                            OutlinedButton.icon(
+                              onPressed: _shareRecap,
+                              icon: const Icon(Icons.share),
+                              label: const Text('SHARE RECAP'),
+                            ),
+                          ],
+                          const SizedBox(height: 12),
+                        ],
                       ),
-                      const SizedBox(width: 10),
-                      StatPill(
-                        icon: Icons.emoji_events,
-                        label: 'best streak',
-                        value: '${d.longestStreak}',
-                      ),
-                      const SizedBox(width: 10),
-                      StatPill(
-                        icon: Icons.fitness_center,
-                        label: 'workouts',
-                        value: '${d.workouts}',
-                      ),
-                    ],
+                    ),
                   ),
-                  const SectionTitle('Activity calendar'),
-                  BrainCard(child: _calendar(context, d)),
-                  const SectionTitle('Personal records'),
-                  _records(context, d),
-                  const SectionTitle('Achievements'),
-                  _achievements(context, d),
-                  if (d.daily.length >= 7) ...[
-                    const SectionTitle('Your Brain Week'),
-                    RepaintBoundary(
-                      key: recapKey,
-                      child: _recapCard(context, d),
-                    ),
-                    const SizedBox(height: 10),
-                    OutlinedButton.icon(
-                      onPressed: _shareRecap,
-                      icon: const Icon(Icons.share),
-                      label: const Text('SHARE RECAP'),
-                    ),
-                  ],
-                  const SizedBox(height: 12),
                 ],
               ),
             ),
@@ -226,10 +233,17 @@ class _ProgressScreenState extends State<ProgressScreen> {
               e.key,
               style: TextStyle(
                 fontWeight: FontWeight.w800,
-                color: got ? null : Theme.of(context).disabledColor,
+                color: got
+                    ? null
+                    : context.brain.text.withValues(alpha: .72),
               ),
             ),
-            subtitle: Text(e.value),
+            subtitle: Text(
+              e.value,
+              style: TextStyle(
+                color: context.brain.text.withValues(alpha: got ? .78 : .64),
+              ),
+            ),
             trailing: got ? const Text('DONE') : null,
           );
         }).toList(),
@@ -238,6 +252,8 @@ class _ProgressScreenState extends State<ProgressScreen> {
   }
 
   Widget _recapCard(BuildContext context, BrainState d) {
+    final light = Theme.of(context).brightness == Brightness.light;
+    final ink = light ? context.brain.text : Colors.white;
     final recent = d.daily.reversed.take(7).toList(),
         best = recent.reduce((a, b) => a.brainScore > b.brainScore ? a : b),
         reaction = recent
@@ -248,19 +264,28 @@ class _ProgressScreenState extends State<ProgressScreen> {
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            Theme.of(context).colorScheme.primary.withValues(alpha: .8),
-            Theme.of(context).colorScheme.secondary.withValues(alpha: .65),
+            if (light) ...[
+              context.brain.surface,
+              context.brain.hud,
+            ] else ...[
+              context.brain.primary.withValues(alpha: .8),
+              context.brain.secondary.withValues(alpha: .65),
+            ],
           ],
         ),
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: context.brain.outline, width: 4),
+        boxShadow: [
+          BoxShadow(color: context.brain.shadow, offset: const Offset(0, 7)),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             '🧠 YOUR BRAIN WEEK',
             style: TextStyle(
-              color: Colors.white,
+              color: ink,
               fontWeight: FontWeight.w900,
               fontSize: 20,
             ),
@@ -268,25 +293,25 @@ class _ProgressScreenState extends State<ProgressScreen> {
           const SizedBox(height: 16),
           Text(
             '${recent.length} workouts completed',
-            style: const TextStyle(color: Colors.white, fontSize: 17),
+            style: TextStyle(color: ink, fontSize: 17),
           ),
           Text(
             '🏆 Best Brain Score  ${best.brainScore}',
-            style: const TextStyle(color: Colors.white, fontSize: 17),
+            style: TextStyle(color: ink, fontSize: 17),
           ),
           if (reaction < 9999)
             Text(
               '⚡ Fastest Reaction  $reaction ms',
-              style: const TextStyle(color: Colors.white, fontSize: 17),
+              style: TextStyle(color: ink, fontSize: 17),
             ),
           Text(
             '🔥 Best streak  ${d.longestStreak} days',
-            style: const TextStyle(color: Colors.white, fontSize: 17),
+            style: TextStyle(color: ink, fontSize: 17),
           ),
           const SizedBox(height: 14),
-          const Text(
+          Text(
             'BrainFlex · Small games. Bright sparks.',
-            style: TextStyle(color: Colors.white70),
+            style: TextStyle(color: ink.withValues(alpha: .72)),
           ),
         ],
       ),

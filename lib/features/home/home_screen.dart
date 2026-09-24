@@ -5,6 +5,7 @@ import '../../core/models/brain_models.dart';
 import '../../core/state/brain_cubit.dart';
 import '../../core/widgets/common.dart';
 import '../../core/widgets/demo_ads.dart';
+import '../../app/theme/brain_theme.dart';
 import '../brain_buddy/brain_buddy.dart';
 import '../daily_workout/workout_screen.dart';
 import '../settings/settings_screen.dart';
@@ -19,13 +20,11 @@ class HomeScreen extends StatelessWidget {
         stableSeed('$today|micro') % 20 == 0 && d.lastMicroEventDate != today;
     return Scaffold(
       appBar: AppBar(
+        toolbarHeight: 72,
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'BrainFlex',
-              style: TextStyle(fontWeight: FontWeight.w900),
-            ),
+            const Text('BRAINFlex'),
             Text(
               DateFormat('EEEE, MMM d').format(DateTime.now()),
               style: Theme.of(context).textTheme.labelMedium,
@@ -39,7 +38,15 @@ class HomeScreen extends StatelessWidget {
               context,
               MaterialPageRoute(builder: (_) => const SettingsScreen()),
             ),
-            icon: const Icon(Icons.settings_outlined),
+            icon: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: context.brain.surfaceHigh,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: context.brain.outline, width: 2),
+              ),
+              child: const Icon(Icons.settings_rounded),
+            ),
           ),
         ],
       ),
@@ -51,106 +58,157 @@ class HomeScreen extends StatelessWidget {
               child: RefreshIndicator(
                 onRefresh: () => context.read<BrainCubit>().bootstrap(),
                 child: ListView(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 18),
                   children: [
                     Center(
-                      child: Stack(
-                        alignment: Alignment.topRight,
-                        children: [
-                          BrainBuddy(
-                            mood: d.mood,
-                            level: d.level,
-                            equipped: d.equipped,
-                            reducedMotion: d.reducedMotion,
-                            onTap: () => context.read<BrainCubit>().react(
-                              BuddyMood.tapped,
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 760),
+                        child: Column(
+                          children: [
+                            BrainCard(
+                              style: GamePanelStyle.inset,
+                              color: context.brain.hud,
+                              child: Stack(
+                                alignment: Alignment.topRight,
+                                children: [
+                                  Column(
+                                    children: [
+                                      Row(
+                                        children: [
+                                          EnergyHearts(energy: d.energy),
+                                          const Spacer(),
+                                          _hudBadge(
+                                            context,
+                                            Icons.local_fire_department_rounded,
+                                            '${d.currentStreak}',
+                                          ),
+                                          const SizedBox(width: 8),
+                                          _hudBadge(
+                                            context,
+                                            Icons.hexagon_rounded,
+                                            '${d.tokens}',
+                                          ),
+                                        ],
+                                      ),
+                                      BrainBuddy(
+                                        mood: d.mood,
+                                        level: d.level,
+                                        equipped: d.equipped,
+                                        reducedMotion: d.reducedMotion,
+                                        onTap: () => context
+                                            .read<BrainCubit>()
+                                            .react(BuddyMood.tapped),
+                                      ),
+                                      Text(
+                                        _greeting(d),
+                                        textAlign: TextAlign.center,
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .titleMedium
+                                            ?.copyWith(
+                                              fontWeight: FontWeight.w800,
+                                            ),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      ResourceBar(
+                                        label: 'Level ${d.level} · ${d.rank}',
+                                        value: d.level >= 50
+                                            ? 1
+                                            : d.xp / d.xpNeeded,
+                                        color: context.brain.secondary,
+                                        trailing: d.level >= 50
+                                            ? 'MAX'
+                                            : '${d.xp}/${d.xpNeeded} XP',
+                                      ),
+                                    ],
+                                  ),
+                                  if (micro)
+                                    IconButton.filled(
+                                      tooltip: 'Catch the neuron for 5 XP',
+                                      onPressed: () => _micro(context),
+                                      icon: const Icon(Icons.bubble_chart),
+                                    ),
+                                ],
+                              ),
                             ),
-                          ),
-                          if (micro)
-                            IconButton.filled(
-                              tooltip: 'Catch the neuron for 5 XP',
-                              onPressed: () => _micro(context),
-                              icon: const Icon(Icons.bubble_chart),
+                            const SizedBox(height: 18),
+                            _workoutCard(context, d, done),
+                            if (_canRescue(d)) ...[
+                              const SizedBox(height: 12),
+                              _rescueCard(context, d),
+                            ],
+                            const SizedBox(height: 12),
+                            Row(
+                              children: [
+                                StatPill(
+                                  icon: Icons.local_fire_department,
+                                  label: 'day streak',
+                                  value: '${d.currentStreak}',
+                                ),
+                                const SizedBox(width: 10),
+                                StatPill(
+                                  icon: Icons.psychology,
+                                  label: d.rank,
+                                  value: 'Lv ${d.level}',
+                                ),
+                                const SizedBox(width: 10),
+                                StatPill(
+                                  icon: Icons.ac_unit,
+                                  label: 'freezes',
+                                  value: '${d.freezes}',
+                                ),
+                              ],
                             ),
-                        ],
-                      ),
-                    ),
-                    Text(
-                      _greeting(d),
-                      textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                    const SizedBox(height: 14),
-                    _workoutCard(context, d, done),
-                    if (_canRescue(d)) ...[
-                      const SizedBox(height: 12),
-                      _rescueCard(context, d),
-                    ],
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        StatPill(
-                          icon: Icons.local_fire_department,
-                          label: 'day streak',
-                          value: '${d.currentStreak}',
-                        ),
-                        const SizedBox(width: 10),
-                        StatPill(
-                          icon: Icons.psychology,
-                          label: d.rank,
-                          value: 'Lv ${d.level}',
-                        ),
-                        const SizedBox(width: 10),
-                        StatPill(
-                          icon: Icons.ac_unit,
-                          label: 'freezes',
-                          value: '${d.freezes}',
-                        ),
-                      ],
-                    ),
-                    const SectionTitle('Brain energy'),
-                    BrainCard(
-                      child: Column(
-                        children: [
-                          Row(
-                            children: [
-                              const Icon(Icons.bolt),
-                              const SizedBox(width: 8),
-                              Text(
-                                '${d.energy} / 100',
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.w900,
+                            const SectionTitle('Brain energy'),
+                            BrainCard(
+                              child: Column(
+                                children: [
+                                  Row(
+                                    children: [
+                                      EnergyHearts(energy: d.energy),
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        '${d.energy} / 100',
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.w900,
+                                        ),
+                                      ),
+                                      const Spacer(),
+                                      Text('${d.tokens} tokens'),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 10),
+                                  ResourceBar(
+                                    label: 'Energy cycle',
+                                    value: d.energy / 100,
+                                    color: const Color(0xFFF23D5B),
+                                    trailing: '${d.energy}%',
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SectionTitle('Daily missions'),
+                            ...d.missions.map((m) => _mission(context, m)),
+                            if (d.missions.any(
+                              (m) => m.id != 'workout' && !m.complete,
+                            ))
+                              Align(
+                                alignment: Alignment.centerLeft,
+                                child: TextButton.icon(
+                                  onPressed: () => _reroll(context),
+                                  icon: const Icon(Icons.ondemand_video),
+                                  label: const Text(
+                                    'REROLL A MISSION · DEMO AD',
+                                  ),
                                 ),
                               ),
-                              const Spacer(),
-                              Text('${d.tokens} tokens'),
-                            ],
-                          ),
-                          const SizedBox(height: 10),
-                          LinearProgressIndicator(
-                            value: d.energy / 100,
-                            minHeight: 10,
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SectionTitle('Daily missions'),
-                    ...d.missions.map((m) => _mission(context, m)),
-                    if (d.missions.any((m) => m.id != 'workout' && !m.complete))
-                      Align(
-                        alignment: Alignment.centerLeft,
-                        child: TextButton.icon(
-                          onPressed: () => _reroll(context),
-                          icon: const Icon(Icons.ondemand_video),
-                          label: const Text('REROLL A MISSION · DEMO AD'),
+                            const SectionTitle('This week'),
+                            _weekStrip(context, d),
+                            const SizedBox(height: 12),
+                          ],
                         ),
                       ),
-                    const SectionTitle('This week'),
-                    _weekStrip(context, d),
-                    const SizedBox(height: 12),
+                    ),
                   ],
                 ),
               ),
@@ -161,6 +219,23 @@ class HomeScreen extends StatelessWidget {
       ),
     );
   }
+
+  Widget _hudBadge(BuildContext context, IconData icon, String value) =>
+      Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: context.brain.surfaceHigh,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: context.brain.outline, width: 2),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, size: 18, color: context.rewardInk),
+            const SizedBox(width: 4),
+            Text(value, style: const TextStyle(fontWeight: FontWeight.w900)),
+          ],
+        ),
+      );
 
   void _micro(BuildContext context) {
     context.read<BrainCubit>().claimMicroEvent();
@@ -230,21 +305,17 @@ class HomeScreen extends StatelessWidget {
     BrainState d,
     bool done,
   ) => BrainCard(
-    color: Theme.of(context).colorScheme.primary.withValues(alpha: .16),
+    color: done ? context.brain.surfaceHigh : context.brain.success,
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
+        TitlePlaque(
           done
               ? 'DAILY WORKOUT COMPLETE ✓'
               : d.draft != null
               ? 'WORKOUT IN PROGRESS'
               : "TODAY'S BRAIN WORKOUT",
-          style: TextStyle(
-            color: Theme.of(context).colorScheme.secondary,
-            fontWeight: FontWeight.w900,
-            letterSpacing: 1.1,
-          ),
+          color: context.brain.reward,
         ),
         const SizedBox(height: 8),
         Text(
@@ -258,15 +329,19 @@ class HomeScreen extends StatelessWidget {
         const SizedBox(height: 6),
         Text('${dailyModifier(localDate())} modifier'),
         const SizedBox(height: 16),
-        FilledButton.icon(
+        ArcadeButton(
+          expanded: true,
+          color: done ? context.brain.frame : context.brain.success,
           onPressed: done
               ? null
               : () => Navigator.push(
                   context,
                   MaterialPageRoute(builder: (_) => const WorkoutScreen()),
                 ),
-          icon: Icon(d.draft == null ? Icons.play_arrow : Icons.replay),
-          label: Text(d.draft == null ? 'START WORKOUT' : 'CONTINUE WORKOUT'),
+          icon: d.draft == null
+              ? Icons.play_arrow_rounded
+              : Icons.replay_rounded,
+          label: d.draft == null ? 'PLAY DAILY QUEST' : 'CONTINUE QUEST',
         ),
       ],
     ),
@@ -279,7 +354,7 @@ class HomeScreen extends StatelessWidget {
         children: [
           Icon(
             m.complete ? Icons.check_circle : Icons.adjust,
-            color: m.complete ? Colors.greenAccent : null,
+            color: m.complete ? context.brain.success : null,
           ),
           const SizedBox(width: 12),
           Expanded(

@@ -4,6 +4,7 @@ import '../../core/models/brain_models.dart';
 import '../../core/state/brain_cubit.dart';
 import '../../core/widgets/common.dart';
 import '../../core/widgets/demo_ads.dart';
+import '../../app/theme/brain_theme.dart';
 import 'game_screen.dart';
 
 class GamesScreen extends StatelessWidget {
@@ -13,10 +14,8 @@ class GamesScreen extends StatelessWidget {
     final d = context.watch<BrainCubit>().state.data;
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          'Practice Lab',
-          style: TextStyle(fontWeight: FontWeight.w900),
-        ),
+        toolbarHeight: 70,
+        title: const Text('ARCADE LAB'),
         actions: [
           if (d.boosted)
             const Padding(
@@ -34,17 +33,39 @@ class GamesScreen extends StatelessWidget {
           children: [
             Expanded(
               child: ListView(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.fromLTRB(16, 4, 16, 18),
                 children: [
-                  const Text(
-                    'Choose a challenge',
-                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900),
-                  ),
+                  const Center(child: TitlePlaque('Choose a challenge')),
+                  const SizedBox(height: 14),
                   const Text(
                     'Practice can improve records and earns reduced XP.',
+                    textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 14),
-                  ...GameType.values.map((g) => _gameCard(context, g)),
+                  Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 920),
+                      child: LayoutBuilder(
+                        builder: (context, box) {
+                          final wide = box.maxWidth >= 680;
+                          return Wrap(
+                            spacing: 14,
+                            runSpacing: 16,
+                            children: GameType.values
+                                .map(
+                                  (g) => SizedBox(
+                                    width: wide
+                                        ? (box.maxWidth - 14) / 2
+                                        : box.maxWidth,
+                                    child: _gameCard(context, g),
+                                  ),
+                                )
+                                .toList(),
+                          );
+                        },
+                      ),
+                    ),
+                  ),
                   const SectionTitle('Optional boosts'),
                   BrainCard(
                     child: ListTile(
@@ -95,52 +116,67 @@ class GamesScreen extends StatelessWidget {
                     : b.score.compareTo(a.score),
               ))
               .first;
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
-      child: BrainCard(
-        onTap: () => _chooseMode(context, game),
-        child: Row(
-          children: [
-            Container(
-              width: 58,
-              height: 58,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: Theme.of(
-                  context,
-                ).colorScheme.primary.withValues(alpha: .16),
-                borderRadius: BorderRadius.circular(18),
-              ),
-              child: Text(game.emoji, style: const TextStyle(fontSize: 28)),
+    final accent = context.gameAccent(game);
+    return BrainCard(
+      color: Color.lerp(accent, context.brain.surface, .68),
+      onTap: () => _chooseMode(context, game),
+      child: Row(
+        children: [
+          Container(
+            width: 58,
+            height: 58,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: accent,
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: context.brain.outline, width: 3),
+              boxShadow: [
+                BoxShadow(
+                  color: context.brain.shadow,
+                  offset: const Offset(0, 4),
+                ),
+              ],
             ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    game.title,
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w900,
-                    ),
+            child: Text(game.emoji, style: const TextStyle(fontSize: 28)),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  game.title,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w900,
                   ),
-                  Text(
-                    '${game.domain} · Difficulty ${d.difficulties[game.name] ?? 1}',
-                  ),
-                  Text(
-                    best == null
-                        ? 'No personal best yet'
-                        : game == GameType.reflexTap
-                        ? 'Best ${best.reactionMs} ms'
-                        : 'Best ${best.score} · ${(best.accuracy * 100).round()}%',
-                  ),
-                ],
-              ),
+                ),
+                Text(
+                  '${game.domain} · Difficulty ${d.difficulties[game.name] ?? 1}',
+                ),
+                Text(
+                  best == null
+                      ? 'No personal best yet'
+                      : game == GameType.reflexTap
+                      ? 'Best ${best.reactionMs} ms'
+                      : 'Best ${best.score} · ${(best.accuracy * 100).round()}%',
+                ),
+              ],
             ),
-            const Icon(Icons.chevron_right),
-          ],
-        ),
+          ),
+          Container(
+            padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(
+              color: accent,
+              shape: BoxShape.circle,
+              border: Border.all(color: context.brain.outline, width: 2),
+            ),
+            child: Icon(
+              Icons.play_arrow_rounded,
+              color: context.onColor(accent),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -148,7 +184,7 @@ class GamesScreen extends StatelessWidget {
   Future<void> _chooseMode(BuildContext context, GameType game) async {
     final mode = await showModalBottomSheet<GameMode>(
       context: context,
-      showDragHandle: true,
+      showDragHandle: false,
       builder: (context) => SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
@@ -156,13 +192,10 @@ class GamesScreen extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                game.title,
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.w900,
-                ),
+              Center(
+                child: TitlePlaque(game.title, color: context.gameAccent(game)),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 18),
               ...[
                 (GameMode.classic, 'Classic', 'Standard finite round'),
                 (GameMode.endless, 'Endless', 'Continue until three mistakes'),
@@ -178,14 +211,41 @@ class GamesScreen extends StatelessWidget {
                 ),
                 (GameMode.zen, 'Zen', 'No timer, XP, ads, or pressure'),
               ].map(
-                (m) => ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: Icon(
-                    m.$1 == GameMode.zen ? Icons.spa : Icons.play_circle,
+                (m) => Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: BrainCard(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 10,
+                    ),
+                    onTap: () => Navigator.pop(context, m.$1),
+                    child: Row(
+                      children: [
+                        Icon(
+                          m.$1 == GameMode.zen ? Icons.spa : Icons.play_circle,
+                          color: context.gameAccent(game),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                m.$2,
+                                style: const TextStyle(
+                                  fontFamily: 'Fredoka',
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 17,
+                                ),
+                              ),
+                              Text(m.$3),
+                            ],
+                          ),
+                        ),
+                        const Icon(Icons.chevron_right),
+                      ],
+                    ),
                   ),
-                  title: Text(m.$2),
-                  subtitle: Text(m.$3),
-                  onTap: () => Navigator.pop(context, m.$1),
                 ),
               ),
             ],

@@ -4,6 +4,7 @@ import '../../core/models/brain_models.dart';
 import '../../core/state/brain_cubit.dart';
 import '../../core/widgets/common.dart';
 import '../games/game_screen.dart';
+import '../../app/theme/brain_theme.dart';
 
 class WorkoutScreen extends StatefulWidget {
   const WorkoutScreen({super.key});
@@ -76,21 +77,14 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
     final draft = context.watch<BrainCubit>().state.data.draft;
     final complete = draft?.results.length ?? 0;
     return Scaffold(
-      appBar: AppBar(title: const Text('Daily Brain Workout')),
+      appBar: AppBar(title: const Text('DAILY QUEST')),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(20),
           child: Column(
             children: [
               const SizedBox(height: 30),
-              Text(
-                dailyModifier(localDate()),
-                style: TextStyle(
-                  color: Theme.of(context).colorScheme.secondary,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 1.2,
-                ),
-              ),
+              TitlePlaque('${dailyModifier(localDate())} modifier'),
               const SizedBox(height: 14),
               Text(
                 status ?? 'Five quick challenges',
@@ -101,16 +95,20 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
               const SizedBox(height: 12),
               Text('$complete / 5 complete'),
               const SizedBox(height: 20),
-              LinearProgressIndicator(
+              ResourceBar(
+                label: 'Quest progress',
                 value: complete / 5,
-                minHeight: 12,
-                borderRadius: BorderRadius.circular(20),
+                color: context.brain.success,
+                trailing: '$complete / 5',
               ),
               const Spacer(),
-              Icon(
-                Icons.bolt_rounded,
-                size: 110,
-                color: Theme.of(context).colorScheme.primary,
+              BrainCard(
+                style: GamePanelStyle.inset,
+                child: Icon(
+                  Icons.bolt_rounded,
+                  size: 110,
+                  color: context.rewardInk,
+                ),
               ),
               const SizedBox(height: 20),
               const Text(
@@ -119,10 +117,10 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
               ),
               const Spacer(),
               if (!running)
-                FilledButton.icon(
+                ArcadeButton(
                   onPressed: _run,
-                  icon: const Icon(Icons.play_arrow),
-                  label: const Text('RESUME WORKOUT'),
+                  icon: Icons.play_arrow,
+                  label: 'RESUME QUEST',
                 ),
             ],
           ),
@@ -145,13 +143,13 @@ class WorkoutResultScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         automaticallyImplyLeading: false,
-        title: const Text('Workout Complete'),
+        title: const Text('QUEST COMPLETE'),
       ),
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.all(20),
           children: [
-            const Icon(Icons.auto_awesome, size: 48),
+            const Center(child: TitlePlaque('Victory!')),
             const SizedBox(height: 8),
             const Text(
               "TODAY'S BRAIN SCORE",
@@ -199,9 +197,12 @@ class WorkoutResultScreen extends StatelessWidget {
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 22),
-            FilledButton(
+            ArcadeButton(
+              expanded: true,
+              color: context.brain.success,
               onPressed: () => Navigator.pop(context),
-              child: const Text('COLLECT 100 XP'),
+              icon: Icons.redeem_rounded,
+              label: 'COLLECT 100 XP',
             ),
           ],
         ),
@@ -215,11 +216,7 @@ class WorkoutResultScreen extends StatelessWidget {
       children: [
         SizedBox(width: 76, child: Text(name)),
         Expanded(
-          child: LinearProgressIndicator(
-            value: v / 100,
-            minHeight: 10,
-            borderRadius: BorderRadius.circular(10),
-          ),
+          child: ResourceBar(label: '', value: v / 100),
         ),
         const SizedBox(width: 12),
         SizedBox(
