@@ -1,7 +1,11 @@
-import 'dart:math' as math;
 import 'package:flutter/material.dart';
-import '../../core/models/brain_models.dart';
+
 import '../../app/theme/brain_theme.dart';
+import '../../core/models/brain_models.dart';
+import 'buddy_motion.dart';
+import 'buddy_painter.dart';
+
+export 'buddy_motion.dart' show BuddyVariant;
 
 class BrainBuddy extends StatefulWidget {
   const BrainBuddy({
@@ -9,279 +13,198 @@ class BrainBuddy extends StatefulWidget {
     required this.mood,
     required this.level,
     required this.equipped,
-    this.size = 190,
+    this.size = 220,
     this.reducedMotion = false,
+    this.variant = BuddyVariant.stage,
+    this.reactionKey = 0,
     this.onTap,
   });
+
   final BuddyMood mood;
   final int level;
   final Map<String, String> equipped;
   final double size;
   final bool reducedMotion;
+  final BuddyVariant variant;
+  final int reactionKey;
   final VoidCallback? onTap;
+
   @override
   State<BrainBuddy> createState() => _BrainBuddyState();
 }
 
-class _BrainBuddyState extends State<BrainBuddy>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController c = AnimationController(
+class _BrainBuddyState extends State<BrainBuddy> with TickerProviderStateMixin {
+  late final AnimationController _idle = AnimationController(
     vsync: this,
-    duration: const Duration(milliseconds: 1600),
-  )..repeat(reverse: true);
+    duration: const Duration(milliseconds: 5200),
+  );
+  late final AnimationController _action = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 900),
+  );
+  BuddyMood? _localMood;
+  int _tapIndex = 0;
+  int _actionRun = 0;
+
+  BuddyMood get _displayMood => _localMood ?? widget.mood;
+
+  @override
+  void initState() {
+    super.initState();
+    if (!widget.reducedMotion) _idle.repeat();
+    _playAction();
+  }
+
+  @override
+  void didUpdateWidget(covariant BrainBuddy oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.reducedMotion != widget.reducedMotion) {
+      if (widget.reducedMotion) {
+        _idle
+          ..stop()
+          ..value = 0;
+      } else {
+        _idle.repeat();
+      }
+    }
+    if (oldWidget.mood != widget.mood ||
+        oldWidget.reactionKey != widget.reactionKey) {
+      _localMood = null;
+      _playAction();
+    }
+  }
+
+  Future<void> _playAction() async {
+    final run = ++_actionRun;
+    if (widget.reducedMotion) {
+      _action.value = 1;
+      await Future<void>.delayed(const Duration(milliseconds: 300));
+    } else {
+      try {
+        await _action.forward(from: 0).orCancel;
+      } on TickerCanceled {
+        return;
+      }
+    }
+    if (!mounted || run != _actionRun || _localMood != null) return;
+    if (widget.mood != BuddyMood.idle) {
+      setState(() => _localMood = BuddyMood.idle);
+    }
+  }
+
+  Future<void> _tap() async {
+    const reactions = [BuddyMood.tapped, BuddyMood.surprised, BuddyMood.happy];
+    setState(() {
+      _localMood = reactions[_tapIndex % reactions.length];
+      _tapIndex++;
+    });
+    widget.onTap?.call();
+    final run = ++_actionRun;
+    if (widget.reducedMotion) {
+      _action.value = 1;
+      await Future<void>.delayed(const Duration(milliseconds: 300));
+    } else {
+      try {
+        await _action.forward(from: 0).orCancel;
+      } on TickerCanceled {
+        return;
+      }
+    }
+    if (!mounted || run != _actionRun) return;
+    setState(
+      () => _localMood = widget.mood == BuddyMood.idle ? null : BuddyMood.idle,
+    );
+  }
+
   @override
   void dispose() {
-    c.dispose();
+    _idle.dispose();
+    _action.dispose();
     super.dispose();
   }
 
   @override
-  Widget build(BuildContext context) => Semantics(
-    label: 'Flex the Brain Buddy is ${widget.mood.name}',
-    button: true,
-    child: GestureDetector(
-      onTap: widget.onTap,
+  Widget build(BuildContext context) {
+    final interactive = widget.onTap != null;
+    final character = RepaintBoundary(
       child: AnimatedBuilder(
-        animation: c,
+        animation: Listenable.merge([_idle, _action]),
         builder: (context, _) {
-          final t = widget.reducedMotion ? 0.0 : c.value;
-          return Transform.translate(
-            offset: Offset(0, -4 * math.sin(t * math.pi)),
-            child: CustomPaint(
-              size: Size.square(widget.size),
-              painter: _BuddyPainter(
-                context.brain,
-                widget.mood,
-                widget.level,
-                widget.equipped,
-                t,
-              ),
+          final idle = widget.reducedMotion ? 0.0 : _idle.value;
+          final action = widget.reducedMotion ? 1.0 : _action.value;
+          final pose = BuddyMotion.pose(
+            mood: _displayMood,
+            idle: idle,
+            action: action,
+            reducedMotion: widget.reducedMotion,
+          );
+          return CustomPaint(
+            size: Size.square(widget.size),
+            painter: BuddyPainter(
+              palette: context.brain,
+              theme: _theme(context),
+              mood: _displayMood,
+              pose: pose,
+              level: widget.level,
+              equipped: widget.equipped,
+              variant: widget.variant,
+              phase: idle,
             ),
           );
         },
       ),
-    ),
-  );
-}
+    );
 
-class _BuddyPainter extends CustomPainter {
-  _BuddyPainter(this.p, this.mood, this.level, this.equipped, this.t);
-  final BrainPalette p;
-  final BuddyMood mood;
-  final int level;
-  final Map<String, String> equipped;
-  final double t;
-  @override
-  void paint(Canvas canvas, Size s) {
-    final cx = s.width / 2, cy = s.height * .48;
-    final glow = Paint()
-      ..color = p.primary.withValues(alpha: .16 + .08 * t)
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 22);
-    canvas.drawCircle(Offset(cx, cy), s.width * .39, glow);
-    if (level >= 35 || equipped['effect'] != 'None') {
-      final dots = Paint()..color = p.secondary;
-      for (var i = 0; i < 8; i++) {
-        final a = i * math.pi / 4 + t;
-        canvas.drawCircle(
-          Offset(
-            cx + math.cos(a) * s.width * .43,
-            cy + math.sin(a) * s.width * .34,
-          ),
-          2 + (i % 3).toDouble(),
-          dots,
-        );
-      }
-    }
-    final brain = Paint()..color = const Color(0xFFFF78C8);
-    final outline = Paint()
-      ..color = p.outline
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 5;
-    final body = Path()
-      ..moveTo(cx, cy + s.height * .28)
-      ..cubicTo(
-        cx - s.width * .32,
-        cy + s.height * .28,
-        cx - s.width * .38,
-        cy - s.height * .07,
-        cx - s.width * .25,
-        cy - s.height * .2,
-      )
-      ..cubicTo(
-        cx - s.width * .15,
-        cy - s.height * .38,
-        cx,
-        cy - s.height * .3,
-        cx,
-        cy - s.height * .22,
-      )
-      ..cubicTo(
-        cx + s.width * .1,
-        cy - s.height * .36,
-        cx + s.width * .31,
-        cy - s.height * .3,
-        cx + s.width * .29,
-        cy - s.height * .13,
-      )
-      ..cubicTo(
-        cx + s.width * .43,
-        cy,
-        cx + s.width * .3,
-        cy + s.height * .29,
-        cx,
-        cy + s.height * .28,
-      )
-      ..close();
-    canvas.save();
-    canvas.translate(0, 8);
-    canvas.drawPath(body, Paint()..color = p.shadow.withValues(alpha: .7));
-    canvas.restore();
-    canvas.drawPath(body, brain);
-    canvas.drawPath(body, outline);
-    canvas.drawOval(
-      Rect.fromCenter(
-        center: Offset(cx - s.width * .15, cy - s.height * .2),
-        width: s.width * .13,
-        height: s.height * .06,
-      ),
-      Paint()..color = Colors.white.withValues(alpha: .45),
+    final result = Semantics(
+      label: _semanticLabel(_displayMood),
+      image: !interactive,
+      button: interactive,
+      child: interactive
+          ? Material(
+              color: Colors.transparent,
+              child: InkWell(
+                mouseCursor: SystemMouseCursors.click,
+                customBorder: const CircleBorder(),
+                focusColor: context.brain.secondary.withValues(alpha: .22),
+                hoverColor: context.brain.primary.withValues(alpha: .1),
+                onTap: _tap,
+                child: character,
+              ),
+            )
+          : character,
     );
-    final fold = Paint()
-      ..color = const Color(0xFFC84C9F)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 3
-      ..strokeCap = StrokeCap.round;
-    for (final off in [-.17, 0, .17]) {
-      canvas.drawArc(
-        Rect.fromCenter(
-          center: Offset(cx + s.width * off, cy - s.height * .05),
-          width: s.width * .18,
-          height: s.height * .26,
-        ),
-        -.7,
-        3.6,
-        false,
-        fold,
-      );
-    }
-    final eyeY = cy + s.height * .03;
-    for (final x in [cx - s.width * .11, cx + s.width * .11]) {
-      canvas.drawOval(
-        Rect.fromCenter(
-          center: Offset(x, eyeY),
-          width: s.width * .12,
-          height: s.height * .15,
-        ),
-        Paint()..color = Colors.white,
-      );
-      final dx = mood == BuddyMood.confused ? (x < cx ? -2 : 2) : 0.0;
-      canvas.drawCircle(
-        Offset(x + dx, eyeY + 2),
-        s.width * .033,
-        Paint()..color = const Color(0xFF1A1733),
-      );
-    }
-    final mouth = Paint()
-      ..color = p.outline
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 4
-      ..strokeCap = StrokeCap.round;
-    final happy = {
-      BuddyMood.happy,
-      BuddyMood.celebrate,
-      BuddyMood.levelUp,
-      BuddyMood.record,
-      BuddyMood.workoutComplete,
-      BuddyMood.fullEnergy,
-    }.contains(mood);
-    canvas.drawArc(
-      Rect.fromCenter(
-        center: Offset(cx, cy + s.height * .14),
-        width: s.width * .16,
-        height: s.height * .09,
-      ),
-      happy ? 0 : math.pi,
-      happy ? math.pi : -math.pi,
-      false,
-      mouth,
-    );
-    final limb = Paint()
-      ..color = p.outline
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 5
-      ..strokeCap = StrokeCap.round;
-    canvas.drawLine(
-      Offset(cx - s.width * .22, cy + s.height * .18),
-      Offset(cx - s.width * .29, cy + s.height * .36),
-      limb,
-    );
-    canvas.drawLine(
-      Offset(cx + s.width * .22, cy + s.height * .18),
-      Offset(cx + s.width * .29, cy + s.height * .36),
-      limb,
-    );
-    canvas.drawLine(
-      Offset(cx - s.width * .27, cy + s.height * .36),
-      Offset(cx - s.width * .36, cy + s.height * .36),
-      Paint()
-        ..color = p.secondary
-        ..strokeWidth = 9
-        ..strokeCap = StrokeCap.round,
-    );
-    canvas.drawLine(
-      Offset(cx + s.width * .27, cy + s.height * .36),
-      Offset(cx + s.width * .36, cy + s.height * .36),
-      Paint()
-        ..color = p.secondary
-        ..strokeWidth = 9
-        ..strokeCap = StrokeCap.round,
-    );
-    final glasses = equipped['glasses'];
-    if (level >= 5 || glasses != null && glasses != 'None') {
-      final g = Paint()
-        ..color = glasses == 'Golden Glasses' ? p.reward : p.text
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 3;
-      canvas.drawCircle(Offset(cx - s.width * .11, eyeY), s.width * .075, g);
-      canvas.drawCircle(Offset(cx + s.width * .11, eyeY), s.width * .075, g);
-      canvas.drawLine(
-        Offset(cx - s.width * .035, eyeY),
-        Offset(cx + s.width * .035, eyeY),
-        g,
-      );
-    }
-    if (level >= 10 || equipped['hat'] == 'Headphones') {
-      final hp = Paint()
-        ..color = p.secondary
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 8;
-      canvas.drawArc(
-        Rect.fromCenter(
-          center: Offset(cx, cy - s.height * .13),
-          width: s.width * .5,
-          height: s.height * .4,
-        ),
-        math.pi,
-        math.pi,
-        false,
-        hp,
-      );
-    }
-    if (level >= 20) {
-      canvas.drawPath(
-        Path()
-          ..moveTo(cx - s.width * .2, cy + s.height * .23)
-          ..lineTo(cx, cy + s.height * .42)
-          ..lineTo(cx + s.width * .2, cy + s.height * .23),
-        Paint()..color = Colors.white.withValues(alpha: .85),
-      );
-    }
+    return widget.variant == BuddyVariant.compact
+        ? ExcludeSemantics(child: result)
+        : result;
   }
 
-  @override
-  bool shouldRepaint(covariant _BuddyPainter old) =>
-      old.mood != mood ||
-      old.level != level ||
-      old.t != t ||
-      old.equipped != equipped;
+  BrainTheme _theme(BuildContext context) {
+    if (Theme.of(context).brightness == Brightness.light) {
+      return BrainTheme.daydream;
+    }
+    if (context.brain.outline == Colors.white) return BrainTheme.highContrast;
+    if (context.brain.background == Colors.black) return BrainTheme.oled;
+    return BrainTheme.midnight;
+  }
+
+  String _semanticLabel(BuddyMood mood) => switch (mood) {
+    BuddyMood.idle => 'Flex the Brain Buddy is ready',
+    BuddyMood.blink => 'Flex blinks',
+    BuddyMood.wave => 'Flex waves hello',
+    BuddyMood.thinking => 'Flex is thinking of an idea',
+    BuddyMood.happy => 'Flex is happy',
+    BuddyMood.confused => 'Flex pauses to think again',
+    BuddyMood.celebrate => 'Flex celebrates',
+    BuddyMood.sleepy => 'Flex is resting',
+    BuddyMood.returning => 'Flex welcomes you back',
+    BuddyMood.energized => 'Flex is energized',
+    BuddyMood.levelUp => 'Flex celebrates a new level',
+    BuddyMood.streak => 'Flex celebrates your streak',
+    BuddyMood.record => 'Flex celebrates a new record',
+    BuddyMood.chest => 'Flex opens a reward chest',
+    BuddyMood.fullEnergy => 'Flex celebrates full Brain Energy',
+    BuddyMood.surprised => 'Flex is pleasantly surprised',
+    BuddyMood.tapped => 'Flex gives you a high five',
+    BuddyMood.workoutComplete => 'Flex celebrates your completed workout',
+  };
 }

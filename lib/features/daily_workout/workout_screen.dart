@@ -5,6 +5,7 @@ import '../../core/state/brain_cubit.dart';
 import '../../core/widgets/common.dart';
 import '../games/game_screen.dart';
 import '../../app/theme/brain_theme.dart';
+import '../brain_buddy/brain_buddy.dart';
 
 class WorkoutScreen extends StatefulWidget {
   const WorkoutScreen({super.key});
@@ -74,7 +75,8 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final draft = context.watch<BrainCubit>().state.data.draft;
+    final data = context.watch<BrainCubit>().state.data;
+    final draft = data.draft;
     final complete = draft?.results.length ?? 0;
     return Scaffold(
       appBar: AppBar(title: const Text('DAILY QUEST')),
@@ -104,10 +106,15 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
               const Spacer(),
               BrainCard(
                 style: GamePanelStyle.inset,
-                child: Icon(
-                  Icons.bolt_rounded,
-                  size: 110,
-                  color: context.rewardInk,
+                child: BrainBuddy(
+                  mood: complete == 0
+                      ? BuddyMood.energized
+                      : BuddyMood.returning,
+                  reactionKey: complete,
+                  level: data.level,
+                  equipped: data.equipped,
+                  reducedMotion: data.reducedMotion,
+                  size: 180,
                 ),
               ),
               const SizedBox(height: 20),
@@ -149,6 +156,16 @@ class WorkoutResultScreen extends StatelessWidget {
         child: ListView(
           padding: const EdgeInsets.all(20),
           children: [
+            Center(
+              child: BrainBuddy(
+                mood: BuddyMood.workoutComplete,
+                level: data.level,
+                equipped: data.equipped,
+                reducedMotion: data.reducedMotion,
+                variant: BuddyVariant.celebration,
+                size: 185,
+              ),
+            ),
             const Center(child: TitlePlaque('Victory!')),
             const SizedBox(height: 8),
             const Text(

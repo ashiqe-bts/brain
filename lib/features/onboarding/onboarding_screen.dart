@@ -183,6 +183,20 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               ? 'Perfect! Flex likes your focus.'
               : 'Choose BLUE to try it.',
         ),
+        const SizedBox(height: 8),
+        BrainBuddy(
+          mood: sampleScore > 0 ? BuddyMood.happy : BuddyMood.thinking,
+          reactionKey: sampleScore,
+          level: 1,
+          equipped: const {
+            'hat': 'None',
+            'glasses': 'None',
+            'effect': 'None',
+            'background': 'Brain Laboratory',
+          },
+          variant: BuddyVariant.compact,
+          size: 104,
+        ),
       ],
     ),
   );

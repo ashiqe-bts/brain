@@ -95,9 +95,8 @@ class HomeScreen extends StatelessWidget {
                                         level: d.level,
                                         equipped: d.equipped,
                                         reducedMotion: d.reducedMotion,
-                                        onTap: () => context
-                                            .read<BrainCubit>()
-                                            .react(BuddyMood.tapped),
+                                        onTap: () =>
+                                            context.read<BrainCubit>().haptic(),
                                       ),
                                       Text(
                                         _greeting(d),

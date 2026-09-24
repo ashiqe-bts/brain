@@ -150,6 +150,7 @@ class _LabScreenState extends State<LabScreen> {
           equipped: d.equipped,
           reducedMotion: d.reducedMotion,
           size: 210,
+          onTap: () => context.read<BrainCubit>().haptic(),
         ),
         Text(
           'LEVEL ${d.level} · ${d.rank.toUpperCase()}',

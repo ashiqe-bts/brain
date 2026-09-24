@@ -8,6 +8,7 @@ import '../../core/state/brain_cubit.dart';
 import '../../core/widgets/demo_ads.dart';
 import '../../core/widgets/common.dart';
 import '../../app/theme/brain_theme.dart';
+import '../brain_buddy/brain_buddy.dart';
 
 class GameScreen extends StatefulWidget {
   const GameScreen({
@@ -30,7 +31,7 @@ class GameScreen extends StatefulWidget {
 class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
   late final Random random;
   final stopwatch = Stopwatch();
-  Timer? timer, delayTimer;
+  Timer? timer, delayTimer, buddyResetTimer;
   GameLifecycle lifecycle = GameLifecycle.initial;
   int countdown = 3,
       timeLeft = 30,
@@ -51,6 +52,8 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
   int reflexTrial = 0, falseStarts = 0;
   bool secondChanceUsed = false, secondChancePromptOpen = false;
   bool reflexGo = false;
+  BuddyMood buddyMood = BuddyMood.thinking;
+  int buddyReactionKey = 0;
   final reactions = <int>[];
   DateTime? goAt;
   static const names = ['RED', 'BLUE', 'GREEN', 'YELLOW'];
@@ -72,6 +75,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
     WidgetsBinding.instance.removeObserver(this);
     timer?.cancel();
     delayTimer?.cancel();
+    buddyResetTimer?.cancel();
     super.dispose();
   }
 
@@ -350,6 +354,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
   }
 
   Future<void> _showResult(GameResult result) async {
+    final data = context.read<BrainCubit>().data;
     await showModalBottomSheet<void>(
       context: context,
       isDismissible: false,
@@ -360,6 +365,16 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              BrainBuddy(
+                mood: result.normalized >= 80
+                    ? BuddyMood.celebrate
+                    : BuddyMood.happy,
+                level: data.level,
+                equipped: data.equipped,
+                reducedMotion: data.reducedMotion,
+                variant: BuddyVariant.celebration,
+                size: 120,
+              ),
               TitlePlaque(
                 result.normalized >= 80 ? 'Brilliant!' : 'Round complete',
                 color: context.gameAccent(widget.type),
@@ -440,11 +455,25 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
             child: lifecycle == GameLifecycle.countdown
                 ? Center(
                     key: const ValueKey('count'),
-                    child: Text(
-                      '$countdown',
-                      style: Theme.of(context).textTheme.displayLarge?.copyWith(
-                        fontWeight: FontWeight.w900,
-                      ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        BrainBuddy(
+                          mood: BuddyMood.thinking,
+                          level: context.read<BrainCubit>().data.level,
+                          equipped: context.read<BrainCubit>().data.equipped,
+                          reducedMotion: context
+                              .read<BrainCubit>()
+                              .data
+                              .reducedMotion,
+                          size: 145,
+                        ),
+                        Text(
+                          '$countdown',
+                          style: Theme.of(context).textTheme.displayLarge
+                              ?.copyWith(fontWeight: FontWeight.w900),
+                        ),
+                      ],
                     ),
                   )
                 : lifecycle == GameLifecycle.paused
@@ -456,72 +485,103 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
     );
   }
 
-  Widget _paused() => Center(
-    child: Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        const Icon(Icons.pause_circle_outline, size: 72),
-        const Text('Paused'),
-        const SizedBox(height: 16),
-        FilledButton(
-          onPressed: () {
-            setState(() => lifecycle = GameLifecycle.running);
-            stopwatch.start();
-            if (widget.type == GameType.reflexTap) {
-              _scheduleReflex();
-            } else {
-              _startTimer();
-            }
-          },
-          child: const Text('RESUME'),
-        ),
-      ],
-    ),
-  );
-  Widget _game() => Padding(
-    key: ValueKey(widget.type),
-    padding: const EdgeInsets.all(20),
-    child: Column(
-      children: [
-        Row(
-          children: [
-            _pill('Score $score'),
-            const Spacer(),
-            _pill('Combo $combo'),
-            if (widget.personalBest != null) ...[
-              const SizedBox(width: 8),
-              _pill('PB ${widget.personalBest!.score}'),
-            ],
-          ],
-        ),
-        const SizedBox(height: 16),
-        ResourceBar(
-          label: widget.mode == GameMode.official
-              ? 'Daily quest'
-              : widget.mode.name,
-          value: timed
-              ? timeLeft / (widget.modifier == 'Lightning' ? 24 : 30)
-              : min(1, correct / 10),
-          color: context.gameAccent(widget.type),
-        ),
-        const SizedBox(height: 16),
-        Expanded(
-          child: switch (widget.type) {
-            GameType.colorClash => _color(),
-            GameType.mathBlitz => _math(),
-            GameType.memoryTiles => _memory(),
-            GameType.reflexTap => _reflex(),
-            GameType.oddOneOut => _odd(),
-          },
-        ),
-        if (widget.mode == GameMode.zen)
-          TextButton(
-            onPressed: _finish,
-            child: const Text('Finish zen session'),
+  Widget _paused() {
+    final d = context.read<BrainCubit>().data;
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          BrainBuddy(
+            mood: BuddyMood.sleepy,
+            level: d.level,
+            equipped: d.equipped,
+            reducedMotion: d.reducedMotion,
+            size: 150,
           ),
-      ],
-    ),
-  );
+          Text('Paused', style: Theme.of(context).textTheme.headlineSmall),
+          const SizedBox(height: 16),
+          FilledButton(
+            onPressed: () {
+              setState(() => lifecycle = GameLifecycle.running);
+              stopwatch.start();
+              if (widget.type == GameType.reflexTap) {
+                _scheduleReflex();
+              } else {
+                _startTimer();
+              }
+            },
+            child: const Text('RESUME'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _game() {
+    final d = context.watch<BrainCubit>().state.data;
+    return Padding(
+      key: ValueKey(widget.type),
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              BrainBuddy(
+                mood: buddyMood,
+                reactionKey: buddyReactionKey,
+                level: d.level,
+                equipped: d.equipped,
+                reducedMotion: d.reducedMotion,
+                variant: BuddyVariant.compact,
+                size: 62,
+              ),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Wrap(
+                  alignment: WrapAlignment.end,
+                  spacing: 8,
+                  runSpacing: 6,
+                  children: [
+                    _pill('Score $score'),
+                    _pill('Combo $combo'),
+                    if (widget.personalBest != null)
+                      _pill('PB ${widget.personalBest!.score}'),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          ResourceBar(
+            label: widget.mode == GameMode.official
+                ? 'Daily quest'
+                : widget.mode.name,
+            value: timed
+                ? timeLeft / (widget.modifier == 'Lightning' ? 24 : 30)
+                : min(1, correct / 10),
+            color: context.gameAccent(widget.type),
+          ),
+          const SizedBox(height: 16),
+          Expanded(
+            child: switch (widget.type) {
+              GameType.colorClash => _color(),
+              GameType.mathBlitz => _math(),
+              GameType.memoryTiles => _memory(),
+              GameType.reflexTap => _reflex(),
+              GameType.oddOneOut => _odd(),
+            },
+          ),
+          if (widget.mode == GameMode.zen)
+            TextButton(
+              onPressed: _finish,
+              child: const Text('Finish zen session'),
+            ),
+        ],
+      ),
+    );
+  }
+
   Widget _pill(String t) => Container(
     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
     decoration: BoxDecoration(
@@ -796,6 +856,20 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
 
   void _feedback(bool positive) {
     final cubit = context.read<BrainCubit>();
+    buddyResetTimer?.cancel();
+    buddyMood = positive
+        ? combo > 0 && combo % 5 == 0
+              ? BuddyMood.energized
+              : BuddyMood.happy
+        : BuddyMood.surprised;
+    buddyReactionKey++;
+    buddyResetTimer = Timer(const Duration(milliseconds: 700), () {
+      if (!mounted || lifecycle == GameLifecycle.completed) return;
+      setState(() {
+        buddyMood = BuddyMood.thinking;
+        buddyReactionKey++;
+      });
+    });
     if (cubit.data.sound) {
       SystemSound.play(SystemSoundType.click);
     }
