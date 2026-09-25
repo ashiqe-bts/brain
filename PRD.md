@@ -117,7 +117,7 @@ Drift game-session rows are the source of truth for dated history. History queri
 
 Migration from the original product must preserve settings, onboarding, reminders, themes, streaks, XP, participation levels, achievements, workouts, daily summaries, and meaningful game results. Timestamped records are reconstructed where possible. Undated snapshot-only results remain eligible for historical personal-best display but are excluded from time-based trends. A pre-migration state snapshot is retained until the new state saves successfully.
 
-Retired character, mood, energy, cosmetic, token, boost, advertising, and reward fields are ignored after migration and are not exposed in the product.
+Unrecognized legacy snapshot fields are ignored after migration and are not exposed in the product.
 
 There are no accounts, backend, cloud synchronization, advertising SDKs, or product telemetry. On web, local data uses browser-managed storage; clearing site data removes it.
 

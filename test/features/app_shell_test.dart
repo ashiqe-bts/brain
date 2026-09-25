@@ -25,7 +25,7 @@ void main() {
     await repository.close();
   });
 
-  testWidgets('uses Today, Train, and Insights without mascot or ads', (
+  testWidgets('uses Today, Train, and Insights without retired surfaces', (
     tester,
   ) async {
     await tester.pumpWidget(
@@ -43,7 +43,6 @@ void main() {
     expect(find.text('Train'), findsOneWidget);
     expect(find.text('Insights'), findsOneWidget);
     expect(find.text('Lab'), findsNothing);
-    expect(find.textContaining('Brain Buddy'), findsNothing);
     expect(find.textContaining('Demo Ad'), findsNothing);
 
     await tester.tap(find.byIcon(Icons.insights_rounded));

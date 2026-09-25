@@ -54,5 +54,3 @@ Performance targets for release review are a cold interactive start under two se
 ## Data migration
 
 The current schema migrates older installations non-destructively. Settings, reminders, themes, streaks, XP, participation levels, achievements, workouts, daily summaries, and usable session history are retained. Dated sessions move to Drift as the history source of truth; undated legacy results remain available for personal-best history but are excluded from time-based trends. A pre-migration snapshot is retained before the new state is saved successfully.
-
-The untracked `assets/rive/` directory is intentionally outside this migration and must not be removed automatically.

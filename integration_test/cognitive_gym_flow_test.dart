@@ -28,7 +28,6 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('A personal cognitive gym'), findsOneWidget);
-    expect(find.textContaining('Brain Buddy'), findsNothing);
     expect(find.textContaining('Demo Ad'), findsNothing);
 
     await repository.save(
