@@ -12,6 +12,38 @@ class BaselineStatus {
   bool get isComplete => completed >= required;
 }
 
+enum TrendDirection { insufficient, stable, improving, needsAttention }
+
+class SkillTrend {
+  const SkillTrend({
+    required this.type,
+    required this.direction,
+    required this.currentLevel,
+    required this.baselineLevel,
+    required this.delta,
+    required this.samples,
+  });
+
+  final GameType type;
+  final TrendDirection direction;
+  final double currentLevel;
+  final double baselineLevel;
+  final double delta;
+  final int samples;
+}
+
+class WeeklyReview {
+  const WeeklyReview({
+    required this.workouts,
+    required this.trends,
+    required this.recommendations,
+  });
+
+  final int workouts;
+  final Map<GameType, SkillTrend> trends;
+  final List<GameType> recommendations;
+}
+
 BaselineStatus baselineStatus(List<DailySummary> daily) =>
     BaselineStatus(completed: min(3, daily.length));
 
@@ -30,6 +62,118 @@ int adaptDifficulty(int current, Iterable<double> recentScores) {
   if (mastered >= 2) return min(10, current + 1);
   if (struggling >= 2) return max(1, current - 1);
   return current.clamp(1, 10);
+}
+
+SkillTrend skillTrend(GameType type, Iterable<GameResult> history) {
+  final eligible = history
+      .where((result) => result.type == type && result.contributesToTrends)
+      .toList();
+  final latestRules = eligible.fold<int>(
+    0,
+    (v, result) => max(v, result.rulesVersion),
+  );
+  final sessions =
+      eligible.where((result) => result.rulesVersion == latestRules).toList()
+        ..sort((a, b) => a.completedAt!.compareTo(b.completedAt!));
+  if (sessions.isEmpty) {
+    return SkillTrend(
+      type: type,
+      direction: TrendDirection.insufficient,
+      currentLevel: 0,
+      baselineLevel: 0,
+      delta: 0,
+      samples: 0,
+    );
+  }
+  final levels = sessions
+      .map(
+        (result) => trainingLevel(
+          difficulty: result.difficulty,
+          score: result.normalized,
+        ),
+      )
+      .toList();
+  final baseline = _medianDouble(levels.take(3));
+  final current = _medianDouble(levels.reversed.take(3));
+  final delta = current - baseline;
+  final direction = sessions.length < 6
+      ? TrendDirection.insufficient
+      : delta >= .2
+      ? TrendDirection.improving
+      : delta <= -.2
+      ? TrendDirection.needsAttention
+      : TrendDirection.stable;
+  return SkillTrend(
+    type: type,
+    direction: direction,
+    currentLevel: current,
+    baselineLevel: baseline,
+    delta: delta,
+    samples: sessions.length,
+  );
+}
+
+WeeklyReview weeklyReview({
+  required List<DailySummary> daily,
+  required List<GameResult> history,
+  DateTime? now,
+}) {
+  final today = now ?? DateTime.now();
+  final start = DateTime(
+    today.year,
+    today.month,
+    today.day,
+  ).subtract(const Duration(days: 6));
+  final workouts = daily.where((summary) {
+    final date = DateTime.tryParse(summary.date);
+    return date != null && !date.isBefore(start);
+  }).length;
+  final trends = {
+    for (final type in GameType.values) type: skillTrend(type, history),
+  };
+  final ranked = [...GameType.values]
+    ..sort((a, b) {
+      final aTrend = trends[a]!;
+      final bTrend = trends[b]!;
+      final bySamples = aTrend.samples.compareTo(bTrend.samples);
+      if (bySamples != 0) return bySamples;
+      return aTrend.currentLevel.compareTo(bTrend.currentLevel);
+    });
+  return WeeklyReview(
+    workouts: workouts,
+    trends: trends,
+    recommendations: ranked.take(2).toList(),
+  );
+}
+
+String sessionTip(GameResult result) {
+  if (result.accuracy < .75) {
+    return 'Prioritize accuracy before speed on the next comparable round.';
+  }
+  return switch (result.type) {
+    GameType.colorClash =>
+      'Keep naming the ink color silently before choosing an answer.',
+    GameType.mathBlitz =>
+      'Check the operation first, then estimate before calculating exactly.',
+    GameType.memoryTiles =>
+      'Group nearby tiles into small shapes instead of memorizing one by one.',
+    GameType.reflexTap =>
+      result.metrics['falseStarts'] != null &&
+              result.metrics['falseStarts']! > 0
+          ? 'Wait for the full signal; false starts matter more than raw speed.'
+          : 'Keep your finger relaxed and compare results on the same device.',
+    GameType.visualSearch =>
+      'Scan in a consistent path instead of jumping randomly around the grid.',
+  };
+}
+
+double _medianDouble(Iterable<double> values) {
+  final sorted = values.toList()..sort();
+  if (sorted.isEmpty) return 0;
+  final middle = sorted.length ~/ 2;
+  return sorted.length.isOdd
+      ? sorted[middle]
+      : (sorted[middle - 1] + sorted[middle]) / 2;
 }
 
 double scoreGame({

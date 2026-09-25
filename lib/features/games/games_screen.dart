@@ -215,15 +215,16 @@ class GamesScreen extends StatelessWidget {
       ),
     );
     if (mode == null || !context.mounted) return;
-    final cubit = context.read<BrainCubit>(),
-        pb = cubit.personalBest(game, mode);
+    final cubit = context.read<BrainCubit>();
+    final difficulty = cubit.data.difficulties[game.name] ?? 1;
+    final pb = cubit.personalBest(game, mode, difficulty: difficulty);
     final result = await Navigator.push<GameResult>(
       context,
       MaterialPageRoute(
         builder: (_) => GameScreen(
           type: game,
           mode: mode,
-          difficulty: cubit.data.difficulties[game.name] ?? 1,
+          difficulty: difficulty,
           personalBest: pb,
         ),
       ),

@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../models/brain_models.dart';
 import '../storage/brain_repository.dart';
+import '../training/training_analytics.dart';
 
 class BrainViewState extends Equatable {
   const BrainViewState(this.data, this.revision, {this.ready = true});
@@ -122,21 +123,42 @@ class BrainCubit extends Cubit<BrainViewState> {
   }
 
   Future<bool> recordResult(GameResult result) async {
-    final previous = personalBest(result.type, result.mode);
+    final previous = personalBest(
+      result.type,
+      result.mode,
+      difficulty: result.difficulty,
+      rulesVersion: result.rulesVersion,
+    );
     final isRecord =
-        previous == null ||
-        result.score > previous.score ||
-        (result.type == GameType.reflexTap &&
-            result.reactionMs != null &&
-            (previous.reactionMs == null ||
-                result.reactionMs! < previous.reactionMs!));
+        result.mode != GameMode.relaxed &&
+        (previous == null ||
+            result.score > previous.score ||
+            (result.type == GameType.reflexTap &&
+                result.reactionMs != null &&
+                (previous.reactionMs == null ||
+                    result.reactionMs! < previous.reactionMs!)));
     data.history.add(result);
     await repository.saveGame(result);
-    data.difficulties[result.type.name] = result.normalized > 80
-        ? min(10, result.difficulty + 1)
-        : result.normalized < 45
-        ? max(1, result.difficulty - 1)
-        : result.difficulty;
+    final recentComparable =
+        data.history
+            .where(
+              (item) =>
+                  item.type == result.type &&
+                  item.rulesVersion == result.rulesVersion &&
+                  item.contributesToTrends,
+            )
+            .toList()
+          ..sort(
+            (a, b) => (b.completedAt ?? DateTime(1970)).compareTo(
+              a.completedAt ?? DateTime(1970),
+            ),
+          );
+    if (result.contributesToTrends) {
+      data.difficulties[result.type.name] = adaptDifficulty(
+        result.difficulty,
+        recentComparable.take(3).map((item) => item.normalized),
+      );
+    }
     if (result.mode == GameMode.official) {
       final draft = data.draft;
       if (draft != null) {
@@ -146,10 +168,9 @@ class BrainCubit extends Cubit<BrainViewState> {
           results: [...draft.results, result],
         );
       }
-    } else if (result.mode != GameMode.zen) {
+    } else if (result.mode != GameMode.relaxed && result.mode != GameMode.zen) {
       data.practiceSessions++;
-      addXp((data.boosted ? 2 : 1) * (5 + min(10, result.score ~/ 10)));
-      addEnergy(5);
+      addXp(5 + min(10, result.score ~/ 10));
     }
     _progressMission('correct', result.correct);
     if (isRecord) {
@@ -162,14 +183,24 @@ class BrainCubit extends Cubit<BrainViewState> {
     return isRecord;
   }
 
-  GameResult? personalBest(GameType type, GameMode mode) {
+  GameResult? personalBest(
+    GameType type,
+    GameMode mode, {
+    int? difficulty,
+    int rulesVersion = 2,
+  }) {
+    if (mode == GameMode.relaxed || mode == GameMode.zen) return null;
     final items = data.history
         .where(
           (e) =>
               e.type == type &&
-              (mode == GameMode.personalBest ||
-                  e.mode == mode ||
-                  e.mode == GameMode.classic),
+              e.rulesVersion == rulesVersion &&
+              (difficulty == null || e.difficulty == difficulty) &&
+              (mode == GameMode.personalBest
+                  ? e.mode == GameMode.personalBest ||
+                        e.mode == GameMode.standard ||
+                        e.mode == GameMode.official
+                  : e.mode == mode),
         )
         .toList();
     if (items.isEmpty) return null;
@@ -194,8 +225,8 @@ class BrainCubit extends Cubit<BrainViewState> {
     final reflex = draft.results.firstWhere(
       (e) => e.type == GameType.reflexTap,
     );
-    final speed =
-        ((value(GameType.visualSearch) + reflex.normalized) / 2).round();
+    final speed = ((value(GameType.visualSearch) + reflex.normalized) / 2)
+        .round();
     final answers = draft.results.where((e) => e.type != GameType.reflexTap);
     final attempts = answers.fold<int>(0, (s, e) => s + e.attempts),
         correct = answers.fold<int>(0, (s, e) => s + e.correct);
@@ -213,6 +244,13 @@ class BrainCubit extends Cubit<BrainViewState> {
       accuracy: accuracy,
       reactionMs: reflex.reactionMs,
       results: draft.results,
+      skillRatings: {
+        for (final result in draft.results)
+          result.type.skill: trainingLevel(
+            difficulty: result.difficulty,
+            score: result.normalized,
+          ),
+      },
     );
     data.daily.removeWhere((e) => e.date == summary.date);
     data.daily.add(summary);

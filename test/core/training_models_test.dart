@@ -19,6 +19,13 @@ void main() {
       expect(result.mode, GameMode.standard);
       expect(result.isLegacy, isTrue);
     });
+
+    test('preserves odd one out difficulty as visual search difficulty', () {
+      final migrated = migrateDifficulties({'oddOneOut': 6});
+
+      expect(migrated[GameType.visualSearch.name], 6);
+      expect(migrated, isNot(contains('oddOneOut')));
+    });
   });
 
   group('game scoring', () {
@@ -80,7 +87,59 @@ void main() {
       expect(adaptDifficulty(1, [20, 30, 80]), 1);
     });
   });
+
+  group('skill trends and reviews', () {
+    test('requires three post-baseline observations before naming a trend', () {
+      final sessions = List.generate(
+        5,
+        (index) => _result(day: index + 1, normalized: 60 + index * 5),
+      );
+
+      expect(
+        skillTrend(GameType.colorClash, sessions).direction,
+        TrendDirection.insufficient,
+      );
+    });
+
+    test('uses rolling medians and ignores relaxed sessions', () {
+      final sessions = [
+        ...List.generate(3, (index) => _result(day: index + 1, normalized: 55)),
+        ...List.generate(3, (index) => _result(day: index + 4, normalized: 90)),
+        _result(day: 7, normalized: 1, mode: GameMode.relaxed),
+      ];
+
+      final trend = skillTrend(GameType.colorClash, sessions);
+
+      expect(trend.direction, TrendDirection.improving);
+      expect(trend.delta, greaterThan(.2));
+      expect(trend.samples, 6);
+    });
+
+    test('feedback recommends accuracy before speed', () {
+      expect(
+        sessionTip(_result(day: 1, normalized: 45, accuracy: .55)),
+        contains('accuracy'),
+      );
+    });
+  });
 }
 
 DailySummary _summary(String date) =>
     DailySummary(date: date, results: const [], skillRatings: const {});
+
+GameResult _result({
+  required int day,
+  required double normalized,
+  double accuracy = .9,
+  GameMode mode = GameMode.official,
+}) => GameResult(
+  type: GameType.colorClash,
+  mode: mode,
+  score: normalized.round(),
+  normalized: normalized,
+  accuracy: accuracy,
+  durationMs: 30000,
+  difficulty: 4,
+  completedAt: DateTime.utc(2026, 1, day),
+  rulesVersion: 2,
+);

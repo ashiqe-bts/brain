@@ -84,6 +84,16 @@ GameMode gameModeFromName(String name) => switch (name) {
   _ => GameMode.values.byName(name),
 };
 
+Map<String, int> migrateDifficulties(Map<String, int>? stored) {
+  final values = {
+    for (final game in GameType.values) game.name: stored?[game.name] ?? 1,
+  };
+  if (stored != null && !stored.containsKey(GameType.visualSearch.name)) {
+    values[GameType.visualSearch.name] = stored['oddOneOut'] ?? 1;
+  }
+  return values;
+}
+
 class GameResult {
   const GameResult({
     required this.type,
@@ -379,8 +389,7 @@ class BrainState {
     this.lastInterstitialAt,
     this.boostUntil,
     this.lastMicroEventDate,
-  }) : difficulties =
-           difficulties ?? {for (final g in GameType.values) g.name: 1},
+  }) : difficulties = migrateDifficulties(difficulties),
        daily = daily ?? [],
        history = history ?? [],
        missions = missions ?? [],
