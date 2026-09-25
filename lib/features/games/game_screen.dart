@@ -17,13 +17,11 @@ class GameScreen extends StatefulWidget {
     required this.mode,
     required this.difficulty,
     this.personalBest,
-    this.modifier,
   });
   final GameType type;
   final GameMode mode;
   final int difficulty;
   final GameResult? personalBest;
-  final String? modifier;
   @override
   State<GameScreen> createState() => _GameScreenState();
 }
@@ -72,7 +70,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
     trialFactory = GameTrialFactory(seed);
     colorTrials = trialFactory.colorTrials(120);
     mathTrials = trialFactory.mathTrials(widget.difficulty, count: 120);
-    timeLeft = widget.modifier == 'Lightning' ? 24 : 30;
+    timeLeft = 30;
     _countdown();
   }
 
@@ -137,9 +135,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
   }
 
   bool get timed =>
-      widget.mode != GameMode.endless &&
       widget.mode != GameMode.relaxed &&
-      widget.mode != GameMode.zen &&
       widget.type != GameType.memoryTiles &&
       widget.type != GameType.reflexTap;
   void _startTimer() {
@@ -221,22 +217,20 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
           : combo >= 5
           ? 1.2
           : 1.0;
-      if (widget.modifier == 'Combo' && combo >= 5) multiplier += .5;
       score += (1 * multiplier).round();
       _feedback(true);
     } else {
       combo = 0;
       mistakes++;
-      score = max(0, score - (widget.modifier == 'Precision' ? 2 : 1));
+      score = max(0, score - 1);
       _feedback(false);
     }
     lastAnswerCorrect = ok;
-    if (widget.mode == GameMode.endless && mistakes >= 3) _finish();
     setState(() {});
   }
 
   void _nextMemory() {
-    final roundTarget = widget.modifier == 'Memory Madness' ? 4 : 3;
+    const roundTarget = 3;
     if (memoryRound >= roundTarget) {
       _finish();
       return;
@@ -558,9 +552,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
             label: widget.mode == GameMode.official
                 ? 'Daily quest'
                 : widget.mode.name,
-            value: timed
-                ? timeLeft / (widget.modifier == 'Lightning' ? 24 : 30)
-                : min(1, correct / 10),
+            value: timed ? timeLeft / 30 : min(1, correct / 10),
             color: context.gameAccent(widget.type),
           ),
           const SizedBox(height: 16),
@@ -573,7 +565,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
               GameType.visualSearch => _visualSearch(),
             },
           ),
-          if (widget.mode == GameMode.relaxed || widget.mode == GameMode.zen)
+          if (widget.mode == GameMode.relaxed)
             TextButton(
               onPressed: _finish,
               child: const Text('Finish relaxed session'),
@@ -615,8 +607,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
         mainAxisSpacing: 12,
         crossAxisSpacing: 12,
         childAspectRatio: 2.2,
-        children: List.generate(4, (position) {
-          final i = widget.modifier == 'Reverse' ? 3 - position : position;
+        children: List.generate(4, (i) {
           return ArcadeButton(
             color: context.clashColor(i),
             onPressed: () => _answerColor(i),

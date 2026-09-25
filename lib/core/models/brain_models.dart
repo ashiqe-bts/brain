@@ -3,42 +3,11 @@ import 'dart:math';
 
 enum BrainTheme { midnight, oled, daydream, highContrast }
 
-enum BuddyMood {
-  idle,
-  blink,
-  wave,
-  thinking,
-  happy,
-  confused,
-  celebrate,
-  sleepy,
-  returning,
-  energized,
-  levelUp,
-  streak,
-  record,
-  chest,
-  fullEnergy,
-  surprised,
-  tapped,
-  workoutComplete,
-}
-
 enum SkillDomain { focus, calculation, memory, reaction, visualSearch }
 
 enum GameType { colorClash, mathBlitz, memoryTiles, reflexTap, visualSearch }
 
-enum GameMode {
-  standard,
-  relaxed,
-  personalBest,
-  official,
-  // Kept only while old snapshots and callers migrate to the focused modes.
-  classic,
-  endless,
-  timeAttack,
-  zen,
-}
+enum GameMode { standard, relaxed, personalBest, official }
 
 enum GameLifecycle { initial, countdown, running, paused, feedback, completed }
 
@@ -312,47 +281,13 @@ class WorkoutDraft {
   factory WorkoutDraft.fromJson(Map<String, dynamic> j) => WorkoutDraft(
     date: j['date'] as String,
     order: (j['order'] as List)
-        .map((e) => GameType.values.byName(e as String))
+        .map((e) => gameTypeFromName(e as String))
         .toList(),
     results: (j['results'] as List)
         .map((e) => GameResult.fromJson(Map<String, dynamic>.from(e as Map)))
         .toList(),
   );
 }
-
-const cosmeticCatalog = <String, List<String>>{
-  'hat': [
-    'None',
-    'Graduation Cap',
-    'Wizard Hat',
-    'Crown',
-    'Headphones',
-    'Detective Hat',
-    '7-Day Headband',
-  ],
-  'glasses': [
-    'None',
-    'Round Glasses',
-    'Sunglasses',
-    'Futuristic Visor',
-    'Golden Glasses',
-  ],
-  'effect': [
-    'None',
-    'Fire Aura',
-    'Electric Sparks',
-    'Stars',
-    'Neon Glow',
-    'Floating Equations',
-  ],
-  'background': [
-    'Brain Laboratory',
-    'Space Lab',
-    'Classroom',
-    'Neon Arcade',
-    'Dream World',
-  ],
-};
 
 class BrainState {
   BrainState({
@@ -368,41 +303,22 @@ class BrainState {
     this.reminderEnabled = false,
     this.xp = 0,
     this.level = 1,
-    this.energy = 0,
-    this.tokens = 0,
     this.currentStreak = 0,
     this.longestStreak = 0,
-    this.freezes = 1,
     this.lastCompletedDate,
     this.workouts = 0,
-    this.mood = BuddyMood.idle,
     Map<String, int>? difficulties,
     List<DailySummary>? daily,
     List<GameResult>? history,
     List<Mission>? missions,
     Set<String>? achievements,
-    Set<String>? unlocked,
-    Map<String, String>? equipped,
     this.draft,
     this.lastMissionDate,
-    this.practiceSessions = 0,
-    this.lastInterstitialAt,
-    this.boostUntil,
-    this.lastMicroEventDate,
   }) : difficulties = migrateDifficulties(difficulties),
        daily = daily ?? [],
        history = history ?? [],
        missions = missions ?? [],
-       achievements = achievements ?? {},
-       unlocked = unlocked ?? {'None', 'Brain Laboratory'},
-       equipped =
-           equipped ??
-           {
-             'hat': 'None',
-             'glasses': 'None',
-             'effect': 'None',
-             'background': 'Brain Laboratory',
-           };
+       achievements = achievements ?? {};
   bool onboarded,
       sound,
       music,
@@ -415,44 +331,18 @@ class BrainState {
       reminderMinute,
       xp,
       level,
-      energy,
-      tokens,
       currentStreak,
       longestStreak,
-      freezes,
-      workouts,
-      practiceSessions;
-  String? lastCompletedDate,
-      lastMissionDate,
-      lastInterstitialAt,
-      boostUntil,
-      lastMicroEventDate;
-  BuddyMood mood;
+      workouts;
+  String? lastCompletedDate, lastMissionDate;
   Map<String, int> difficulties;
   List<DailySummary> daily;
   List<GameResult> history;
   List<Mission> missions;
-  Set<String> achievements, unlocked;
-  Map<String, String> equipped;
+  Set<String> achievements;
   WorkoutDraft? draft;
 
   int get xpNeeded => 300 + 50 * (level - 1);
-  String get rank => level >= 50
-      ? 'Quantum Brain'
-      : level >= 40
-      ? 'Mind Master'
-      : level >= 30
-      ? 'Brain Hacker'
-      : level >= 20
-      ? 'Problem Solver'
-      : level >= 10
-      ? 'Quick Thinker'
-      : level >= 5
-      ? 'Curious Mind'
-      : 'Tiny Thinker';
-  bool get boosted =>
-      boostUntil != null &&
-      DateTime.tryParse(boostUntil!)?.isAfter(DateTime.now()) == true;
   Map<String, dynamic> toJson() => {
     'onboarded': onboarded,
     'theme': theme.name,
@@ -466,14 +356,10 @@ class BrainState {
     'reminderEnabled': reminderEnabled,
     'xp': xp,
     'level': level,
-    'energy': energy,
-    'tokens': tokens,
     'currentStreak': currentStreak,
     'longestStreak': longestStreak,
-    'freezes': freezes,
     'lastCompletedDate': lastCompletedDate,
     'workouts': workouts,
-    'mood': mood.name,
     'difficulties': difficulties,
     'daily': daily.map((e) => e.toJson()).toList(),
     // Timestamped sessions live in Drift. Only snapshot-only legacy records
@@ -481,14 +367,8 @@ class BrainState {
     'history': history.where((e) => e.isLegacy).map((e) => e.toJson()).toList(),
     'missions': missions.map((e) => e.toJson()).toList(),
     'achievements': achievements.toList(),
-    'unlocked': unlocked.toList(),
-    'equipped': equipped,
     'draft': draft?.toJson(),
     'lastMissionDate': lastMissionDate,
-    'practiceSessions': practiceSessions,
-    'lastInterstitialAt': lastInterstitialAt,
-    'boostUntil': boostUntil,
-    'lastMicroEventDate': lastMicroEventDate,
   };
   String encode() => jsonEncode(toJson());
   factory BrainState.decode(String value) {
@@ -506,14 +386,10 @@ class BrainState {
       reminderEnabled: j['reminderEnabled'] as bool? ?? false,
       xp: j['xp'] as int? ?? 0,
       level: j['level'] as int? ?? 1,
-      energy: j['energy'] as int? ?? 0,
-      tokens: j['tokens'] as int? ?? 0,
       currentStreak: j['currentStreak'] as int? ?? 0,
       longestStreak: j['longestStreak'] as int? ?? 0,
-      freezes: j['freezes'] as int? ?? 1,
       lastCompletedDate: j['lastCompletedDate'] as String?,
       workouts: j['workouts'] as int? ?? 0,
-      mood: BuddyMood.values.byName(j['mood'] as String? ?? 'idle'),
       difficulties: Map<String, int>.from(j['difficulties'] as Map? ?? {}),
       daily: (j['daily'] as List? ?? [])
           .map(
@@ -527,16 +403,10 @@ class BrainState {
           .map((e) => Mission.fromJson(Map<String, dynamic>.from(e as Map)))
           .toList(),
       achievements: Set<String>.from(j['achievements'] as List? ?? []),
-      unlocked: Set<String>.from(j['unlocked'] as List? ?? []),
-      equipped: Map<String, String>.from(j['equipped'] as Map? ?? {}),
       draft: j['draft'] == null
           ? null
           : WorkoutDraft.fromJson(Map<String, dynamic>.from(j['draft'] as Map)),
       lastMissionDate: j['lastMissionDate'] as String?,
-      practiceSessions: j['practiceSessions'] as int? ?? 0,
-      lastInterstitialAt: j['lastInterstitialAt'] as String?,
-      boostUntil: j['boostUntil'] as String?,
-      lastMicroEventDate: j['lastMicroEventDate'] as String?,
     );
   }
 }
@@ -557,15 +427,6 @@ int stableSeed(String input) {
 
 List<GameType> dailyOrder(String date) {
   final list = [...GameType.values];
-  list.shuffle(Random(stableSeed('$date|1|brainflex-lab')));
+  list.shuffle(Random(stableSeed('$date|2|brainflex-training')));
   return list;
 }
-
-String dailyModifier(String date) => [
-  'Lightning',
-  'Precision',
-  'Memory Madness',
-  'Combo',
-  'Reverse',
-  'Mystery',
-][stableSeed(date) % 6];

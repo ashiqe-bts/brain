@@ -70,8 +70,7 @@ class BrainCubit extends Cubit<BrainViewState> {
       ..onboarded = true
       ..reminderHour = hour
       ..reminderMinute = minute
-      ..reminderEnabled = reminders
-      ..mood = BuddyMood.wave;
+      ..reminderEnabled = reminders;
     await _commit();
   }
 
@@ -102,11 +101,6 @@ class BrainCubit extends Cubit<BrainViewState> {
     data
       ..reminderHour = h
       ..reminderMinute = m;
-    await _commit();
-  }
-
-  Future<void> react(BuddyMood mood) async {
-    data.mood = mood;
     await _commit();
   }
 
@@ -168,14 +162,12 @@ class BrainCubit extends Cubit<BrainViewState> {
           results: [...draft.results, result],
         );
       }
-    } else if (result.mode != GameMode.relaxed && result.mode != GameMode.zen) {
-      data.practiceSessions++;
+    } else if (result.mode != GameMode.relaxed) {
       addXp(5 + min(10, result.score ~/ 10));
     }
     _progressMission('correct', result.correct);
     if (isRecord) {
       _progressMission('record', 1);
-      data.mood = BuddyMood.record;
       addXp(25);
     }
     if (result.accuracy >= .999 && result.attempts > 0) addXp(20);
@@ -189,7 +181,7 @@ class BrainCubit extends Cubit<BrainViewState> {
     int? difficulty,
     int rulesVersion = 2,
   }) {
-    if (mode == GameMode.relaxed || mode == GameMode.zen) return null;
+    if (mode == GameMode.relaxed) return null;
     final items = data.history
         .where(
           (e) =>
@@ -231,12 +223,8 @@ class BrainCubit extends Cubit<BrainViewState> {
     final attempts = answers.fold<int>(0, (s, e) => s + e.attempts),
         correct = answers.fold<int>(0, (s, e) => s + e.correct);
     final accuracy = attempts == 0 ? 0 : (100 * correct / attempts).round();
-    final brain =
-        (focus * .25 + memory * .25 + speed * .20 + math * .15 + accuracy * .15)
-            .round();
     final summary = DailySummary(
       date: draft.date,
-      brainScore: brain,
       focus: focus,
       memory: memory,
       speed: speed,
@@ -258,11 +246,8 @@ class BrainCubit extends Cubit<BrainViewState> {
     _updateStreak(summary.date);
     data.workouts++;
     data.draft = null;
-    data.mood = BuddyMood.workoutComplete;
     addXp(100);
-    addEnergy(50);
     _progressMission('workout', 1);
-    _unlockProgression();
     _evaluateAchievements(summary);
     await repository.saveDaily(summary);
     await _commit();
@@ -281,9 +266,6 @@ class BrainCubit extends Cubit<BrainViewState> {
     }
     data.lastCompletedDate = date;
     data.longestStreak = max(data.longestStreak, data.currentStreak);
-    if ([3, 7, 14, 30, 50, 100, 365].contains(data.currentStreak)) {
-      data.mood = BuddyMood.streak;
-    }
   }
 
   void addXp(int amount) {
@@ -291,16 +273,6 @@ class BrainCubit extends Cubit<BrainViewState> {
     while (data.level < 50 && data.xp >= data.xpNeeded) {
       data.xp -= data.xpNeeded;
       data.level++;
-      data.mood = BuddyMood.levelUp;
-    }
-  }
-
-  void addEnergy(int amount) {
-    data.energy += amount;
-    if (data.energy >= 100) {
-      data.energy -= 100;
-      data.tokens++;
-      data.mood = BuddyMood.fullEnergy;
     }
   }
 
@@ -320,35 +292,9 @@ class BrainCubit extends Cubit<BrainViewState> {
     final m = data.missions[i];
     if (m.complete && !m.claimed) {
       addXp(m.reward);
-      addEnergy(15);
       data.missions[i] = m.copyWith(claimed: true);
-      if (data.missions.every((e) => e.claimed)) {
-        data.tokens++;
-        data.mood = BuddyMood.chest;
-      }
       await _commit();
     }
-  }
-
-  Future<void> rerollMission() async {
-    final i = data.missions.indexWhere((m) => m.id != 'workout' && !m.complete);
-    if (i < 0) return;
-    data.missions[i] = Mission(
-      id: data.missions[i].id,
-      title: 'Score 70+ in any practice game',
-      target: 1,
-      reward: data.missions[i].reward,
-    );
-    await _commit();
-  }
-
-  void _unlockProgression() {
-    if (data.workouts >= 1) data.unlocked.add('Round Glasses');
-    if (data.workouts >= 7) data.unlocked.add('7-Day Headband');
-    if (data.level >= 5) data.unlocked.add('Graduation Cap');
-    if (data.level >= 10) data.unlocked.add('Headphones');
-    if (data.currentStreak >= 30) data.unlocked.add('Golden Glasses');
-    if (data.currentStreak >= 100) data.unlocked.add('Electric Sparks');
   }
 
   void _evaluateAchievements(DailySummary s) {
@@ -371,72 +317,5 @@ class BrainCubit extends Cubit<BrainViewState> {
     }
     if (data.currentStreak >= 30) data.achievements.add('Unstoppable');
     if (s.accuracy > 95) data.achievements.add('Perfectionist');
-  }
-
-  Future<void> equip(String category, String item) async {
-    if (data.unlocked.contains(item) ||
-        item == 'None' ||
-        item == 'Brain Laboratory') {
-      data.equipped[category] = item;
-      await _commit();
-    }
-  }
-
-  Future<void> unlock(String item, int cost) async {
-    if (data.tokens >= cost) {
-      data.tokens -= cost;
-      data.unlocked.add(item);
-      await _commit();
-    }
-  }
-
-  Future<void> activateBoost() async {
-    data.boostUntil = DateTime.now()
-        .add(const Duration(minutes: 10))
-        .toIso8601String();
-    await _commit();
-  }
-
-  Future<void> awardBonusChest() async {
-    data.tokens++;
-    addXp(25);
-    data.mood = BuddyMood.chest;
-    await _commit();
-  }
-
-  Future<void> claimMicroEvent() async {
-    final today = localDate();
-    if (data.lastMicroEventDate == today) return;
-    data.lastMicroEventDate = today;
-    addXp(5);
-    data.mood = BuddyMood.surprised;
-    await _commit();
-  }
-
-  bool shouldInterstitial() =>
-      data.practiceSessions > 0 &&
-      data.practiceSessions % 4 == 0 &&
-      (data.lastInterstitialAt == null ||
-          DateTime.now()
-                  .difference(DateTime.parse(data.lastInterstitialAt!))
-                  .inMinutes >=
-              10);
-  Future<void> markInterstitial() async {
-    data.lastInterstitialAt = DateTime.now().toIso8601String();
-    await _commit();
-  }
-
-  Future<void> rescueStreak({required bool consumeFreeze}) async {
-    if (data.lastCompletedDate == null || data.currentStreak == 0) return;
-    final gap = DateTime.now()
-        .difference(DateTime.parse(data.lastCompletedDate!))
-        .inDays;
-    if (gap != 2 || (consumeFreeze && data.freezes == 0)) return;
-    if (consumeFreeze) data.freezes--;
-    data.lastCompletedDate = localDate(
-      DateTime.now().subtract(const Duration(days: 1)),
-    );
-    data.mood = BuddyMood.streak;
-    await _commit();
   }
 }

@@ -54,10 +54,10 @@ class NotificationService {
     if (!when.isAfter(now)) when = when.add(const Duration(days: 1));
     await plugin.zonedSchedule(
       id: 0,
-      title: '🧠 Flex is ready!',
+      title: 'Your BrainFlex workout is ready',
       body: streakWarning
           ? 'Your streak is still alive. Today’s workout takes about 4 minutes.'
-          : 'A small brain boost is waiting in the lab.',
+          : 'A short five-skill training session is ready.',
       scheduledDate: when,
       notificationDetails: const NotificationDetails(
         android: AndroidNotificationDetails(

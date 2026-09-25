@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:brainflex/core/models/brain_models.dart';
 import 'package:brainflex/core/training/training_analytics.dart';
@@ -25,6 +27,26 @@ void main() {
 
       expect(migrated[GameType.visualSearch.name], 6);
       expect(migrated, isNot(contains('oddOneOut')));
+    });
+
+    test('ignores retired mascot economy fields after decoding', () {
+      final state = BrainState.decode(
+        jsonEncode({
+          'onboarded': true,
+          'energy': 90,
+          'tokens': 8,
+          'mood': 'happy',
+          'equipped': {'hat': 'Crown'},
+          'difficulties': {'oddOneOut': 5},
+        }),
+      );
+
+      final encoded = state.toJson();
+      expect(encoded, isNot(contains('energy')));
+      expect(encoded, isNot(contains('tokens')));
+      expect(encoded, isNot(contains('mood')));
+      expect(encoded, isNot(contains('equipped')));
+      expect(state.difficulties[GameType.visualSearch.name], 5);
     });
   });
 
