@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../core/models/brain_models.dart';
 import '../../core/state/brain_cubit.dart';
+import '../../core/training/training_analytics.dart';
 import '../../core/widgets/common.dart';
-import '../../core/widgets/demo_ads.dart';
 import '../../app/theme/brain_theme.dart';
 import 'game_screen.dart';
 
@@ -11,22 +11,8 @@ class GamesScreen extends StatelessWidget {
   const GamesScreen({super.key});
   @override
   Widget build(BuildContext context) {
-    final d = context.watch<BrainCubit>().state.data;
     return Scaffold(
-      appBar: AppBar(
-        toolbarHeight: 70,
-        title: const Text('ARCADE LAB'),
-        actions: [
-          if (d.boosted)
-            const Padding(
-              padding: EdgeInsets.all(14),
-              child: Chip(
-                avatar: Icon(Icons.bolt, size: 16),
-                label: Text('2× XP'),
-              ),
-            ),
-        ],
-      ),
+      appBar: AppBar(toolbarHeight: 70, title: const Text('TRAIN')),
       body: SafeArea(
         bottom: false,
         child: Column(
@@ -38,7 +24,7 @@ class GamesScreen extends StatelessWidget {
                   const Center(child: TitlePlaque('Choose a challenge')),
                   const SizedBox(height: 14),
                   const Text(
-                    'Practice can improve records and earns reduced XP.',
+                    'Standard sessions contribute to your skill trends. Relaxed practice is never scored.',
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 14),
@@ -66,39 +52,10 @@ class GamesScreen extends StatelessWidget {
                       ),
                     ),
                   ),
-                  const SectionTitle('Optional boosts'),
-                  BrainCard(
-                    child: ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      leading: const Icon(Icons.ondemand_video),
-                      title: const Text('10-minute Practice XP boost'),
-                      subtitle: const Text(
-                        'Watch a clearly labeled local Demo Ad',
-                      ),
-                      trailing: FilledButton.tonal(
-                        onPressed: d.boosted ? null : () => _boost(context),
-                        child: Text(d.boosted ? 'ACTIVE' : '2× XP'),
-                      ),
-                    ),
-                  ),
                   const SizedBox(height: 12),
                 ],
               ),
             ),
-            const SizedBox(height: 10),
-            BrainCard(
-              child: ListTile(
-                contentPadding: EdgeInsets.zero,
-                leading: const Icon(Icons.redeem),
-                title: const Text('Bonus cosmetic chest'),
-                subtitle: const Text('1 token + 25 XP from a local Demo Ad'),
-                trailing: FilledButton.tonal(
-                  onPressed: () => _bonusChest(context),
-                  child: const Text('OPEN'),
-                ),
-              ),
-            ),
-            const DemoBanner(),
           ],
         ),
       ),
@@ -152,14 +109,14 @@ class GamesScreen extends StatelessWidget {
                   ),
                 ),
                 Text(
-                  '${game.domain} · Difficulty ${d.difficulties[game.name] ?? 1}',
+                  '${game.domain} · Level ${d.difficulties[game.name] ?? 1}',
                 ),
                 Text(
                   best == null
-                      ? 'No personal best yet'
+                      ? 'No standard result yet'
                       : game == GameType.reflexTap
                       ? 'Best ${best.reactionMs} ms'
-                      : 'Best ${best.score} · ${(best.accuracy * 100).round()}%',
+                      : 'Training ${trainingLevel(difficulty: best.difficulty, score: best.normalized).toStringAsFixed(1)} · ${(best.accuracy * 100).round()}%',
                 ),
               ],
             ),
@@ -197,19 +154,21 @@ class GamesScreen extends StatelessWidget {
               ),
               const SizedBox(height: 18),
               ...[
-                (GameMode.classic, 'Classic', 'Standard finite round'),
-                (GameMode.endless, 'Endless', 'Continue until three mistakes'),
                 (
-                  GameMode.timeAttack,
-                  'Time Attack',
-                  'Score as much as possible in 30 seconds',
+                  GameMode.standard,
+                  'Standard',
+                  'Comparable practice that contributes to skill trends',
                 ),
                 (
                   GameMode.personalBest,
-                  'PB Challenge',
-                  'Race your best compatible run',
+                  'Personal Best',
+                  'Challenge a result with matching rules and difficulty',
                 ),
-                (GameMode.zen, 'Zen', 'No timer, XP, ads, or pressure'),
+                (
+                  GameMode.relaxed,
+                  'Relaxed',
+                  'Untimed practice that does not affect your trends',
+                ),
               ].map(
                 (m) => Padding(
                   padding: const EdgeInsets.only(bottom: 10),
@@ -222,7 +181,9 @@ class GamesScreen extends StatelessWidget {
                     child: Row(
                       children: [
                         Icon(
-                          m.$1 == GameMode.zen ? Icons.spa : Icons.play_circle,
+                          m.$1 == GameMode.relaxed
+                              ? Icons.spa
+                              : Icons.play_circle,
                           color: context.gameAccent(game),
                         ),
                         const SizedBox(width: 12),
@@ -274,31 +235,12 @@ class GamesScreen extends StatelessWidget {
       SnackBar(
         content: Text(
           record
-              ? '🏆 New personal record!'
-              : 'Practice saved · +${mode == GameMode.zen ? 0 : 5} XP',
+              ? 'New comparable personal best'
+              : mode == GameMode.relaxed
+              ? 'Relaxed practice complete · not added to trends'
+              : 'Standard practice saved',
         ),
       ),
     );
-    if (mode != GameMode.zen && cubit.shouldInterstitial()) {
-      await showInterstitialDemo(context);
-      await cubit.markInterstitial();
-    }
-  }
-
-  Future<void> _boost(BuildContext context) async {
-    if (await showRewardedDemo(
-          context,
-          reward: '2× Practice XP for 10 minutes',
-        ) &&
-        context.mounted) {
-      await context.read<BrainCubit>().activateBoost();
-    }
-  }
-
-  Future<void> _bonusChest(BuildContext context) async {
-    if (await showRewardedDemo(context, reward: '1 cosmetic token + 25 XP') &&
-        context.mounted) {
-      await context.read<BrainCubit>().awardBonusChest();
-    }
   }
 }

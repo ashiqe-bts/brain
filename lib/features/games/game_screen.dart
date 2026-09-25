@@ -5,10 +5,10 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../core/models/brain_models.dart';
 import '../../core/state/brain_cubit.dart';
-import '../../core/widgets/demo_ads.dart';
+import '../../core/training/training_analytics.dart';
 import '../../core/widgets/common.dart';
 import '../../app/theme/brain_theme.dart';
-import '../brain_buddy/brain_buddy.dart';
+import 'game_engine.dart';
 
 class GameScreen extends StatefulWidget {
   const GameScreen({
@@ -30,8 +30,13 @@ class GameScreen extends StatefulWidget {
 
 class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
   late final Random random;
+  late final GameTrialFactory trialFactory;
+  late final List<ColorTrial> colorTrials;
+  late final List<MathTrial> mathTrials;
   final stopwatch = Stopwatch();
-  Timer? timer, delayTimer, buddyResetTimer;
+  final trialWatch = Stopwatch();
+  final reflexWatch = Stopwatch();
+  Timer? timer, delayTimer;
   GameLifecycle lifecycle = GameLifecycle.initial;
   int countdown = 3,
       timeLeft = 30,
@@ -42,30 +47,31 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
       bestCombo = 0,
       mistakes = 0;
   final checkpoints = <int>[];
-  int wordIndex = 0, colorIndex = 1;
-  String expression = '';
-  bool mathAnswer = true;
-  int oddIndex = 0, itemCount = 12;
+  int colorTrialIndex = 0, mathTrialIndex = 0, itemCount = 12;
+  late ColorTrial colorTrial;
+  late MathTrial mathTrial;
+  late VisualSearchTrial visualTrial;
   int memoryRound = 0, gridSize = 4;
+  int maxMemorySpan = 0;
   Set<int> memoryTarget = {}, memorySelected = {};
   bool memoryShowing = true;
-  int reflexTrial = 0, falseStarts = 0;
-  bool secondChanceUsed = false, secondChancePromptOpen = false;
+  int reflexTrial = -1, falseStarts = 0;
   bool reflexGo = false;
-  BuddyMood buddyMood = BuddyMood.thinking;
-  int buddyReactionKey = 0;
   final reactions = <int>[];
-  DateTime? goAt;
+  final responseTimes = <int>[];
+  bool? lastAnswerCorrect;
   static const names = ['RED', 'BLUE', 'GREEN', 'YELLOW'];
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    random = Random(
-      stableSeed(
-        '${DateTime.now().microsecondsSinceEpoch}|${widget.type.name}',
-      ),
+    final seed = stableSeed(
+      '${DateTime.now().microsecondsSinceEpoch}|${widget.type.name}',
     );
+    random = Random(seed);
+    trialFactory = GameTrialFactory(seed);
+    colorTrials = trialFactory.colorTrials(120);
+    mathTrials = trialFactory.mathTrials(widget.difficulty, count: 120);
     timeLeft = widget.modifier == 'Lightning' ? 24 : 30;
     _countdown();
   }
@@ -75,7 +81,6 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
     WidgetsBinding.instance.removeObserver(this);
     timer?.cancel();
     delayTimer?.cancel();
-    buddyResetTimer?.cancel();
     super.dispose();
   }
 
@@ -133,6 +138,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
 
   bool get timed =>
       widget.mode != GameMode.endless &&
+      widget.mode != GameMode.relaxed &&
       widget.mode != GameMode.zen &&
       widget.type != GameType.memoryTiles &&
       widget.type != GameType.reflexTap;
@@ -153,56 +159,58 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
   }
 
   void _nextColor() {
-    wordIndex = random.nextInt(4);
-    do {
-      colorIndex = random.nextInt(4);
-    } while (colorIndex == wordIndex && random.nextBool());
+    colorTrial = colorTrials[colorTrialIndex++ % colorTrials.length];
+    trialWatch
+      ..reset()
+      ..start();
   }
 
   void _answerColor(int value) {
-    _answer(value == colorIndex);
+    _answer(
+      value == colorTrial.colorIndex,
+      responseMs: trialWatch.elapsedMilliseconds,
+    );
     _nextColor();
   }
 
   void _nextMath() {
-    final d = widget.difficulty,
-        a = random.nextInt(8 + d * 4) + 1,
-        b = random.nextInt(8 + d * 3) + 1;
-    final op = d < 3
-        ? '+'
-        : d < 5
-        ? (random.nextBool() ? '+' : '−')
-        : (random.nextBool() ? '×' : '−');
-    final actual = op == '+'
-        ? a + b
-        : op == '−'
-        ? a - b
-        : a * b;
-    mathAnswer = random.nextBool();
-    final shown = mathAnswer
-        ? actual
-        : actual + (random.nextBool() ? 1 : -1) * (1 + random.nextInt(3));
-    expression = '$a $op $b = $shown';
+    mathTrial = mathTrials[mathTrialIndex++ % mathTrials.length];
+    trialWatch
+      ..reset()
+      ..start();
   }
 
   void _answerMath(bool value) {
-    _answer(value == mathAnswer);
+    _answer(
+      value == mathTrial.isCorrect,
+      responseMs: trialWatch.elapsedMilliseconds,
+    );
     _nextMath();
   }
 
   void _nextOdd() {
     itemCount = min(30, 9 + widget.difficulty * 3);
-    oddIndex = random.nextInt(itemCount);
+    visualTrial = trialFactory.visualSearch(
+      widget.difficulty,
+      itemCount: itemCount,
+    );
+    trialWatch
+      ..reset()
+      ..start();
   }
 
   void _answerOdd(int value) {
-    _answer(value == oddIndex);
+    _answer(
+      value == visualTrial.targetIndex,
+      responseMs: trialWatch.elapsedMilliseconds,
+    );
     _nextOdd();
   }
 
-  void _answer(bool ok) {
+  void _answer(bool ok, {int? responseMs}) {
     attempts++;
     if (ok) {
+      if (responseMs != null) responseTimes.add(responseMs);
       correct++;
       combo++;
       bestCombo = max(bestCombo, combo);
@@ -222,13 +230,8 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
       score = max(0, score - (widget.modifier == 'Precision' ? 2 : 1));
       _feedback(false);
     }
-    if (widget.mode == GameMode.endless && mistakes >= 3) {
-      if (secondChanceUsed) {
-        _finish();
-      } else if (!secondChancePromptOpen) {
-        _offerSecondChance();
-      }
-    }
+    lastAnswerCorrect = ok;
+    if (widget.mode == GameMode.endless && mistakes >= 3) _finish();
     setState(() {});
   }
 
@@ -271,6 +274,9 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
       correct += hits;
       score += hits;
       mistakes += memoryTarget.length - hits;
+      if (hits == memoryTarget.length) {
+        maxMemorySpan = max(maxMemorySpan, memoryTarget.length);
+      }
       memoryRound++;
       delayTimer = Timer(const Duration(milliseconds: 350), _nextMemory);
     }
@@ -286,7 +292,9 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
     setState(() {});
     delayTimer = Timer(Duration(milliseconds: 1500 + random.nextInt(2501)), () {
       if (!mounted) return;
-      goAt = DateTime.now();
+      reflexWatch
+        ..reset()
+        ..start();
       setState(() => reflexGo = true);
     });
   }
@@ -301,7 +309,13 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
       _scheduleReflex();
       return;
     }
-    final ms = DateTime.now().difference(goAt!).inMilliseconds;
+    final ms = reflexWatch.elapsedMilliseconds;
+    if (reflexTrial < 0) {
+      reflexTrial = 0;
+      _feedback(true);
+      _scheduleReflex();
+      return;
+    }
     reactions.add(ms);
     score += max(1, 10 - (ms ~/ 80));
     correct++;
@@ -318,21 +332,20 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
     stopwatch.stop();
     lifecycle = GameLifecycle.completed;
     final accuracy = attempts == 0 ? 0.0 : correct / attempts;
-    final pace = widget.type == GameType.reflexTap
-        ? (reactions.isEmpty
-                      ? 0.0
-                      : (650 -
-                                (reactions.reduce((a, b) => a + b) /
-                                    reactions.length)) /
-                            4)
-                  .clamp(0, 100) /
-              100
-        : min(1.0, correct / max(1, stopwatch.elapsedMilliseconds / 3000));
-    final normalized = (accuracy * 70 + pace * 30 - falseStarts * 5)
-        .clamp(0, 100)
-        .toDouble();
-    final sorted = [...reactions]..sort();
-    final reaction = sorted.isEmpty ? null : sorted[sorted.length ~/ 2];
+    final responseMedian = medianMilliseconds(
+      widget.type == GameType.reflexTap ? reactions : responseTimes,
+    );
+    final normalized = scoreGame(
+      type: widget.type,
+      difficulty: widget.difficulty,
+      accuracy: accuracy,
+      medianResponseMs: responseMedian,
+      span: maxMemorySpan,
+      falseStarts: falseStarts,
+    );
+    final reaction = widget.type == GameType.reflexTap && responseMedian > 0
+        ? responseMedian
+        : null;
     final result = GameResult(
       type: widget.type,
       mode: widget.mode,
@@ -346,6 +359,13 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
       correct: correct,
       attempts: attempts,
       checkpoints: checkpoints,
+      completedAt: DateTime.now(),
+      rulesVersion: 2,
+      metrics: {
+        'medianResponseMs': responseMedian.toDouble(),
+        'falseStarts': falseStarts.toDouble(),
+        'span': maxMemorySpan.toDouble(),
+      },
     );
     if (mounted) setState(() {});
     Future.delayed(const Duration(milliseconds: 250), () {
@@ -354,7 +374,6 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
   }
 
   Future<void> _showResult(GameResult result) async {
-    final data = context.read<BrainCubit>().data;
     await showModalBottomSheet<void>(
       context: context,
       isDismissible: false,
@@ -365,32 +384,38 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              BrainBuddy(
-                mood: result.normalized >= 80
-                    ? BuddyMood.celebrate
-                    : BuddyMood.happy,
-                level: data.level,
-                equipped: data.equipped,
-                reducedMotion: data.reducedMotion,
-                variant: BuddyVariant.celebration,
-                size: 120,
+              Icon(
+                result.normalized >= 85
+                    ? Icons.trending_up_rounded
+                    : Icons.check_circle_outline_rounded,
+                size: 54,
+                color: context.gameAccent(widget.type),
               ),
+              const SizedBox(height: 12),
               TitlePlaque(
-                result.normalized >= 80 ? 'Brilliant!' : 'Round complete',
+                '${widget.type.domain} review',
                 color: context.gameAccent(widget.type),
               ),
               const SizedBox(height: 16),
-              Text('SCORE', style: Theme.of(context).textTheme.titleMedium),
+              Text(
+                'TRAINING LEVEL',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
               const SizedBox(height: 12),
               Text(
-                '${result.score}',
+                trainingLevel(
+                  difficulty: result.difficulty,
+                  score: result.normalized,
+                ).toStringAsFixed(1),
                 style: Theme.of(context).textTheme.displayMedium?.copyWith(
                   color: Theme.of(context).colorScheme.secondary,
                   fontWeight: FontWeight.w900,
                 ),
               ),
               Text(
-                'Score · ${(result.accuracy * 100).round()}% accuracy${result.reactionMs == null ? '' : ' · ${result.reactionMs} ms'}',
+                '${(result.accuracy * 100).round()}% accuracy'
+                '${result.metrics['medianResponseMs'] == 0 ? '' : ' · ${result.metrics['medianResponseMs']!.round()} ms median'}',
+                textAlign: TextAlign.center,
               ),
               if (widget.personalBest != null) ...[
                 const SizedBox(height: 8),
@@ -428,12 +453,6 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
             style: const TextStyle(fontSize: 20),
           ),
           actions: [
-            Center(
-              child: EnergyHearts(
-                energy: context.watch<BrainCubit>().state.data.energy,
-                compact: true,
-              ),
-            ),
             if (timed)
               Padding(
                 padding: const EdgeInsets.all(16),
@@ -455,25 +474,11 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
             child: lifecycle == GameLifecycle.countdown
                 ? Center(
                     key: const ValueKey('count'),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        BrainBuddy(
-                          mood: BuddyMood.thinking,
-                          level: context.read<BrainCubit>().data.level,
-                          equipped: context.read<BrainCubit>().data.equipped,
-                          reducedMotion: context
-                              .read<BrainCubit>()
-                              .data
-                              .reducedMotion,
-                          size: 145,
-                        ),
-                        Text(
-                          '$countdown',
-                          style: Theme.of(context).textTheme.displayLarge
-                              ?.copyWith(fontWeight: FontWeight.w900),
-                        ),
-                      ],
+                    child: Text(
+                      '$countdown',
+                      style: Theme.of(context).textTheme.displayLarge?.copyWith(
+                        fontWeight: FontWeight.w900,
+                      ),
                     ),
                   )
                 : lifecycle == GameLifecycle.paused
@@ -486,18 +491,12 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
   }
 
   Widget _paused() {
-    final d = context.read<BrainCubit>().data;
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          BrainBuddy(
-            mood: BuddyMood.sleepy,
-            level: d.level,
-            equipped: d.equipped,
-            reducedMotion: d.reducedMotion,
-            size: 150,
-          ),
+          const Icon(Icons.pause_circle_outline_rounded, size: 72),
+          const SizedBox(height: 16),
           Text('Paused', style: Theme.of(context).textTheme.headlineSmall),
           const SizedBox(height: 16),
           FilledButton(
@@ -518,7 +517,6 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
   }
 
   Widget _game() {
-    final d = context.watch<BrainCubit>().state.data;
     return Padding(
       key: ValueKey(widget.type),
       padding: const EdgeInsets.all(20),
@@ -527,16 +525,19 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
           Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              BrainBuddy(
-                mood: buddyMood,
-                reactionKey: buddyReactionKey,
-                level: d.level,
-                equipped: d.equipped,
-                reducedMotion: d.reducedMotion,
-                variant: BuddyVariant.compact,
-                size: 62,
-              ),
-              const SizedBox(width: 6),
+              if (lastAnswerCorrect != null)
+                Semantics(
+                  liveRegion: true,
+                  label: lastAnswerCorrect! ? 'Correct' : 'Try the next one',
+                  child: Icon(
+                    lastAnswerCorrect!
+                        ? Icons.check_circle_rounded
+                        : Icons.cancel_outlined,
+                    color: lastAnswerCorrect!
+                        ? context.brain.success
+                        : context.brain.danger,
+                  ),
+                ),
               Expanded(
                 child: Wrap(
                   alignment: WrapAlignment.end,
@@ -569,13 +570,13 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
               GameType.mathBlitz => _math(),
               GameType.memoryTiles => _memory(),
               GameType.reflexTap => _reflex(),
-              GameType.visualSearch => _odd(),
+              GameType.visualSearch => _visualSearch(),
             },
           ),
-          if (widget.mode == GameMode.zen)
+          if (widget.mode == GameMode.relaxed || widget.mode == GameMode.zen)
             TextButton(
               onPressed: _finish,
-              child: const Text('Finish zen session'),
+              child: const Text('Finish relaxed session'),
             ),
         ],
       ),
@@ -600,11 +601,11 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
       const Text('Tap the INK color, not the word'),
       const SizedBox(height: 20),
       Text(
-        names[wordIndex],
+        names[colorTrial.wordIndex],
         style: TextStyle(
           fontSize: 54,
           fontWeight: FontWeight.w900,
-          color: context.clashColor(colorIndex),
+          color: context.clashColor(colorTrial.colorIndex),
         ),
       ),
       const SizedBox(height: 38),
@@ -631,7 +632,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
       const Text('Is this equation correct?'),
       const SizedBox(height: 28),
       Text(
-        expression,
+        mathTrial.expression,
         style: const TextStyle(fontSize: 42, fontWeight: FontWeight.w900),
       ),
       const SizedBox(height: 42),
@@ -750,10 +751,24 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
       ),
     ),
   );
-  Widget _odd() => Column(
+  Widget _visualSearch() => Column(
     children: [
-      const Text('Find the different symbol'),
-      const SizedBox(height: 16),
+      const Text('Find the target'),
+      const SizedBox(height: 8),
+      Semantics(
+        label: 'Target symbol',
+        child: Container(
+          width: 64,
+          height: 64,
+          decoration: BoxDecoration(
+            color: context.brain.hud,
+            border: Border.all(color: context.brain.outline, width: 3),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: _glyph(visualTrial.target, 38),
+        ),
+      ),
+      const SizedBox(height: 14),
       Expanded(
         child: GridView.builder(
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
@@ -766,33 +781,20 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
             crossAxisSpacing: 8,
           ),
           itemCount: itemCount,
-          itemBuilder: (context, i) => InkWell(
-            onTap: () => _answerOdd(i),
-            borderRadius: BorderRadius.circular(12),
-            child: Container(
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: context.brain.outline, width: 3),
-                boxShadow: [
-                  BoxShadow(
-                    color: context.brain.shadow,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              alignment: Alignment.center,
-              child: Transform.rotate(
-                angle: i == oddIndex ? .25 : 0,
-                child: Text(
-                  i == oddIndex ? '◉' : '●',
-                  style: TextStyle(
-                    fontSize: itemCount > 20 ? 24 : 32,
-                    color: i == oddIndex && widget.difficulty > 5
-                        ? Theme.of(context).colorScheme.secondary
-                        : null,
-                  ),
+          itemBuilder: (context, i) => Semantics(
+            label: 'Search item ${i + 1}',
+            button: true,
+            child: InkWell(
+              onTap: () => _answerOdd(i),
+              borderRadius: BorderRadius.circular(12),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: context.brain.outline, width: 3),
                 ),
+                alignment: Alignment.center,
+                child: _glyph(visualTrial.items[i], itemCount > 20 ? 24 : 32),
               ),
             ),
           ),
@@ -800,6 +802,30 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
       ),
     ],
   );
+
+  Widget _glyph(VisualGlyph glyph, double size) {
+    final filledIcons = [
+      Icons.circle,
+      Icons.change_history,
+      Icons.square,
+      Icons.hexagon,
+    ];
+    final outlinedIcons = [
+      Icons.circle_outlined,
+      Icons.change_history_outlined,
+      Icons.square_outlined,
+      Icons.hexagon_outlined,
+    ];
+    return Transform.rotate(
+      angle: glyph.rotation * pi / 2,
+      child: Icon(
+        (glyph.filled ? filledIcons : outlinedIcons)[glyph.shape],
+        size: size,
+        color: context.clashColor(glyph.colorIndex),
+      ),
+    );
+  }
+
   Future<void> _confirmQuit() async {
     final yes = await showDialog<bool>(
       context: context,
@@ -821,55 +847,9 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
     if (yes == true && mounted) Navigator.pop(context);
   }
 
-  Future<void> _offerSecondChance() async {
-    secondChancePromptOpen = true;
-    final wantsAd = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Three mistakes'),
-        content: const Text(
-          'Finish this run, or explicitly choose a Demo Ad for one second chance.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext, false),
-            child: const Text('FINISH'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(dialogContext, true),
-            child: const Text('DEMO SECOND CHANCE'),
-          ),
-        ],
-      ),
-    );
-    if (!mounted) return;
-    if (wantsAd == true &&
-        await showRewardedDemo(context, reward: 'Continue this Endless run')) {
-      mistakes = 2;
-      secondChanceUsed = true;
-      secondChancePromptOpen = false;
-      setState(() {});
-    } else {
-      _finish();
-    }
-  }
-
   void _feedback(bool positive) {
     final cubit = context.read<BrainCubit>();
-    buddyResetTimer?.cancel();
-    buddyMood = positive
-        ? combo > 0 && combo % 5 == 0
-              ? BuddyMood.energized
-              : BuddyMood.happy
-        : BuddyMood.surprised;
-    buddyReactionKey++;
-    buddyResetTimer = Timer(const Duration(milliseconds: 700), () {
-      if (!mounted || lifecycle == GameLifecycle.completed) return;
-      setState(() {
-        buddyMood = BuddyMood.thinking;
-        buddyReactionKey++;
-      });
-    });
+    lastAnswerCorrect = positive;
     if (cubit.data.sound) {
       SystemSound.play(SystemSoundType.click);
     }
