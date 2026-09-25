@@ -3,30 +3,14 @@ import 'dart:math';
 
 enum BrainTheme { midnight, oled, daydream, highContrast }
 
-enum BuddyMood {
-  idle,
-  blink,
-  wave,
-  thinking,
-  happy,
-  confused,
-  celebrate,
-  sleepy,
-  returning,
-  energized,
-  levelUp,
-  streak,
-  record,
-  chest,
-  fullEnergy,
-  surprised,
-  tapped,
-  workoutComplete,
-}
+enum SkillDomain { focus, calculation, memory, reaction, visualSearch }
 
-enum GameType { colorClash, mathBlitz, memoryTiles, reflexTap, oddOneOut }
+enum GameType { colorClash, mathBlitz, memoryTiles, reflexTap, visualSearch }
 
-enum GameMode { classic, endless, timeAttack, personalBest, zen, official }
+enum GameMode { standard, relaxed, personalBest, official }
+
+typedef SessionKind = GameMode;
+typedef GameRulesVersion = int;
 
 enum GameLifecycle { initial, countdown, running, paused, feedback, completed }
 
@@ -36,22 +20,106 @@ extension GameTypeX on GameType {
     GameType.mathBlitz => 'Math Blitz',
     GameType.memoryTiles => 'Memory Tiles',
     GameType.reflexTap => 'Reflex Tap',
-    GameType.oddOneOut => 'Odd One Out',
+    GameType.visualSearch => 'Visual Search',
+  };
+  SkillDomain get skill => switch (this) {
+    GameType.colorClash => SkillDomain.focus,
+    GameType.mathBlitz => SkillDomain.calculation,
+    GameType.memoryTiles => SkillDomain.memory,
+    GameType.reflexTap => SkillDomain.reaction,
+    GameType.visualSearch => SkillDomain.visualSearch,
   };
   String get domain => switch (this) {
     GameType.colorClash => 'Focus',
-    GameType.mathBlitz => 'Math',
+    GameType.mathBlitz => 'Calculation',
     GameType.memoryTiles => 'Memory',
     GameType.reflexTap => 'Reaction',
-    GameType.oddOneOut => 'Speed',
+    GameType.visualSearch => 'Visual search',
   };
   String get emoji => switch (this) {
     GameType.colorClash => '🎨',
     GameType.mathBlitz => '➗',
     GameType.memoryTiles => '🧩',
     GameType.reflexTap => '⚡',
-    GameType.oddOneOut => '🔎',
+    GameType.visualSearch => '🔎',
   };
+}
+
+GameType gameTypeFromName(String name) => switch (name) {
+  'oddOneOut' => GameType.visualSearch,
+  _ => GameType.values.byName(name),
+};
+
+GameMode gameModeFromName(String name) => switch (name) {
+  'classic' || 'endless' || 'timeAttack' => GameMode.standard,
+  'zen' => GameMode.relaxed,
+  _ => GameMode.values.byName(name),
+};
+
+Map<String, int> migrateDifficulties(Map<String, int>? stored) {
+  final values = {
+    for (final game in GameType.values) game.name: stored?[game.name] ?? 1,
+  };
+  if (stored != null && !stored.containsKey(GameType.visualSearch.name)) {
+    values[GameType.visualSearch.name] = stored['oddOneOut'] ?? 1;
+  }
+  return values;
+}
+
+class ComparableSeriesKey {
+  const ComparableSeriesKey({
+    required this.game,
+    required this.rulesVersion,
+    this.difficulty,
+  });
+
+  final GameType game;
+  final GameRulesVersion rulesVersion;
+  final int? difficulty;
+
+  bool accepts(GameResult result) =>
+      result.type == game &&
+      result.rulesVersion == rulesVersion &&
+      (difficulty == null || result.difficulty == difficulty);
+}
+
+sealed class RawGameMetrics {
+  const RawGameMetrics();
+}
+
+final class FocusMetrics extends RawGameMetrics {
+  const FocusMetrics(this.medianCorrectResponseMs);
+  final int medianCorrectResponseMs;
+}
+
+final class CalculationMetrics extends RawGameMetrics {
+  const CalculationMetrics(this.medianCorrectResponseMs);
+  final int medianCorrectResponseMs;
+}
+
+final class MemoryMetrics extends RawGameMetrics {
+  const MemoryMetrics({
+    required this.span,
+    required this.exposureDurationMs,
+    required this.rounds,
+  });
+  final int span;
+  final int exposureDurationMs;
+  final int rounds;
+}
+
+final class ReactionMetrics extends RawGameMetrics {
+  const ReactionMetrics({
+    required this.medianLatencyMs,
+    required this.falseStarts,
+  });
+  final int medianLatencyMs;
+  final int falseStarts;
+}
+
+final class VisualSearchMetrics extends RawGameMetrics {
+  const VisualSearchMetrics(this.medianCorrectSearchMs);
+  final int medianCorrectSearchMs;
 }
 
 class GameResult {
@@ -68,6 +136,12 @@ class GameResult {
     this.correct = 0,
     this.attempts = 0,
     this.checkpoints = const [],
+    this.id,
+    this.completedAt,
+    this.rulesVersion = 1,
+    this.metrics = const {},
+    this.scoreComponents = const {},
+    this.isLegacy = false,
   });
   final GameType type;
   final GameMode mode;
@@ -81,6 +155,71 @@ class GameResult {
   final int correct;
   final int attempts;
   final List<int> checkpoints;
+  final String? id;
+  final DateTime? completedAt;
+  final GameRulesVersion rulesVersion;
+  final Map<String, double> metrics;
+  final Map<String, double> scoreComponents;
+  final bool isLegacy;
+
+  ComparableSeriesKey comparableSeries({bool matchDifficulty = false}) =>
+      ComparableSeriesKey(
+        game: type,
+        rulesVersion: rulesVersion,
+        difficulty: matchDifficulty ? difficulty : null,
+      );
+
+  RawGameMetrics get rawMetrics => switch (type) {
+    GameType.colorClash => FocusMetrics(
+      metrics['medianResponseMs']?.round() ?? 0,
+    ),
+    GameType.mathBlitz => CalculationMetrics(
+      metrics['medianResponseMs']?.round() ?? 0,
+    ),
+    GameType.memoryTiles => MemoryMetrics(
+      span: metrics['span']?.round() ?? 0,
+      exposureDurationMs: metrics['exposureDurationMs']?.round() ?? 0,
+      rounds: metrics['rounds']?.round() ?? 0,
+    ),
+    GameType.reflexTap => ReactionMetrics(
+      medianLatencyMs: metrics['medianResponseMs']?.round() ?? 0,
+      falseStarts: metrics['falseStarts']?.round() ?? 0,
+    ),
+    GameType.visualSearch => VisualSearchMetrics(
+      metrics['medianResponseMs']?.round() ?? 0,
+    ),
+  };
+
+  bool get contributesToTrends =>
+      !isLegacy &&
+      completedAt != null &&
+      (mode == GameMode.standard || mode == GameMode.official);
+
+  GameResult copyWith({
+    String? id,
+    DateTime? completedAt,
+    int? rulesVersion,
+    bool? isLegacy,
+  }) => GameResult(
+    type: type,
+    mode: mode,
+    score: score,
+    normalized: normalized,
+    accuracy: accuracy,
+    durationMs: durationMs,
+    difficulty: difficulty,
+    bestCombo: bestCombo,
+    reactionMs: reactionMs,
+    correct: correct,
+    attempts: attempts,
+    checkpoints: checkpoints,
+    id: id ?? this.id,
+    completedAt: completedAt ?? this.completedAt,
+    rulesVersion: rulesVersion ?? this.rulesVersion,
+    metrics: metrics,
+    scoreComponents: scoreComponents,
+    isLegacy: isLegacy ?? this.isLegacy,
+  );
 
   Map<String, dynamic> toJson() => {
     'type': type.name,
@@ -95,10 +234,15 @@ class GameResult {
     'correct': correct,
     'attempts': attempts,
     'checkpoints': checkpoints,
+    'id': id,
+    'completedAt': completedAt?.toIso8601String(),
+    'rulesVersion': rulesVersion,
+    'metrics': metrics,
+    'scoreComponents': scoreComponents,
   };
   factory GameResult.fromJson(Map<String, dynamic> j) => GameResult(
-    type: GameType.values.byName(j['type'] as String),
-    mode: GameMode.values.byName(j['mode'] as String),
+    type: gameTypeFromName(j['type'] as String),
+    mode: gameModeFromName(j['mode'] as String),
     score: j['score'] as int,
     normalized: (j['normalized'] as num).toDouble(),
     accuracy: (j['accuracy'] as num).toDouble(),
@@ -109,25 +253,39 @@ class GameResult {
     correct: j['correct'] as int? ?? 0,
     attempts: j['attempts'] as int? ?? 0,
     checkpoints: List<int>.from(j['checkpoints'] as List? ?? const []),
+    id: j['id'] as String?,
+    completedAt: j['completedAt'] == null
+        ? null
+        : DateTime.tryParse(j['completedAt'] as String),
+    rulesVersion: j['rulesVersion'] as int? ?? 0,
+    metrics: (j['metrics'] as Map? ?? const {}).map(
+      (key, value) => MapEntry(key as String, (value as num).toDouble()),
+    ),
+    scoreComponents: (j['scoreComponents'] as Map? ?? const {}).map(
+      (key, value) => MapEntry(key as String, (value as num).toDouble()),
+    ),
+    isLegacy: j['completedAt'] == null || j['rulesVersion'] == null,
   );
 }
 
 class DailySummary {
   const DailySummary({
     required this.date,
-    required this.brainScore,
-    required this.focus,
-    required this.memory,
-    required this.speed,
-    required this.math,
-    required this.accuracy,
+    this.brainScore = 0,
+    this.focus = 0,
+    this.memory = 0,
+    this.speed = 0,
+    this.math = 0,
+    this.accuracy = 0,
     this.reactionMs,
     required this.results,
+    this.skillRatings = const {},
   });
   final String date;
   final int brainScore, focus, memory, speed, math, accuracy;
   final int? reactionMs;
   final List<GameResult> results;
+  final Map<SkillDomain, double> skillRatings;
   Map<String, dynamic> toJson() => {
     'date': date,
     'brainScore': brainScore,
@@ -138,19 +296,26 @@ class DailySummary {
     'accuracy': accuracy,
     'reactionMs': reactionMs,
     'results': results.map((e) => e.toJson()).toList(),
+    'skillRatings': skillRatings.map((key, value) => MapEntry(key.name, value)),
   };
   factory DailySummary.fromJson(Map<String, dynamic> j) => DailySummary(
     date: j['date'] as String,
-    brainScore: j['brainScore'] as int,
-    focus: j['focus'] as int,
-    memory: j['memory'] as int,
-    speed: j['speed'] as int,
-    math: j['math'] as int,
-    accuracy: j['accuracy'] as int,
+    brainScore: j['brainScore'] as int? ?? 0,
+    focus: j['focus'] as int? ?? 0,
+    memory: j['memory'] as int? ?? 0,
+    speed: j['speed'] as int? ?? 0,
+    math: j['math'] as int? ?? 0,
+    accuracy: j['accuracy'] as int? ?? 0,
     reactionMs: j['reactionMs'] as int?,
-    results: (j['results'] as List)
+    results: (j['results'] as List? ?? const [])
         .map((e) => GameResult.fromJson(Map<String, dynamic>.from(e as Map)))
         .toList(),
+    skillRatings: (j['skillRatings'] as Map? ?? const {}).map(
+      (key, value) => MapEntry(
+        SkillDomain.values.byName(key as String),
+        (value as num).toDouble(),
+      ),
+    ),
   );
 }
 
@@ -210,47 +375,13 @@ class WorkoutDraft {
   factory WorkoutDraft.fromJson(Map<String, dynamic> j) => WorkoutDraft(
     date: j['date'] as String,
     order: (j['order'] as List)
-        .map((e) => GameType.values.byName(e as String))
+        .map((e) => gameTypeFromName(e as String))
         .toList(),
     results: (j['results'] as List)
         .map((e) => GameResult.fromJson(Map<String, dynamic>.from(e as Map)))
         .toList(),
   );
 }
-
-const cosmeticCatalog = <String, List<String>>{
-  'hat': [
-    'None',
-    'Graduation Cap',
-    'Wizard Hat',
-    'Crown',
-    'Headphones',
-    'Detective Hat',
-    '7-Day Headband',
-  ],
-  'glasses': [
-    'None',
-    'Round Glasses',
-    'Sunglasses',
-    'Futuristic Visor',
-    'Golden Glasses',
-  ],
-  'effect': [
-    'None',
-    'Fire Aura',
-    'Electric Sparks',
-    'Stars',
-    'Neon Glow',
-    'Floating Equations',
-  ],
-  'background': [
-    'Brain Laboratory',
-    'Space Lab',
-    'Classroom',
-    'Neon Arcade',
-    'Dream World',
-  ],
-};
 
 class BrainState {
   BrainState({
@@ -266,42 +397,22 @@ class BrainState {
     this.reminderEnabled = false,
     this.xp = 0,
     this.level = 1,
-    this.energy = 0,
-    this.tokens = 0,
     this.currentStreak = 0,
     this.longestStreak = 0,
-    this.freezes = 1,
     this.lastCompletedDate,
     this.workouts = 0,
-    this.mood = BuddyMood.idle,
     Map<String, int>? difficulties,
     List<DailySummary>? daily,
     List<GameResult>? history,
     List<Mission>? missions,
     Set<String>? achievements,
-    Set<String>? unlocked,
-    Map<String, String>? equipped,
     this.draft,
     this.lastMissionDate,
-    this.practiceSessions = 0,
-    this.lastInterstitialAt,
-    this.boostUntil,
-    this.lastMicroEventDate,
-  }) : difficulties =
-           difficulties ?? {for (final g in GameType.values) g.name: 1},
+  }) : difficulties = migrateDifficulties(difficulties),
        daily = daily ?? [],
        history = history ?? [],
        missions = missions ?? [],
-       achievements = achievements ?? {},
-       unlocked = unlocked ?? {'None', 'Brain Laboratory'},
-       equipped =
-           equipped ??
-           {
-             'hat': 'None',
-             'glasses': 'None',
-             'effect': 'None',
-             'background': 'Brain Laboratory',
-           };
+       achievements = achievements ?? {};
   bool onboarded,
       sound,
       music,
@@ -314,44 +425,18 @@ class BrainState {
       reminderMinute,
       xp,
       level,
-      energy,
-      tokens,
       currentStreak,
       longestStreak,
-      freezes,
-      workouts,
-      practiceSessions;
-  String? lastCompletedDate,
-      lastMissionDate,
-      lastInterstitialAt,
-      boostUntil,
-      lastMicroEventDate;
-  BuddyMood mood;
+      workouts;
+  String? lastCompletedDate, lastMissionDate;
   Map<String, int> difficulties;
   List<DailySummary> daily;
   List<GameResult> history;
   List<Mission> missions;
-  Set<String> achievements, unlocked;
-  Map<String, String> equipped;
+  Set<String> achievements;
   WorkoutDraft? draft;
 
   int get xpNeeded => 300 + 50 * (level - 1);
-  String get rank => level >= 50
-      ? 'Quantum Brain'
-      : level >= 40
-      ? 'Mind Master'
-      : level >= 30
-      ? 'Brain Hacker'
-      : level >= 20
-      ? 'Problem Solver'
-      : level >= 10
-      ? 'Quick Thinker'
-      : level >= 5
-      ? 'Curious Mind'
-      : 'Tiny Thinker';
-  bool get boosted =>
-      boostUntil != null &&
-      DateTime.tryParse(boostUntil!)?.isAfter(DateTime.now()) == true;
   Map<String, dynamic> toJson() => {
     'onboarded': onboarded,
     'theme': theme.name,
@@ -365,27 +450,19 @@ class BrainState {
     'reminderEnabled': reminderEnabled,
     'xp': xp,
     'level': level,
-    'energy': energy,
-    'tokens': tokens,
     'currentStreak': currentStreak,
     'longestStreak': longestStreak,
-    'freezes': freezes,
     'lastCompletedDate': lastCompletedDate,
     'workouts': workouts,
-    'mood': mood.name,
     'difficulties': difficulties,
     'daily': daily.map((e) => e.toJson()).toList(),
-    'history': history.map((e) => e.toJson()).toList(),
+    // Timestamped sessions live in Drift. Only snapshot-only legacy records
+    // remain here so old personal bests survive without unbounded duplication.
+    'history': history.where((e) => e.isLegacy).map((e) => e.toJson()).toList(),
     'missions': missions.map((e) => e.toJson()).toList(),
     'achievements': achievements.toList(),
-    'unlocked': unlocked.toList(),
-    'equipped': equipped,
     'draft': draft?.toJson(),
     'lastMissionDate': lastMissionDate,
-    'practiceSessions': practiceSessions,
-    'lastInterstitialAt': lastInterstitialAt,
-    'boostUntil': boostUntil,
-    'lastMicroEventDate': lastMicroEventDate,
   };
   String encode() => jsonEncode(toJson());
   factory BrainState.decode(String value) {
@@ -403,14 +480,10 @@ class BrainState {
       reminderEnabled: j['reminderEnabled'] as bool? ?? false,
       xp: j['xp'] as int? ?? 0,
       level: j['level'] as int? ?? 1,
-      energy: j['energy'] as int? ?? 0,
-      tokens: j['tokens'] as int? ?? 0,
       currentStreak: j['currentStreak'] as int? ?? 0,
       longestStreak: j['longestStreak'] as int? ?? 0,
-      freezes: j['freezes'] as int? ?? 1,
       lastCompletedDate: j['lastCompletedDate'] as String?,
       workouts: j['workouts'] as int? ?? 0,
-      mood: BuddyMood.values.byName(j['mood'] as String? ?? 'idle'),
       difficulties: Map<String, int>.from(j['difficulties'] as Map? ?? {}),
       daily: (j['daily'] as List? ?? [])
           .map(
@@ -424,16 +497,10 @@ class BrainState {
           .map((e) => Mission.fromJson(Map<String, dynamic>.from(e as Map)))
           .toList(),
       achievements: Set<String>.from(j['achievements'] as List? ?? []),
-      unlocked: Set<String>.from(j['unlocked'] as List? ?? []),
-      equipped: Map<String, String>.from(j['equipped'] as Map? ?? {}),
       draft: j['draft'] == null
           ? null
           : WorkoutDraft.fromJson(Map<String, dynamic>.from(j['draft'] as Map)),
       lastMissionDate: j['lastMissionDate'] as String?,
-      practiceSessions: j['practiceSessions'] as int? ?? 0,
-      lastInterstitialAt: j['lastInterstitialAt'] as String?,
-      boostUntil: j['boostUntil'] as String?,
-      lastMicroEventDate: j['lastMicroEventDate'] as String?,
     );
   }
 }
@@ -454,15 +521,6 @@ int stableSeed(String input) {
 
 List<GameType> dailyOrder(String date) {
   final list = [...GameType.values];
-  list.shuffle(Random(stableSeed('$date|1|brainflex-lab')));
+  list.shuffle(Random(stableSeed('$date|2|brainflex-training')));
   return list;
 }
-
-String dailyModifier(String date) => [
-  'Lightning',
-  'Precision',
-  'Memory Madness',
-  'Combo',
-  'Reverse',
-  'Mystery',
-][stableSeed(date) % 6];

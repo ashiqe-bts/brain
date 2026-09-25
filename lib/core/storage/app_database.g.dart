@@ -994,6 +994,10 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       $StoredGameRecordsTable(this);
   late final $StoredDailyRecordsTable storedDailyRecords =
       $StoredDailyRecordsTable(this);
+  late final Index gameRecordsTypePlayedAt = Index(
+    'game_records_type_played_at',
+    'CREATE INDEX game_records_type_played_at ON stored_game_records (game_type, played_at_ms)',
+  );
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -1002,6 +1006,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     appSnapshots,
     storedGameRecords,
     storedDailyRecords,
+    gameRecordsTypePlayedAt,
   ];
 }
 

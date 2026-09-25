@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:drift/drift.dart';
 import '../models/brain_models.dart';
 import 'app_database.dart';
 
@@ -11,10 +12,33 @@ class BrainRepository {
     )..where((t) => t.key.equals('state'))).getSingleOrNull();
     if (row == null) return BrainState();
     try {
-      return BrainState.decode(row.value);
+      await db
+          .into(db.appSnapshots)
+          .insert(
+            AppSnapshotsCompanion.insert(
+              key: 'state_v1_backup',
+              value: row.value,
+              updatedAt: row.updatedAt,
+            ),
+            mode: InsertMode.insertOrIgnore,
+          );
+    } catch (_) {
+      // A backup is a safety net, not a prerequisite for loading user data.
+    }
+    final BrainState state;
+    try {
+      state = BrainState.decode(row.value);
     } catch (_) {
       return BrainState();
     }
+    try {
+      final sessions = await loadSessions(limit: 500);
+      final legacy = state.history.where((result) => result.isLegacy);
+      state.history = [...legacy, ...sessions];
+    } catch (_) {
+      // Keep the decoded snapshot if session history cannot be queried.
+    }
+    return state;
   }
 
   Future<void> save(BrainState state) => db
@@ -26,18 +50,68 @@ class BrainRepository {
           updatedAt: DateTime.now(),
         ),
       );
-  Future<void> saveGame(GameResult result) => db
-      .into(db.storedGameRecords)
-      .insert(
-        StoredGameRecordsCompanion.insert(
-          gameType: result.type.name,
-          mode: result.mode.name,
-          score: result.score,
-          accuracy: result.accuracy,
-          playedAtMs: DateTime.now().millisecondsSinceEpoch,
-          payload: jsonEncode(result.toJson()),
-        ),
+  Future<int> saveGame(GameResult result) {
+    final completedAt = result.completedAt ?? DateTime.now();
+    final stored = result.copyWith(completedAt: completedAt, isLegacy: false);
+    return db
+        .into(db.storedGameRecords)
+        .insert(
+          StoredGameRecordsCompanion.insert(
+            gameType: stored.type.name,
+            mode: stored.mode.name,
+            score: stored.score,
+            accuracy: stored.accuracy,
+            playedAtMs: completedAt.millisecondsSinceEpoch,
+            payload: jsonEncode(stored.toJson()),
+          ),
+        );
+  }
+
+  Future<List<GameResult>> loadSessions({
+    int limit = 100,
+    GameType? type,
+    DateTime? since,
+  }) async {
+    final query = db.select(db.storedGameRecords)
+      ..orderBy([(table) => OrderingTerm.desc(table.playedAtMs)])
+      ..limit(limit);
+    if (type != null) {
+      query.where(
+        (table) => table.gameType.isIn([
+          type.name,
+          if (type == GameType.visualSearch) 'oddOneOut',
+        ]),
       );
+    }
+    if (since != null) {
+      query.where(
+        (table) =>
+            table.playedAtMs.isBiggerOrEqualValue(since.millisecondsSinceEpoch),
+      );
+    }
+    final rows = await query.get();
+    return rows.map((row) {
+      final decoded = GameResult.fromJson(
+        Map<String, dynamic>.from(jsonDecode(row.payload) as Map),
+      );
+      return decoded.copyWith(
+        id: row.id.toString(),
+        completedAt: DateTime.fromMillisecondsSinceEpoch(
+          row.playedAtMs,
+          isUtc: true,
+        ),
+        isLegacy: false,
+      );
+    }).toList();
+  }
+
+  Future<bool> hasMigrationBackup() async {
+    final row = await (db.select(
+      db.appSnapshots,
+    )..where((table) => table.key.equals('state_v1_backup'))).getSingleOrNull();
+    return row != null;
+  }
+
   Future<void> saveDaily(DailySummary result) => db
       .into(db.storedDailyRecords)
       .insertOnConflictUpdate(

@@ -393,10 +393,10 @@ Color _gameAccent(GameType type, {required bool light}) =>
       (GameType.mathBlitz, true) => const Color(0xFF1479B8),
       (GameType.memoryTiles, true) => const Color(0xFF8430C2),
       (GameType.reflexTap, true) => const Color(0xFFC86400),
-      (GameType.oddOneOut, true) => const Color(0xFF4B8F16),
+      (GameType.visualSearch, true) => const Color(0xFF4B8F16),
       (GameType.colorClash, false) => const Color(0xFFFF4963),
       (GameType.mathBlitz, false) => const Color(0xFF38B9FF),
       (GameType.memoryTiles, false) => const Color(0xFFB638F3),
       (GameType.reflexTap, false) => const Color(0xFFFF961A),
-      (GameType.oddOneOut, false) => const Color(0xFF71C72A),
+      (GameType.visualSearch, false) => const Color(0xFF71C72A),
     };

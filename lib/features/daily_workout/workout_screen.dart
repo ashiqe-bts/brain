@@ -1,14 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+
+import '../../app/theme/brain_theme.dart';
 import '../../core/models/brain_models.dart';
 import '../../core/state/brain_cubit.dart';
+import '../../core/training/training_analytics.dart';
 import '../../core/widgets/common.dart';
 import '../games/game_screen.dart';
-import '../../app/theme/brain_theme.dart';
-import '../brain_buddy/brain_buddy.dart';
 
 class WorkoutScreen extends StatefulWidget {
   const WorkoutScreen({super.key});
+
   @override
   State<WorkoutScreen> createState() => _WorkoutScreenState();
 }
@@ -16,6 +18,7 @@ class WorkoutScreen extends StatefulWidget {
 class _WorkoutScreenState extends State<WorkoutScreen> {
   bool running = false;
   String? status;
+
   @override
   void initState() {
     super.initState();
@@ -32,13 +35,16 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
       return;
     }
     var draft = cubit.data.draft!;
-    for (var i = draft.results.length; i < draft.order.length; i++) {
-      final type = draft.order[i];
+    for (
+      var index = draft.results.length;
+      index < draft.order.length;
+      index++
+    ) {
+      final type = draft.order[index];
       if (mounted) {
         setState(
-          () => status = dailyModifier(draft.date) == 'Mystery'
-              ? 'Mystery challenge ${i + 1} of 5'
-              : 'Challenge ${i + 1} of 5 · ${type.title}',
+          () => status =
+              '${type.domain} · round ${index + 1} of ${draft.order.length}',
         );
       }
       if (!mounted) return;
@@ -49,7 +55,9 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
             type: type,
             mode: GameMode.official,
             difficulty: cubit.data.difficulties[type.name] ?? 1,
-            modifier: dailyModifier(draft.date),
+            randomSeed: stableSeed(
+              '${draft.date}|${type.name}|${cubit.data.difficulties[type.name] ?? 1}|2',
+            ),
           ),
         ),
       );
@@ -75,51 +83,36 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final data = context.watch<BrainCubit>().state.data;
-    final draft = data.draft;
+    final draft = context.watch<BrainCubit>().state.data.draft;
     final complete = draft?.results.length ?? 0;
+    final total = draft?.order.length ?? GameType.values.length;
     return Scaffold(
-      appBar: AppBar(title: const Text('DAILY QUEST')),
+      appBar: AppBar(title: const Text('DAILY TRAINING')),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(20),
           child: Column(
             children: [
-              const SizedBox(height: 30),
-              TitlePlaque('${dailyModifier(localDate())} modifier'),
-              const SizedBox(height: 14),
+              const Spacer(),
+              const Icon(Icons.fitness_center_rounded, size: 72),
+              const SizedBox(height: 18),
               Text(
-                status ?? 'Five quick challenges',
+                status ?? 'Five standardized skill rounds',
+                textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                   fontWeight: FontWeight.w900,
                 ),
               ),
-              const SizedBox(height: 12),
-              Text('$complete / 5 complete'),
-              const SizedBox(height: 20),
+              const SizedBox(height: 18),
               ResourceBar(
-                label: 'Quest progress',
-                value: complete / 5,
+                label: 'Workout progress',
+                value: total == 0 ? 0 : complete / total,
                 color: context.brain.success,
-                trailing: '$complete / 5',
-              ),
-              const Spacer(),
-              BrainCard(
-                style: GamePanelStyle.inset,
-                child: BrainBuddy(
-                  mood: complete == 0
-                      ? BuddyMood.energized
-                      : BuddyMood.returning,
-                  reactionKey: complete,
-                  level: data.level,
-                  equipped: data.equipped,
-                  reducedMotion: data.reducedMotion,
-                  size: 180,
-                ),
+                trailing: '$complete / $total',
               ),
               const SizedBox(height: 20),
               const Text(
-                'Every round is saved when it ends. You can safely leave and continue later.',
+                'Each completed round is saved. You can safely leave and continue later.',
                 textAlign: TextAlign.center,
               ),
               const Spacer(),
@@ -127,7 +120,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                 ArcadeButton(
                   onPressed: _run,
                   icon: Icons.play_arrow,
-                  label: 'RESUME QUEST',
+                  label: 'RESUME WORKOUT',
                 ),
             ],
           ),
@@ -139,87 +132,88 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
 
 class WorkoutResultScreen extends StatelessWidget {
   const WorkoutResultScreen({super.key, required this.summary});
+
   final DailySummary summary;
+
   @override
   Widget build(BuildContext context) {
     final data = context.watch<BrainCubit>().state.data;
-    final previous = data.daily.where((e) => e.date != summary.date).lastOrNull;
-    final delta = previous == null
-        ? null
-        : summary.brainScore - previous.brainScore;
     return Scaffold(
       appBar: AppBar(
         automaticallyImplyLeading: false,
-        title: const Text('QUEST COMPLETE'),
+        title: const Text('SESSION REVIEW'),
       ),
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.all(20),
           children: [
-            Center(
-              child: BrainBuddy(
-                mood: BuddyMood.workoutComplete,
-                level: data.level,
-                equipped: data.equipped,
-                reducedMotion: data.reducedMotion,
-                variant: BuddyVariant.celebration,
-                size: 185,
-              ),
+            const Icon(Icons.check_circle_rounded, size: 72),
+            const SizedBox(height: 12),
+            Text(
+              'Daily training complete',
+              textAlign: TextAlign.center,
+              style: Theme.of(
+                context,
+              ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w900),
             ),
-            const Center(child: TitlePlaque('Victory!')),
+            const SizedBox(height: 8),
+            Text(
+              baselineStatus(data.daily).isComplete
+                  ? 'Results are compared only with compatible sessions.'
+                  : 'Baseline ${baselineStatus(data.daily).completed} of 3 complete.',
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 20),
+            for (final result in summary.results)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: BrainCard(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Text(
+                            result.type.emoji,
+                            style: const TextStyle(fontSize: 26),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              result.type.domain,
+                              style: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                          ),
+                          Text(
+                            'Level ${trainingLevel(difficulty: result.difficulty, score: result.normalized).toStringAsFixed(1)}',
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Text(_rawMetrics(result)),
+                      const SizedBox(height: 6),
+                      Text(_comparison(result, data)),
+                      const SizedBox(height: 6),
+                      Text(sessionTip(result)),
+                    ],
+                  ),
+                ),
+              ),
             const SizedBox(height: 8),
             const Text(
-              "TODAY'S BRAIN SCORE",
-              textAlign: TextAlign.center,
-              style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: 1.2),
-            ),
-            Text(
-              '${summary.brainScore}',
-              textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.displayLarge?.copyWith(
-                fontWeight: FontWeight.w900,
-                color: Theme.of(context).colorScheme.secondary,
-              ),
-            ),
-            if (delta != null)
-              Text(
-                '${delta >= 0 ? '+' : ''}$delta compared with your previous workout',
-                textAlign: TextAlign.center,
-              ),
-            const SizedBox(height: 22),
-            BrainCard(
-              child: Column(
-                children: [
-                  _bar(context, 'Focus', summary.focus),
-                  _bar(context, 'Memory', summary.memory),
-                  _bar(context, 'Speed', summary.speed),
-                  _bar(context, 'Math', summary.math),
-                  _bar(context, 'Accuracy', summary.accuracy),
-                  if (summary.reactionMs != null)
-                    ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      leading: const Icon(Icons.bolt),
-                      title: const Text('Reaction median'),
-                      trailing: Text(
-                        '${summary.reactionMs} ms',
-                        style: const TextStyle(fontWeight: FontWeight.w900),
-                      ),
-                    ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 14),
-            const Text(
-              'Brain Score reflects your game performance and personal progress. It is not an IQ score or medical assessment.',
+              'These results describe performance in BrainFlex tasks, not IQ or a medical assessment.',
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 22),
+            const SizedBox(height: 20),
             ArcadeButton(
               expanded: true,
               color: context.brain.success,
               onPressed: () => Navigator.pop(context),
-              icon: Icons.redeem_rounded,
-              label: 'COLLECT 100 XP',
+              icon: Icons.done_rounded,
+              label: 'DONE',
             ),
           ],
         ),
@@ -227,23 +221,33 @@ class WorkoutResultScreen extends StatelessWidget {
     );
   }
 
-  Widget _bar(BuildContext c, String name, int v) => Padding(
-    padding: const EdgeInsets.symmetric(vertical: 8),
-    child: Row(
-      children: [
-        SizedBox(width: 76, child: Text(name)),
-        Expanded(
-          child: ResourceBar(label: '', value: v / 100),
-        ),
-        const SizedBox(width: 12),
-        SizedBox(
-          width: 28,
-          child: Text(
-            '$v',
-            style: const TextStyle(fontWeight: FontWeight.w800),
-          ),
-        ),
-      ],
-    ),
-  );
+  String _rawMetrics(GameResult result) {
+    final accuracy = '${(result.accuracy * 100).round()}% accuracy';
+    if (result.type == GameType.reflexTap && result.reactionMs != null) {
+      return '$accuracy · ${result.reactionMs} ms median reaction';
+    }
+    final span = result.metrics['span']?.round() ?? 0;
+    if (result.type == GameType.memoryTiles && span > 0) {
+      return '$accuracy · span $span';
+    }
+    final response = result.metrics['medianResponseMs']?.round() ?? 0;
+    return response > 0 ? '$accuracy · $response ms median response' : accuracy;
+  }
+
+  String _comparison(GameResult result, BrainState data) {
+    final comparison = sessionComparison(
+      result: result,
+      history: data.history,
+      daily: data.daily,
+    );
+    String delta(double value) =>
+        '${value >= 0 ? '+' : ''}${value.toStringAsFixed(1)}';
+    final baseline = comparison.baselineDelta == null
+        ? 'Baseline change: available after 3 compatible daily results'
+        : 'Baseline change: ${delta(comparison.baselineDelta!)} levels';
+    final previous = comparison.previousDelta == null
+        ? 'Previous change: no earlier compatible attempt'
+        : 'Previous change: ${delta(comparison.previousDelta!)} levels';
+    return '$baseline\n$previous';
+  }
 }

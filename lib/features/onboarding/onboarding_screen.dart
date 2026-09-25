@@ -1,25 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../core/models/brain_models.dart';
+
+import '../../app/theme/brain_theme.dart';
 import '../../core/services/notification_service.dart';
 import '../../core/state/brain_cubit.dart';
-import '../brain_buddy/brain_buddy.dart';
 import '../../core/widgets/common.dart';
-import '../../app/theme/brain_theme.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
+
   @override
   State<OnboardingScreen> createState() => _OnboardingScreenState();
 }
 
 class _OnboardingScreenState extends State<OnboardingScreen> {
   final controller = PageController();
+  final notifications = NotificationService();
   int page = 0;
+  int sampleScore = 0;
   TimeOfDay reminder = const TimeOfDay(hour: 19, minute: 0);
   bool reminders = false;
-  int sampleScore = 0;
-  final notifications = NotificationService();
+
   @override
   void initState() {
     super.initState();
@@ -35,8 +36,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             child: PageView(
               controller: controller,
               physics: const NeverScrollableScrollPhysics(),
-              onPageChanged: (v) => setState(() => page = v),
-              children: [_welcome(), _reminder(), _sample(), _ready()],
+              onPageChanged: (value) => setState(() => page = value),
+              children: [_welcome(), _baseline(), _sample(), _reminder()],
             ),
           ),
           Padding(
@@ -58,9 +59,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       ? context.brain.success
                       : context.brain.primary,
                   icon: page == 3
-                      ? Icons.rocket_launch_rounded
+                      ? Icons.fitness_center_rounded
                       : Icons.arrow_forward_rounded,
-                  label: page == 3 ? 'ENTER THE LAB' : 'CONTINUE',
+                  label: page == 3 ? 'START TRAINING' : 'CONTINUE',
                 ),
               ],
             ),
@@ -69,6 +70,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       ),
     ),
   );
+
   Widget _frame(String eyebrow, String title, String body, Widget child) =>
       Padding(
         padding: const EdgeInsets.all(22),
@@ -82,7 +84,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   TitlePlaque(eyebrow),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 14),
                   Text(
                     title,
                     textAlign: TextAlign.center,
@@ -92,7 +94,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   ),
                   const SizedBox(height: 10),
                   Text(body, textAlign: TextAlign.center),
-                  const SizedBox(height: 30),
+                  const SizedBox(height: 28),
                   child,
                 ],
               ),
@@ -100,33 +102,81 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           ),
         ),
       );
+
   Widget _welcome() => _frame(
-    'BRAINFlex LAB',
-    'Hey! I’m Flex.',
-    'A tiny brain buddy with big plans. Let’s train focus, memory, math, reaction, and visual speed together.',
-    BrainBuddy(
-      mood: BuddyMood.wave,
-      level: 1,
-      equipped: const {
-        'hat': 'None',
-        'glasses': 'None',
-        'effect': 'None',
-        'background': 'Brain Laboratory',
-      },
-      size: 220,
+    'BRAINFLEX',
+    'A personal cognitive gym',
+    'Practice focus, calculation, memory, reaction, and visual search in short daily sessions.',
+    const Icon(Icons.psychology_alt_rounded, size: 120),
+  );
+
+  Widget _baseline() => _frame(
+    'YOUR OWN STARTING POINT',
+    'Three workouts build your baseline',
+    'BrainFlex compares compatible sessions with your own history. It does not compare you with an age group or claim to measure IQ.',
+    const Column(
+      children: [
+        LinearProgressIndicator(value: 1 / 3),
+        SizedBox(height: 12),
+        Text('Workout 1 of 3 begins after onboarding'),
+      ],
     ),
   );
+
+  Widget _sample() => _frame(
+    'QUICK SAMPLE',
+    'Tap the ink color',
+    'The word says RED, but the ink is blue.',
+    Column(
+      children: [
+        Text(
+          'RED',
+          style: TextStyle(
+            color: context.clashColor(1),
+            fontWeight: FontWeight.w900,
+            fontSize: 52,
+          ),
+        ),
+        const SizedBox(height: 20),
+        Wrap(
+          spacing: 10,
+          runSpacing: 10,
+          children: ['RED', 'BLUE', 'GREEN', 'YELLOW']
+              .map(
+                (label) => ArcadeButton(
+                  color: context.clashColor(
+                    const ['RED', 'BLUE', 'GREEN', 'YELLOW'].indexOf(label),
+                  ),
+                  onPressed: () =>
+                      setState(() => sampleScore = label == 'BLUE' ? 1 : -1),
+                  label: label,
+                ),
+              )
+              .toList(),
+        ),
+        const SizedBox(height: 12),
+        Text(
+          sampleScore == 1
+              ? 'Correct—the ink is blue.'
+              : sampleScore == -1
+              ? 'Look at the ink rather than the word.'
+              : 'Choose the ink color.',
+        ),
+      ],
+    ),
+  );
+
   Widget _reminder() => _frame(
-    'ONE GENTLE NUDGE',
-    'When should I wait for you?',
-    'BrainFlex sends at most one local reminder each day. You can change this anytime.',
+    'PRIVATE BY DEFAULT',
+    'Train on your schedule',
+    'Your results stay on this device. A single optional local reminder can help you build a routine.',
     Column(
       children: [
         SwitchListTile(
           value: reminders,
-          onChanged: (v) => setState(() => reminders = v),
+          onChanged: (value) => setState(() => reminders = value),
           title: const Text('Daily reminder'),
-          subtitle: const Text('Stored and scheduled only on this device'),
+          subtitle: const Text('Scheduled only on this device'),
         ),
         ListTile(
           enabled: reminders,
@@ -146,76 +196,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       ],
     ),
   );
-  Widget _sample() => _frame(
-    '15-SECOND SAMPLE',
-    'Tap the ink color',
-    'The word can be sneaky. This one is written in blue.',
-    Column(
-      children: [
-        Text(
-          'RED',
-          style: TextStyle(
-            color: context.clashColor(1),
-            fontWeight: FontWeight.w900,
-            fontSize: 52,
-          ),
-        ),
-        const SizedBox(height: 22),
-        Wrap(
-          spacing: 10,
-          runSpacing: 10,
-          children: ['RED', 'BLUE', 'GREEN', 'YELLOW']
-              .map(
-                (e) => ArcadeButton(
-                  color: context.clashColor(
-                    const ['RED', 'BLUE', 'GREEN', 'YELLOW'].indexOf(e),
-                  ),
-                  onPressed: () =>
-                      setState(() => sampleScore += e == 'BLUE' ? 1 : 0),
-                  label: e,
-                ),
-              )
-              .toList(),
-        ),
-        const SizedBox(height: 12),
-        Text(
-          sampleScore > 0
-              ? 'Perfect! Flex likes your focus.'
-              : 'Choose BLUE to try it.',
-        ),
-        const SizedBox(height: 8),
-        BrainBuddy(
-          mood: sampleScore > 0 ? BuddyMood.happy : BuddyMood.thinking,
-          reactionKey: sampleScore,
-          level: 1,
-          equipped: const {
-            'hat': 'None',
-            'glasses': 'None',
-            'effect': 'None',
-            'background': 'Brain Laboratory',
-          },
-          variant: BuddyVariant.compact,
-          size: 104,
-        ),
-      ],
-    ),
-  );
-  Widget _ready() => _frame(
-    'YOU’RE READY',
-    'Your lab is waiting.',
-    'No login. No pressure. Just a few playful minutes whenever you want them.',
-    BrainBuddy(
-      mood: BuddyMood.celebrate,
-      level: 1,
-      equipped: const {
-        'hat': 'None',
-        'glasses': 'None',
-        'effect': 'None',
-        'background': 'Brain Laboratory',
-      },
-      size: 200,
-    ),
-  );
+
   Future<void> _next() async {
     if (page < 3) {
       controller.nextPage(
@@ -225,8 +206,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       return;
     }
     if (reminders) {
-      final ok = await notifications.requestPermission();
-      if (ok) {
+      final allowed = await notifications.requestPermission();
+      if (allowed) {
         await notifications.scheduleDaily(
           hour: reminder.hour,
           minute: reminder.minute,

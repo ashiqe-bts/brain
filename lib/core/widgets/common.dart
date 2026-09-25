@@ -294,63 +294,6 @@ class TitlePlaque extends StatelessWidget {
   }
 }
 
-class EnergyHearts extends StatelessWidget {
-  const EnergyHearts({super.key, required this.energy, this.compact = false});
-  final int energy;
-  final bool compact;
-  @override
-  Widget build(BuildContext context) {
-    return Semantics(
-      label: 'Brain energy $energy out of 100',
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: List.generate(4, (i) {
-          final fill = ((energy.clamp(0, 100) - i * 25) / 25).clamp(0.0, 1.0);
-          final size = compact ? 20.0 : 29.0;
-          return Padding(
-            padding: EdgeInsets.only(right: compact ? 2 : 5),
-            child: SizedBox.square(
-              dimension: size,
-              child: Stack(
-                children: [
-                  Icon(
-                    Icons.favorite_border_rounded,
-                    size: size,
-                    color: context.brain.frame,
-                    shadows: [
-                      Shadow(
-                        color: context.brain.outline,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  ClipRect(
-                    child: Align(
-                      alignment: Alignment.centerLeft,
-                      widthFactor: fill,
-                      child: Icon(
-                        Icons.favorite_rounded,
-                        size: size,
-                        color: const Color(0xFFF23D5B),
-                        shadows: [
-                          Shadow(
-                            color: context.brain.outline,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          );
-        }),
-      ),
-    );
-  }
-}
-
 class ResourceBar extends StatelessWidget {
   const ResourceBar({
     super.key,

@@ -3,7 +3,6 @@ import '../../app/theme/brain_theme.dart';
 import '../home/home_screen.dart';
 import '../games/games_screen.dart';
 import '../progress/progress_screen.dart';
-import '../lab/lab_screen.dart';
 
 class AppShell extends StatefulWidget {
   const AppShell({super.key});
@@ -13,17 +12,11 @@ class AppShell extends StatefulWidget {
 
 class _AppShellState extends State<AppShell> {
   int index = 0;
-  final pages = const [
-    HomeScreen(),
-    GamesScreen(),
-    ProgressScreen(),
-    LabScreen(),
-  ];
+  final pages = const [HomeScreen(), GamesScreen(), ProgressScreen()];
   static const destinations = [
-    (Icons.home_rounded, 'Home'),
-    (Icons.sports_esports_rounded, 'Games'),
-    (Icons.emoji_events_rounded, 'Progress'),
-    (Icons.science_rounded, 'Lab'),
+    (Icons.today_rounded, 'Today'),
+    (Icons.fitness_center_rounded, 'Train'),
+    (Icons.insights_rounded, 'Insights'),
   ];
 
   @override
@@ -126,6 +119,7 @@ class _DockItem extends StatelessWidget {
                   fontFamily: 'Fredoka',
                   fontWeight: FontWeight.w700,
                   fontSize: 11,
+                  height: 1.1,
                   color: selected
                       ? context.onColor(context.brain.primary)
                       : context.brain.text.withValues(alpha: .7),
