@@ -74,6 +74,23 @@ void main() {
       expect(trainingLevel(difficulty: 4, score: 50), 3.5);
       expect(trainingLevel(difficulty: 10, score: 100), 10);
     });
+
+    test('exposes versioned score components and typed raw metrics', () {
+      final score = scoreGameDetails(
+        type: GameType.reflexTap,
+        difficulty: 3,
+        accuracy: .8,
+        medianResponseMs: 300,
+        falseStarts: 1,
+      );
+      final result = _result(day: 1, normalized: score.normalized).copyWith();
+
+      expect(score.accuracyContribution, greaterThan(0));
+      expect(score.paceContribution, greaterThan(0));
+      expect(score.penalty, 6);
+      expect(result.rawMetrics, isA<FocusMetrics>());
+      expect(result.comparableSeries().accepts(result), isTrue);
+    });
   });
 
   group('progressive baseline', () {
@@ -143,11 +160,48 @@ void main() {
         contains('accuracy'),
       );
     });
+
+    test('session comparison uses baseline median and previous attempt', () {
+      final baseline = [
+        _result(day: 1, normalized: 50),
+        _result(day: 2, normalized: 60),
+        _result(day: 3, normalized: 70),
+      ];
+      final current = _result(day: 4, normalized: 90);
+
+      final comparison = sessionComparison(
+        result: current,
+        history: [...baseline, current],
+        daily: [
+          _summary('2026-01-01', results: [baseline[0]]),
+          _summary('2026-01-02', results: [baseline[1]]),
+          _summary('2026-01-03', results: [baseline[2]]),
+        ],
+      );
+
+      expect(comparison.baselineDelta, closeTo(.3, .001));
+      expect(comparison.previousDelta, closeTo(.2, .001));
+    });
+
+    test('session comparison explains insufficient compatible data', () {
+      final current = _result(day: 2, normalized: 70);
+
+      final comparison = sessionComparison(
+        result: current,
+        history: [current],
+        daily: [
+          _summary('2026-01-02', results: [current]),
+        ],
+      );
+
+      expect(comparison.baselineDelta, isNull);
+      expect(comparison.previousDelta, isNull);
+    });
   });
 }
 
-DailySummary _summary(String date) =>
-    DailySummary(date: date, results: const [], skillRatings: const {});
+DailySummary _summary(String date, {List<GameResult> results = const []}) =>
+    DailySummary(date: date, results: results, skillRatings: const {});
 
 GameResult _result({
   required int day,

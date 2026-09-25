@@ -200,7 +200,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
         const SizedBox(height: 8),
         Text(
           baselineReady
-              ? 'Next week, prioritize ${review.recommendations.map((game) => game.domain).join(' and ')}.'
+              ? 'Next week, prioritize ${review.recommendations.map((item) => item.game.domain).join(' and ')}.'
               : 'Recommendations unlock after your three-workout baseline.',
         ),
         const SizedBox(height: 8),

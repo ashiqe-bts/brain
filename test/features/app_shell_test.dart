@@ -52,4 +52,27 @@ void main() {
     expect(find.text('FIVE-SKILL PROFILE'), findsOneWidget);
     expect(find.text('Baseline 0 of 3'), findsOneWidget);
   });
+
+  testWidgets('supports 200 percent text and high contrast navigation', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MediaQuery(
+        data: const MediaQueryData(textScaler: TextScaler.linear(2)),
+        child: BlocProvider.value(
+          value: cubit,
+          child: MaterialApp(
+            theme: buildBrainTheme(BrainTheme.highContrast),
+            home: const AppShell(),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Today'), findsOneWidget);
+    expect(find.text('Train'), findsOneWidget);
+    expect(find.text('Insights'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
 }

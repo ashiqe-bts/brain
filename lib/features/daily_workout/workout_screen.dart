@@ -55,6 +55,9 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
             type: type,
             mode: GameMode.official,
             difficulty: cubit.data.difficulties[type.name] ?? 1,
+            randomSeed: stableSeed(
+              '${draft.date}|${type.name}|${cubit.data.difficulties[type.name] ?? 1}|2',
+            ),
           ),
         ),
       );
@@ -192,6 +195,8 @@ class WorkoutResultScreen extends StatelessWidget {
                       const SizedBox(height: 8),
                       Text(_rawMetrics(result)),
                       const SizedBox(height: 6),
+                      Text(_comparison(result, data)),
+                      const SizedBox(height: 6),
                       Text(sessionTip(result)),
                     ],
                   ),
@@ -227,5 +232,22 @@ class WorkoutResultScreen extends StatelessWidget {
     }
     final response = result.metrics['medianResponseMs']?.round() ?? 0;
     return response > 0 ? '$accuracy · $response ms median response' : accuracy;
+  }
+
+  String _comparison(GameResult result, BrainState data) {
+    final comparison = sessionComparison(
+      result: result,
+      history: data.history,
+      daily: data.daily,
+    );
+    String delta(double value) =>
+        '${value >= 0 ? '+' : ''}${value.toStringAsFixed(1)}';
+    final baseline = comparison.baselineDelta == null
+        ? 'Baseline change: available after 3 compatible daily results'
+        : 'Baseline change: ${delta(comparison.baselineDelta!)} levels';
+    final previous = comparison.previousDelta == null
+        ? 'Previous change: no earlier compatible attempt'
+        : 'Previous change: ${delta(comparison.previousDelta!)} levels';
+    return '$baseline\n$previous';
   }
 }

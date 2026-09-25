@@ -117,60 +117,60 @@ class BrainCubit extends Cubit<BrainViewState> {
   }
 
   Future<bool> recordResult(GameResult result) async {
+    final recorded = result.copyWith(
+      completedAt: result.completedAt ?? DateTime.now(),
+      isLegacy: false,
+    );
     final previous = personalBest(
-      result.type,
-      result.mode,
-      difficulty: result.difficulty,
-      rulesVersion: result.rulesVersion,
+      recorded.type,
+      recorded.mode,
+      difficulty: recorded.difficulty,
+      rulesVersion: recorded.rulesVersion,
     );
     final isRecord =
-        result.mode != GameMode.relaxed &&
+        recorded.mode != GameMode.relaxed &&
         (previous == null ||
-            result.score > previous.score ||
-            (result.type == GameType.reflexTap &&
-                result.reactionMs != null &&
+            recorded.score > previous.score ||
+            (recorded.type == GameType.reflexTap &&
+                recorded.reactionMs != null &&
                 (previous.reactionMs == null ||
-                    result.reactionMs! < previous.reactionMs!)));
-    data.history.add(result);
-    await repository.saveGame(result);
+                    recorded.reactionMs! < previous.reactionMs!)));
+    data.history.add(recorded);
+    await repository.saveGame(recorded);
+    final series = recorded.comparableSeries(matchDifficulty: true);
     final recentComparable =
         data.history
-            .where(
-              (item) =>
-                  item.type == result.type &&
-                  item.rulesVersion == result.rulesVersion &&
-                  item.contributesToTrends,
-            )
+            .where((item) => series.accepts(item) && item.contributesToTrends)
             .toList()
           ..sort(
             (a, b) => (b.completedAt ?? DateTime(1970)).compareTo(
               a.completedAt ?? DateTime(1970),
             ),
           );
-    if (result.contributesToTrends) {
-      data.difficulties[result.type.name] = adaptDifficulty(
-        result.difficulty,
+    if (recorded.contributesToTrends) {
+      data.difficulties[recorded.type.name] = adaptDifficulty(
+        recorded.difficulty,
         recentComparable.take(3).map((item) => item.normalized),
       );
     }
-    if (result.mode == GameMode.official) {
+    if (recorded.mode == GameMode.official) {
       final draft = data.draft;
       if (draft != null) {
         data.draft = WorkoutDraft(
           date: draft.date,
           order: draft.order,
-          results: [...draft.results, result],
+          results: [...draft.results, recorded],
         );
       }
-    } else if (result.mode != GameMode.relaxed) {
-      addXp(5 + min(10, result.score ~/ 10));
+    } else if (recorded.mode != GameMode.relaxed) {
+      addXp(5 + min(10, recorded.score ~/ 10));
     }
-    _progressMission('correct', result.correct);
+    _progressMission('correct', recorded.correct);
     if (isRecord) {
       _progressMission('record', 1);
       addXp(25);
     }
-    if (result.accuracy >= .999 && result.attempts > 0) addXp(20);
+    if (recorded.accuracy >= .999 && recorded.attempts > 0) addXp(20);
     await _commit();
     return isRecord;
   }

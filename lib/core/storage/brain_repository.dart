@@ -22,14 +22,23 @@ class BrainRepository {
             ),
             mode: InsertMode.insertOrIgnore,
           );
-      final state = BrainState.decode(row.value);
-      final sessions = await loadSessions(limit: 500);
-      final legacy = state.history.where((result) => result.isLegacy);
-      state.history = [...legacy, ...sessions];
-      return state;
+    } catch (_) {
+      // A backup is a safety net, not a prerequisite for loading user data.
+    }
+    final BrainState state;
+    try {
+      state = BrainState.decode(row.value);
     } catch (_) {
       return BrainState();
     }
+    try {
+      final sessions = await loadSessions(limit: 500);
+      final legacy = state.history.where((result) => result.isLegacy);
+      state.history = [...legacy, ...sessions];
+    } catch (_) {
+      // Keep the decoded snapshot if session history cannot be queried.
+    }
+    return state;
   }
 
   Future<void> save(BrainState state) => db

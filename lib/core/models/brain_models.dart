@@ -9,6 +9,9 @@ enum GameType { colorClash, mathBlitz, memoryTiles, reflexTap, visualSearch }
 
 enum GameMode { standard, relaxed, personalBest, official }
 
+typedef SessionKind = GameMode;
+typedef GameRulesVersion = int;
+
 enum GameLifecycle { initial, countdown, running, paused, feedback, completed }
 
 extension GameTypeX on GameType {
@@ -63,6 +66,62 @@ Map<String, int> migrateDifficulties(Map<String, int>? stored) {
   return values;
 }
 
+class ComparableSeriesKey {
+  const ComparableSeriesKey({
+    required this.game,
+    required this.rulesVersion,
+    this.difficulty,
+  });
+
+  final GameType game;
+  final GameRulesVersion rulesVersion;
+  final int? difficulty;
+
+  bool accepts(GameResult result) =>
+      result.type == game &&
+      result.rulesVersion == rulesVersion &&
+      (difficulty == null || result.difficulty == difficulty);
+}
+
+sealed class RawGameMetrics {
+  const RawGameMetrics();
+}
+
+final class FocusMetrics extends RawGameMetrics {
+  const FocusMetrics(this.medianCorrectResponseMs);
+  final int medianCorrectResponseMs;
+}
+
+final class CalculationMetrics extends RawGameMetrics {
+  const CalculationMetrics(this.medianCorrectResponseMs);
+  final int medianCorrectResponseMs;
+}
+
+final class MemoryMetrics extends RawGameMetrics {
+  const MemoryMetrics({
+    required this.span,
+    required this.exposureDurationMs,
+    required this.rounds,
+  });
+  final int span;
+  final int exposureDurationMs;
+  final int rounds;
+}
+
+final class ReactionMetrics extends RawGameMetrics {
+  const ReactionMetrics({
+    required this.medianLatencyMs,
+    required this.falseStarts,
+  });
+  final int medianLatencyMs;
+  final int falseStarts;
+}
+
+final class VisualSearchMetrics extends RawGameMetrics {
+  const VisualSearchMetrics(this.medianCorrectSearchMs);
+  final int medianCorrectSearchMs;
+}
+
 class GameResult {
   const GameResult({
     required this.type,
@@ -81,6 +140,7 @@ class GameResult {
     this.completedAt,
     this.rulesVersion = 1,
     this.metrics = const {},
+    this.scoreComponents = const {},
     this.isLegacy = false,
   });
   final GameType type;
@@ -97,9 +157,38 @@ class GameResult {
   final List<int> checkpoints;
   final String? id;
   final DateTime? completedAt;
-  final int rulesVersion;
+  final GameRulesVersion rulesVersion;
   final Map<String, double> metrics;
+  final Map<String, double> scoreComponents;
   final bool isLegacy;
+
+  ComparableSeriesKey comparableSeries({bool matchDifficulty = false}) =>
+      ComparableSeriesKey(
+        game: type,
+        rulesVersion: rulesVersion,
+        difficulty: matchDifficulty ? difficulty : null,
+      );
+
+  RawGameMetrics get rawMetrics => switch (type) {
+    GameType.colorClash => FocusMetrics(
+      metrics['medianResponseMs']?.round() ?? 0,
+    ),
+    GameType.mathBlitz => CalculationMetrics(
+      metrics['medianResponseMs']?.round() ?? 0,
+    ),
+    GameType.memoryTiles => MemoryMetrics(
+      span: metrics['span']?.round() ?? 0,
+      exposureDurationMs: metrics['exposureDurationMs']?.round() ?? 0,
+      rounds: metrics['rounds']?.round() ?? 0,
+    ),
+    GameType.reflexTap => ReactionMetrics(
+      medianLatencyMs: metrics['medianResponseMs']?.round() ?? 0,
+      falseStarts: metrics['falseStarts']?.round() ?? 0,
+    ),
+    GameType.visualSearch => VisualSearchMetrics(
+      metrics['medianResponseMs']?.round() ?? 0,
+    ),
+  };
 
   bool get contributesToTrends =>
       !isLegacy &&
@@ -128,6 +217,7 @@ class GameResult {
     completedAt: completedAt ?? this.completedAt,
     rulesVersion: rulesVersion ?? this.rulesVersion,
     metrics: metrics,
+    scoreComponents: scoreComponents,
     isLegacy: isLegacy ?? this.isLegacy,
   );
 
@@ -148,6 +238,7 @@ class GameResult {
     'completedAt': completedAt?.toIso8601String(),
     'rulesVersion': rulesVersion,
     'metrics': metrics,
+    'scoreComponents': scoreComponents,
   };
   factory GameResult.fromJson(Map<String, dynamic> j) => GameResult(
     type: gameTypeFromName(j['type'] as String),
@@ -168,6 +259,9 @@ class GameResult {
         : DateTime.tryParse(j['completedAt'] as String),
     rulesVersion: j['rulesVersion'] as int? ?? 0,
     metrics: (j['metrics'] as Map? ?? const {}).map(
+      (key, value) => MapEntry(key as String, (value as num).toDouble()),
+    ),
+    scoreComponents: (j['scoreComponents'] as Map? ?? const {}).map(
       (key, value) => MapEntry(key as String, (value as num).toDouble()),
     ),
     isLegacy: j['completedAt'] == null || j['rulesVersion'] == null,
@@ -206,14 +300,14 @@ class DailySummary {
   };
   factory DailySummary.fromJson(Map<String, dynamic> j) => DailySummary(
     date: j['date'] as String,
-    brainScore: j['brainScore'] as int,
-    focus: j['focus'] as int,
-    memory: j['memory'] as int,
-    speed: j['speed'] as int,
-    math: j['math'] as int,
-    accuracy: j['accuracy'] as int,
+    brainScore: j['brainScore'] as int? ?? 0,
+    focus: j['focus'] as int? ?? 0,
+    memory: j['memory'] as int? ?? 0,
+    speed: j['speed'] as int? ?? 0,
+    math: j['math'] as int? ?? 0,
+    accuracy: j['accuracy'] as int? ?? 0,
     reactionMs: j['reactionMs'] as int?,
-    results: (j['results'] as List)
+    results: (j['results'] as List? ?? const [])
         .map((e) => GameResult.fromJson(Map<String, dynamic>.from(e as Map)))
         .toList(),
     skillRatings: (j['skillRatings'] as Map? ?? const {}).map(

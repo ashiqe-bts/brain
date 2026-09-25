@@ -119,6 +119,7 @@ class _DockItem extends StatelessWidget {
                   fontFamily: 'Fredoka',
                   fontWeight: FontWeight.w700,
                   fontSize: 11,
+                  height: 1.1,
                   color: selected
                       ? context.onColor(context.brain.primary)
                       : context.brain.text.withValues(alpha: .7),

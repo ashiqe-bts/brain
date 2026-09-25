@@ -2,6 +2,8 @@ import 'dart:math';
 
 import '../models/brain_models.dart';
 
+enum BaselineState { building, complete }
+
 class BaselineStatus {
   const BaselineStatus({required this.completed, this.required = 3});
 
@@ -10,6 +12,8 @@ class BaselineStatus {
 
   int get remaining => max(0, required - completed);
   bool get isComplete => completed >= required;
+  BaselineState get state =>
+      isComplete ? BaselineState.complete : BaselineState.building;
 }
 
 enum TrendDirection { insufficient, stable, improving, needsAttention }
@@ -41,7 +45,21 @@ class WeeklyReview {
 
   final int workouts;
   final Map<GameType, SkillTrend> trends;
-  final List<GameType> recommendations;
+  final List<ReviewRecommendation> recommendations;
+}
+
+class ReviewRecommendation {
+  const ReviewRecommendation({required this.game, required this.reason});
+
+  final GameType game;
+  final String reason;
+}
+
+class SessionComparison {
+  const SessionComparison({this.baselineDelta, this.previousDelta});
+
+  final double? baselineDelta;
+  final double? previousDelta;
 }
 
 BaselineStatus baselineStatus(List<DailySummary> daily) =>
@@ -62,6 +80,47 @@ int adaptDifficulty(int current, Iterable<double> recentScores) {
   if (mastered >= 2) return min(10, current + 1);
   if (struggling >= 2) return max(1, current - 1);
   return current.clamp(1, 10);
+}
+
+SessionComparison sessionComparison({
+  required GameResult result,
+  required List<GameResult> history,
+  required List<DailySummary> daily,
+}) {
+  double level(GameResult item) =>
+      trainingLevel(difficulty: item.difficulty, score: item.normalized);
+
+  final orderedDaily = daily.toList()..sort((a, b) => a.date.compareTo(b.date));
+  final compatibleBaseline = orderedDaily
+      .take(3)
+      .expand((summary) => summary.results)
+      .where(
+        (item) =>
+            item.type == result.type &&
+            item.rulesVersion == result.rulesVersion &&
+            item.contributesToTrends,
+      )
+      .toList();
+  final previous =
+      history
+          .where(
+            (item) =>
+                item.type == result.type &&
+                item.rulesVersion == result.rulesVersion &&
+                item.contributesToTrends &&
+                item.completedAt != null &&
+                result.completedAt != null &&
+                item.completedAt!.isBefore(result.completedAt!),
+          )
+          .toList()
+        ..sort((a, b) => b.completedAt!.compareTo(a.completedAt!));
+  final current = level(result);
+  return SessionComparison(
+    baselineDelta: compatibleBaseline.length < 3
+        ? null
+        : current - _medianDouble(compatibleBaseline.map(level)),
+    previousDelta: previous.isEmpty ? null : current - level(previous.first),
+  );
 }
 
 SkillTrend skillTrend(GameType type, Iterable<GameResult> history) {
@@ -142,7 +201,17 @@ WeeklyReview weeklyReview({
   return WeeklyReview(
     workouts: workouts,
     trends: trends,
-    recommendations: ranked.take(2).toList(),
+    recommendations: ranked
+        .take(2)
+        .map(
+          (game) => ReviewRecommendation(
+            game: game,
+            reason: trends[game]!.samples < 3
+                ? 'Build more comparable history'
+                : 'Prioritize the weaker rolling trend',
+          ),
+        )
+        .toList(),
   );
 }
 
@@ -176,7 +245,27 @@ double _medianDouble(Iterable<double> values) {
       : (sorted[middle - 1] + sorted[middle]) / 2;
 }
 
-double scoreGame({
+class GameScore {
+  const GameScore({
+    required this.normalized,
+    required this.accuracyContribution,
+    required this.paceContribution,
+    required this.penalty,
+  });
+
+  final double normalized;
+  final double accuracyContribution;
+  final double paceContribution;
+  final double penalty;
+
+  Map<String, double> toJson() => {
+    'accuracy': accuracyContribution,
+    'pace': paceContribution,
+    'penalty': penalty,
+  };
+}
+
+GameScore scoreGameDetails({
   required GameType type,
   required int difficulty,
   required double accuracy,
@@ -193,12 +282,36 @@ double scoreGame({
     GameType.visualSearch => _pace(medianResponseMs, fast: 550, slow: 3000),
   };
   final accuracyWeight = type == GameType.reflexTap ? .35 : .7;
-  final falseStartPenalty = type == GameType.reflexTap ? falseStarts * 6 : 0;
-  return (100 * (safeAccuracy * accuracyWeight + pace * (1 - accuracyWeight)) -
-          falseStartPenalty)
-      .clamp(0, 100)
-      .toDouble();
+  final accuracyContribution = 100 * safeAccuracy * accuracyWeight;
+  final paceContribution = 100 * pace * (1 - accuracyWeight);
+  final falseStartPenalty = type == GameType.reflexTap
+      ? falseStarts * 6.0
+      : 0.0;
+  return GameScore(
+    normalized: (accuracyContribution + paceContribution - falseStartPenalty)
+        .clamp(0, 100)
+        .toDouble(),
+    accuracyContribution: accuracyContribution,
+    paceContribution: paceContribution,
+    penalty: falseStartPenalty,
+  );
 }
+
+double scoreGame({
+  required GameType type,
+  required int difficulty,
+  required double accuracy,
+  required int medianResponseMs,
+  int span = 0,
+  int falseStarts = 0,
+}) => scoreGameDetails(
+  type: type,
+  difficulty: difficulty,
+  accuracy: accuracy,
+  medianResponseMs: medianResponseMs,
+  span: span,
+  falseStarts: falseStarts,
+).normalized;
 
 double _pace(int value, {required int fast, required int slow}) {
   if (value <= 0) return 0;

@@ -29,6 +29,7 @@ void main() {
         completedAt: completedAt,
         rulesVersion: 2,
         metrics: const {'medianResponseMs': 640},
+        scoreComponents: const {'accuracy': 63, 'pace': 19, 'penalty': 0},
       ),
     );
 
@@ -39,6 +40,7 @@ void main() {
     expect(sessions.single.completedAt, completedAt);
     expect(sessions.single.rulesVersion, 2);
     expect(sessions.single.metrics['medianResponseMs'], 640);
+    expect(sessions.single.scoreComponents['accuracy'], 63);
   });
 
   test(
@@ -67,4 +69,22 @@ void main() {
       expect(await repository.hasMigrationBackup(), isTrue);
     },
   );
+
+  test('partial legacy daily summaries decode without data loss', () async {
+    await database
+        .into(database.appSnapshots)
+        .insert(
+          AppSnapshotsCompanion.insert(
+            key: 'state',
+            value: '{"onboarded":true,"daily":[{"date":"2025-12-01"}]}',
+            updatedAt: DateTime.utc(2026),
+          ),
+        );
+
+    final loaded = await repository.load();
+
+    expect(loaded.onboarded, isTrue);
+    expect(loaded.daily.single.date, '2025-12-01');
+    expect(loaded.daily.single.results, isEmpty);
+  });
 }

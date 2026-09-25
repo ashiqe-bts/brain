@@ -17,11 +17,15 @@ class GameScreen extends StatefulWidget {
     required this.mode,
     required this.difficulty,
     this.personalBest,
+    this.randomSeed,
+    this.now,
   });
   final GameType type;
   final GameMode mode;
   final int difficulty;
   final GameResult? personalBest;
+  final int? randomSeed;
+  final DateTime Function()? now;
   @override
   State<GameScreen> createState() => _GameScreenState();
 }
@@ -63,9 +67,11 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    final seed = stableSeed(
-      '${DateTime.now().microsecondsSinceEpoch}|${widget.type.name}',
-    );
+    final seed =
+        widget.randomSeed ??
+        stableSeed(
+          '${DateTime.now().microsecondsSinceEpoch}|${widget.type.name}',
+        );
     random = Random(seed);
     trialFactory = GameTrialFactory(seed);
     colorTrials = trialFactory.colorTrials(120);
@@ -329,7 +335,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
     final responseMedian = medianMilliseconds(
       widget.type == GameType.reflexTap ? reactions : responseTimes,
     );
-    final normalized = scoreGame(
+    final scoreDetails = scoreGameDetails(
       type: widget.type,
       difficulty: widget.difficulty,
       accuracy: accuracy,
@@ -344,7 +350,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
       type: widget.type,
       mode: widget.mode,
       score: score,
-      normalized: normalized,
+      normalized: scoreDetails.normalized,
       accuracy: accuracy,
       durationMs: stopwatch.elapsedMilliseconds,
       difficulty: widget.difficulty,
@@ -353,13 +359,19 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
       correct: correct,
       attempts: attempts,
       checkpoints: checkpoints,
-      completedAt: DateTime.now(),
+      completedAt: widget.now?.call() ?? DateTime.now(),
       rulesVersion: 2,
       metrics: {
         'medianResponseMs': responseMedian.toDouble(),
         'falseStarts': falseStarts.toDouble(),
         'span': maxMemorySpan.toDouble(),
+        'exposureDurationMs': max(
+          900,
+          1800 - widget.difficulty * 80,
+        ).toDouble(),
+        'rounds': memoryRound.toDouble(),
       },
+      scoreComponents: scoreDetails.toJson(),
     );
     if (mounted) setState(() {});
     Future.delayed(const Duration(milliseconds: 250), () {

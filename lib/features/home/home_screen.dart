@@ -21,8 +21,13 @@ class HomeScreen extends StatelessWidget {
     final review = weeklyReview(daily: data.daily, history: data.history);
     return Scaffold(
       appBar: AppBar(
-        toolbarHeight: 72,
+        toolbarHeight:
+            (72 + 16 * (MediaQuery.textScalerOf(context).scale(1) - 1)).clamp(
+              72,
+              104,
+            ),
         title: Column(
+          mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text('TODAY'),
@@ -91,15 +96,18 @@ class HomeScreen extends StatelessWidget {
                                 style: TextStyle(fontWeight: FontWeight.w800),
                               ),
                               const SizedBox(height: 8),
-                              for (final game in review.recommendations)
+                              for (final recommendation
+                                  in review.recommendations)
                                 ListTile(
                                   contentPadding: EdgeInsets.zero,
                                   leading: Text(
-                                    game.emoji,
+                                    recommendation.game.emoji,
                                     style: const TextStyle(fontSize: 24),
                                   ),
-                                  title: Text(game.title),
-                                  subtitle: Text(game.domain),
+                                  title: Text(recommendation.game.title),
+                                  subtitle: Text(
+                                    '${recommendation.game.domain} · ${recommendation.reason}',
+                                  ),
                                 ),
                               const Text(
                                 'Open Train to start a Standard session.',

@@ -64,15 +64,12 @@ class GamesScreen extends StatelessWidget {
 
   Widget _gameCard(BuildContext context, GameType game) {
     final cubit = context.read<BrainCubit>(), d = cubit.data;
-    final items = d.history.where((e) => e.type == game).toList();
-    final best = items.isEmpty
-        ? null
-        : (items..sort(
-                (a, b) => game == GameType.reflexTap
-                    ? (a.reactionMs ?? 9999).compareTo(b.reactionMs ?? 9999)
-                    : b.score.compareTo(a.score),
-              ))
-              .first;
+    final difficulty = d.difficulties[game.name] ?? 1;
+    final best = cubit.personalBest(
+      game,
+      GameMode.personalBest,
+      difficulty: difficulty,
+    );
     final accent = context.gameAccent(game);
     return BrainCard(
       color: Color.lerp(accent, context.brain.surface, .68),
@@ -108,9 +105,7 @@ class GamesScreen extends StatelessWidget {
                     fontWeight: FontWeight.w900,
                   ),
                 ),
-                Text(
-                  '${game.domain} · Level ${d.difficulties[game.name] ?? 1}',
-                ),
+                Text('${game.domain} · Level $difficulty'),
                 Text(
                   best == null
                       ? 'No standard result yet'

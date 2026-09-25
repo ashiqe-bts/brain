@@ -42,12 +42,39 @@ void main() {
     expect(cubit.data.difficulties[GameType.colorClash.name], 4);
     expect(cubit.data.xp, beforeXp);
   });
+
+  test('adaptation ignores results from a different difficulty', () async {
+    await cubit.recordResult(_result(1, 95, difficulty: 3));
+    await cubit.recordResult(_result(2, 95, difficulty: 3));
+    await cubit.recordResult(_result(3, 70));
+
+    expect(cubit.data.difficulties[GameType.colorClash.name], 4);
+  });
+
+  test('recorded sessions always receive a completion timestamp', () async {
+    const result = GameResult(
+      type: GameType.colorClash,
+      mode: GameMode.standard,
+      score: 8,
+      normalized: 80,
+      accuracy: .8,
+      durationMs: 30000,
+      difficulty: 4,
+      rulesVersion: 2,
+    );
+
+    await cubit.recordResult(result);
+
+    expect(cubit.data.history.single.completedAt, isNotNull);
+    expect(cubit.data.history.single.isLegacy, isFalse);
+  });
 }
 
 GameResult _result(
   int day,
   double score, {
   GameMode mode = GameMode.standard,
+  int difficulty = 4,
 }) => GameResult(
   type: GameType.colorClash,
   mode: mode,
@@ -55,7 +82,7 @@ GameResult _result(
   normalized: score,
   accuracy: .9,
   durationMs: 30000,
-  difficulty: 4,
+  difficulty: difficulty,
   completedAt: DateTime.utc(2026, 1, day),
   rulesVersion: 2,
 );
