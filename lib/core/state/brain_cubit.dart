@@ -194,7 +194,8 @@ class BrainCubit extends Cubit<BrainViewState> {
     final reflex = draft.results.firstWhere(
       (e) => e.type == GameType.reflexTap,
     );
-    final speed = ((value(GameType.oddOneOut) + reflex.normalized) / 2).round();
+    final speed =
+        ((value(GameType.visualSearch) + reflex.normalized) / 2).round();
     final answers = draft.results.where((e) => e.type != GameType.reflexTap);
     final attempts = answers.fold<int>(0, (s, e) => s + e.attempts),
         correct = answers.fold<int>(0, (s, e) => s + e.correct);

@@ -24,9 +24,27 @@ enum BuddyMood {
   workoutComplete,
 }
 
-enum GameType { colorClash, mathBlitz, memoryTiles, reflexTap, oddOneOut }
+enum SkillDomain { focus, calculation, memory, reaction, visualSearch }
 
-enum GameMode { classic, endless, timeAttack, personalBest, zen, official }
+enum GameType {
+  colorClash,
+  mathBlitz,
+  memoryTiles,
+  reflexTap,
+  visualSearch,
+}
+
+enum GameMode {
+  standard,
+  relaxed,
+  personalBest,
+  official,
+  // Kept only while old snapshots and callers migrate to the focused modes.
+  classic,
+  endless,
+  timeAttack,
+  zen,
+}
 
 enum GameLifecycle { initial, countdown, running, paused, feedback, completed }
 
@@ -36,23 +54,41 @@ extension GameTypeX on GameType {
     GameType.mathBlitz => 'Math Blitz',
     GameType.memoryTiles => 'Memory Tiles',
     GameType.reflexTap => 'Reflex Tap',
-    GameType.oddOneOut => 'Odd One Out',
+    GameType.visualSearch => 'Visual Search',
+  };
+  SkillDomain get skill => switch (this) {
+    GameType.colorClash => SkillDomain.focus,
+    GameType.mathBlitz => SkillDomain.calculation,
+    GameType.memoryTiles => SkillDomain.memory,
+    GameType.reflexTap => SkillDomain.reaction,
+    GameType.visualSearch => SkillDomain.visualSearch,
   };
   String get domain => switch (this) {
     GameType.colorClash => 'Focus',
-    GameType.mathBlitz => 'Math',
+    GameType.mathBlitz => 'Calculation',
     GameType.memoryTiles => 'Memory',
     GameType.reflexTap => 'Reaction',
-    GameType.oddOneOut => 'Speed',
+    GameType.visualSearch => 'Visual search',
   };
   String get emoji => switch (this) {
     GameType.colorClash => '🎨',
     GameType.mathBlitz => '➗',
     GameType.memoryTiles => '🧩',
     GameType.reflexTap => '⚡',
-    GameType.oddOneOut => '🔎',
+    GameType.visualSearch => '🔎',
   };
 }
+
+GameType gameTypeFromName(String name) => switch (name) {
+  'oddOneOut' => GameType.visualSearch,
+  _ => GameType.values.byName(name),
+};
+
+GameMode gameModeFromName(String name) => switch (name) {
+  'classic' || 'endless' || 'timeAttack' => GameMode.standard,
+  'zen' => GameMode.relaxed,
+  _ => GameMode.values.byName(name),
+};
 
 class GameResult {
   const GameResult({
@@ -68,6 +104,11 @@ class GameResult {
     this.correct = 0,
     this.attempts = 0,
     this.checkpoints = const [],
+    this.id,
+    this.completedAt,
+    this.rulesVersion = 1,
+    this.metrics = const {},
+    this.isLegacy = false,
   });
   final GameType type;
   final GameMode mode;
@@ -81,6 +122,16 @@ class GameResult {
   final int correct;
   final int attempts;
   final List<int> checkpoints;
+  final String? id;
+  final DateTime? completedAt;
+  final int rulesVersion;
+  final Map<String, double> metrics;
+  final bool isLegacy;
+
+  bool get contributesToTrends =>
+      !isLegacy &&
+      completedAt != null &&
+      (mode == GameMode.standard || mode == GameMode.official);
 
   Map<String, dynamic> toJson() => {
     'type': type.name,
@@ -95,10 +146,14 @@ class GameResult {
     'correct': correct,
     'attempts': attempts,
     'checkpoints': checkpoints,
+    'id': id,
+    'completedAt': completedAt?.toIso8601String(),
+    'rulesVersion': rulesVersion,
+    'metrics': metrics,
   };
   factory GameResult.fromJson(Map<String, dynamic> j) => GameResult(
-    type: GameType.values.byName(j['type'] as String),
-    mode: GameMode.values.byName(j['mode'] as String),
+    type: gameTypeFromName(j['type'] as String),
+    mode: gameModeFromName(j['mode'] as String),
     score: j['score'] as int,
     normalized: (j['normalized'] as num).toDouble(),
     accuracy: (j['accuracy'] as num).toDouble(),
@@ -109,25 +164,36 @@ class GameResult {
     correct: j['correct'] as int? ?? 0,
     attempts: j['attempts'] as int? ?? 0,
     checkpoints: List<int>.from(j['checkpoints'] as List? ?? const []),
+    id: j['id'] as String?,
+    completedAt: j['completedAt'] == null
+        ? null
+        : DateTime.tryParse(j['completedAt'] as String),
+    rulesVersion: j['rulesVersion'] as int? ?? 0,
+    metrics: (j['metrics'] as Map? ?? const {}).map(
+      (key, value) => MapEntry(key as String, (value as num).toDouble()),
+    ),
+    isLegacy: j['completedAt'] == null || j['rulesVersion'] == null,
   );
 }
 
 class DailySummary {
   const DailySummary({
     required this.date,
-    required this.brainScore,
-    required this.focus,
-    required this.memory,
-    required this.speed,
-    required this.math,
-    required this.accuracy,
+    this.brainScore = 0,
+    this.focus = 0,
+    this.memory = 0,
+    this.speed = 0,
+    this.math = 0,
+    this.accuracy = 0,
     this.reactionMs,
     required this.results,
+    this.skillRatings = const {},
   });
   final String date;
   final int brainScore, focus, memory, speed, math, accuracy;
   final int? reactionMs;
   final List<GameResult> results;
+  final Map<SkillDomain, double> skillRatings;
   Map<String, dynamic> toJson() => {
     'date': date,
     'brainScore': brainScore,
@@ -138,6 +204,7 @@ class DailySummary {
     'accuracy': accuracy,
     'reactionMs': reactionMs,
     'results': results.map((e) => e.toJson()).toList(),
+    'skillRatings': skillRatings.map((key, value) => MapEntry(key.name, value)),
   };
   factory DailySummary.fromJson(Map<String, dynamic> j) => DailySummary(
     date: j['date'] as String,
@@ -151,6 +218,12 @@ class DailySummary {
     results: (j['results'] as List)
         .map((e) => GameResult.fromJson(Map<String, dynamic>.from(e as Map)))
         .toList(),
+    skillRatings: (j['skillRatings'] as Map? ?? const {}).map(
+      (key, value) => MapEntry(
+        SkillDomain.values.byName(key as String),
+        (value as num).toDouble(),
+      ),
+    ),
   );
 }
 

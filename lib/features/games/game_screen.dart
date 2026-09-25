@@ -125,7 +125,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
         _nextMemory();
       case GameType.reflexTap:
         _scheduleReflex();
-      case GameType.oddOneOut:
+      case GameType.visualSearch:
         _nextOdd();
     }
     _startTimer();
@@ -569,7 +569,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
               GameType.mathBlitz => _math(),
               GameType.memoryTiles => _memory(),
               GameType.reflexTap => _reflex(),
-              GameType.oddOneOut => _odd(),
+              GameType.visualSearch => _odd(),
             },
           ),
           if (widget.mode == GameMode.zen)
