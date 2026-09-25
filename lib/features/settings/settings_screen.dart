@@ -48,8 +48,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   title: const Text('Dark mode'),
                   subtitle: Text(
                     d.theme == BrainTheme.daydream
-                        ? 'Light storybook colors are active'
-                        : 'Dark arcade colors are active',
+                        ? 'Light colors are active'
+                        : 'Dark colors are active',
                   ),
                 ),
                 Padding(
@@ -160,14 +160,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   leading: Icon(Icons.health_and_safety_outlined),
                   title: Text('Mental exercise, not medicine'),
                   subtitle: Text(
-                    'BrainFlex does not measure IQ, diagnose conditions, or make health claims.',
+                    'BrainFlex tracks performance in its trained tasks. It does not measure IQ, diagnose conditions, or make health claims.',
                   ),
                 ),
                 const AboutListTile(
                   icon: Icon(Icons.info_outline),
                   applicationName: 'BrainFlex',
                   applicationVersion: '1.0.0',
-                  applicationLegalese: 'A playful offline brain-training game.',
+                  applicationLegalese: 'Private, offline cognitive practice.',
                 ),
               ],
             ),
@@ -197,9 +197,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
         title: Text(title),
       );
   String _themeName(BrainTheme t) => switch (t) {
-    BrainTheme.midnight => 'Midnight Brain Lab',
+    BrainTheme.midnight => 'Midnight',
     BrainTheme.oled => 'True Black OLED',
-    BrainTheme.daydream => 'Daydream Lab',
+    BrainTheme.daydream => 'Daylight',
     BrainTheme.highContrast => 'High Contrast',
   };
   Future<void> _toggleReminder(bool value, BrainState d) async {
@@ -247,7 +247,7 @@ class PrivacyScreen extends StatelessWidget {
         ),
         const SizedBox(height: 20),
         Text(
-          'Your brain world stays yours.',
+          'Your training data stays yours.',
           style: Theme.of(
             context,
           ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w900),
@@ -255,11 +255,11 @@ class PrivacyScreen extends StatelessWidget {
         ),
         const SizedBox(height: 20),
         const Text(
-          'BrainFlex does not require an account. Gameplay history, progress, settings, and cosmetics are stored locally on your device. There is no backend, cloud sync, analytics service, or user-generated content.',
+          'BrainFlex does not require an account. Session history, personal baselines, progress, and settings are stored locally on your device. There is no backend, cloud sync, advertising SDK, product analytics service, or user-generated content.',
         ),
         const SizedBox(height: 14),
         const Text(
-          'The advertising surfaces in this MVP are clearly labeled local demonstrations. They do not contact an ad network, create an advertising identifier, or track you.',
+          'Standard and daily sessions contribute to personal trends. Relaxed practice is kept separate so it cannot distort measured progress.',
         ),
         const SizedBox(height: 14),
         const Text(
