@@ -11,6 +11,10 @@ class AppSnapshots extends Table {
   Set<Column<Object>> get primaryKey => {key};
 }
 
+@TableIndex(
+  name: 'game_records_type_played_at',
+  columns: {#gameType, #playedAtMs},
+)
 class StoredGameRecords extends Table {
   IntColumn get id => integer().autoIncrement()();
   TextColumn get gameType => text()();
@@ -41,6 +45,21 @@ class AppDatabase extends _$AppDatabase {
           ),
         ),
       );
+  AppDatabase.forTesting(super.e);
+
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
+
+  @override
+  MigrationStrategy get migration => MigrationStrategy(
+    onCreate: (m) => m.createAll(),
+    onUpgrade: (m, from, to) async {
+      if (from < 2) {
+        await customStatement(
+          'CREATE INDEX IF NOT EXISTS game_records_type_played_at '
+          'ON stored_game_records (game_type, played_at_ms)',
+        );
+      }
+    },
+  );
 }

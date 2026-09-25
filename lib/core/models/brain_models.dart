@@ -26,13 +26,7 @@ enum BuddyMood {
 
 enum SkillDomain { focus, calculation, memory, reaction, visualSearch }
 
-enum GameType {
-  colorClash,
-  mathBlitz,
-  memoryTiles,
-  reflexTap,
-  visualSearch,
-}
+enum GameType { colorClash, mathBlitz, memoryTiles, reflexTap, visualSearch }
 
 enum GameMode {
   standard,
@@ -132,6 +126,31 @@ class GameResult {
       !isLegacy &&
       completedAt != null &&
       (mode == GameMode.standard || mode == GameMode.official);
+
+  GameResult copyWith({
+    String? id,
+    DateTime? completedAt,
+    int? rulesVersion,
+    bool? isLegacy,
+  }) => GameResult(
+    type: type,
+    mode: mode,
+    score: score,
+    normalized: normalized,
+    accuracy: accuracy,
+    durationMs: durationMs,
+    difficulty: difficulty,
+    bestCombo: bestCombo,
+    reactionMs: reactionMs,
+    correct: correct,
+    attempts: attempts,
+    checkpoints: checkpoints,
+    id: id ?? this.id,
+    completedAt: completedAt ?? this.completedAt,
+    rulesVersion: rulesVersion ?? this.rulesVersion,
+    metrics: metrics,
+    isLegacy: isLegacy ?? this.isLegacy,
+  );
 
   Map<String, dynamic> toJson() => {
     'type': type.name,
@@ -448,7 +467,9 @@ class BrainState {
     'mood': mood.name,
     'difficulties': difficulties,
     'daily': daily.map((e) => e.toJson()).toList(),
-    'history': history.map((e) => e.toJson()).toList(),
+    // Timestamped sessions live in Drift. Only snapshot-only legacy records
+    // remain here so old personal bests survive without unbounded duplication.
+    'history': history.where((e) => e.isLegacy).map((e) => e.toJson()).toList(),
     'missions': missions.map((e) => e.toJson()).toList(),
     'achievements': achievements.toList(),
     'unlocked': unlocked.toList(),

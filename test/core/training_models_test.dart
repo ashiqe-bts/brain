@@ -82,8 +82,5 @@ void main() {
   });
 }
 
-DailySummary _summary(String date) => DailySummary(
-  date: date,
-  results: const [],
-  skillRatings: const {},
-);
+DailySummary _summary(String date) =>
+    DailySummary(date: date, results: const [], skillRatings: const {});
