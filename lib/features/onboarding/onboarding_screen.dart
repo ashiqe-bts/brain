@@ -118,7 +118,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       children: [
         LinearProgressIndicator(value: 1 / 3),
         SizedBox(height: 12),
-        Text('Workout 1 of 3 begins after onboarding'),
+        Text('Your first five-game rotation begins after onboarding'),
       ],
     ),
   );

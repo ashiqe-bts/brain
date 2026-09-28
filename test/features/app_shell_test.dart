@@ -48,8 +48,10 @@ void main() {
     await tester.tap(find.byIcon(Icons.insights_rounded));
     await tester.pumpAndSettle();
 
-    expect(find.text('FIVE-SKILL PROFILE'), findsOneWidget);
-    expect(find.text('Baseline 0 of 3'), findsOneWidget);
+    expect(find.text('FIFTEEN-GAME PROFILE'), findsOneWidget);
+    expect(find.text('0 of 15 game baselines ready'), findsOneWidget);
+    expect(find.text('All'), findsOneWidget);
+    expect(find.byTooltip('Research basis for Color Clash'), findsOneWidget);
   });
 
   testWidgets('supports 200 percent text and high contrast navigation', (

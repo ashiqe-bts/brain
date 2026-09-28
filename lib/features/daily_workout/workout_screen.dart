@@ -56,7 +56,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
             mode: GameMode.official,
             difficulty: cubit.data.difficulties[type.name] ?? 1,
             randomSeed: stableSeed(
-              '${draft.date}|${type.name}|${cubit.data.difficulties[type.name] ?? 1}|2',
+              '${draft.date}|${type.name}|${cubit.data.difficulties[type.name] ?? 1}|${type.rulesVersion}',
             ),
           ),
         ),
@@ -85,7 +85,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
   Widget build(BuildContext context) {
     final draft = context.watch<BrainCubit>().state.data.draft;
     final complete = draft?.results.length ?? 0;
-    final total = draft?.order.length ?? GameType.values.length;
+    final total = draft?.order.length ?? 5;
     return Scaffold(
       appBar: AppBar(title: const Text('DAILY TRAINING')),
       body: SafeArea(
@@ -97,7 +97,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
               const Icon(Icons.fitness_center_rounded, size: 72),
               const SizedBox(height: 18),
               Text(
-                status ?? 'Five standardized skill rounds',
+                status ?? 'Five games from your balanced rotation',
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                   fontWeight: FontWeight.w900,
@@ -158,9 +158,9 @@ class WorkoutResultScreen extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              baselineStatus(data.daily).isComplete
+              baselineStatus(data.history).isComplete
                   ? 'Results are compared only with compatible sessions.'
-                  : 'Baseline ${baselineStatus(data.daily).completed} of 3 complete.',
+                  : '${baselineStatus(data.history).readyGames} of ${activeGames.length} game baselines ready.',
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 20),
@@ -204,7 +204,7 @@ class WorkoutResultScreen extends StatelessWidget {
               ),
             const SizedBox(height: 8),
             const Text(
-              'These results describe performance in BrainFlex tasks, not IQ or a medical assessment.',
+              'These results describe performance in practiced BrainFlex tasks, not IQ, a medical assessment, or proof of everyday cognitive change.',
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 20),
@@ -226,8 +226,19 @@ class WorkoutResultScreen extends StatelessWidget {
     if (result.type == GameType.reflexTap && result.reactionMs != null) {
       return '$accuracy · ${result.reactionMs} ms median reaction';
     }
+    final falseStarts = result.metrics['falseStarts']?.round() ?? 0;
+    if (result.type == GameType.signalStop) {
+      return '$accuracy · $falseStarts false start${falseStarts == 1 ? '' : 's'}';
+    }
     final span = result.metrics['span']?.round() ?? 0;
-    if (result.type == GameType.memoryTiles && span > 0) {
+    if (span > 0 &&
+        const {
+          GameType.memoryTiles,
+          GameType.nBackNavigator,
+          GameType.pairLink,
+          GameType.objectTracker,
+          GameType.towerPlanner,
+        }.contains(result.type)) {
       return '$accuracy · span $span';
     }
     final response = result.metrics['medianResponseMs']?.round() ?? 0;

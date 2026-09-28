@@ -1,19 +1,37 @@
 import 'dart:math';
 
 import '../models/brain_models.dart';
+import 'game_catalog.dart';
 
 enum BaselineState { building, complete }
 
 class BaselineStatus {
-  const BaselineStatus({required this.completed, this.required = 3});
+  const BaselineStatus({required this.games});
 
-  final int completed;
-  final int required;
+  final Map<GameType, GameBaselineStatus> games;
 
-  int get remaining => max(0, required - completed);
-  bool get isComplete => completed >= required;
+  int get completedRounds =>
+      games.values.fold(0, (sum, item) => sum + item.completed);
+  int get requiredRounds => activeGames.length * 3;
+  int get completed => completedRounds;
+  int get required => requiredRounds;
+  int get remaining => max(0, requiredRounds - completedRounds);
+  int get readyGames => games.values.where((item) => item.isComplete).length;
+  bool get isComplete => readyGames == activeGames.length;
   BaselineState get state =>
       isComplete ? BaselineState.complete : BaselineState.building;
+
+  GameBaselineStatus forGame(GameType type) =>
+      games[type] ?? const GameBaselineStatus(completed: 0);
+}
+
+class GameBaselineStatus {
+  const GameBaselineStatus({required this.completed});
+
+  final int completed;
+  int get required => 3;
+  int get remaining => max(0, required - completed);
+  bool get isComplete => completed >= required;
 }
 
 enum TrendDirection { insufficient, stable, improving, needsAttention }
@@ -62,8 +80,31 @@ class SessionComparison {
   final double? previousDelta;
 }
 
-BaselineStatus baselineStatus(List<DailySummary> daily) =>
-    BaselineStatus(completed: min(3, daily.length));
+BaselineStatus baselineStatus(Iterable<Object> source) {
+  final results = source.expand<GameResult>((item) sync* {
+    if (item is GameResult) yield item;
+    if (item is DailySummary) yield* item.results;
+  }).toList();
+  return BaselineStatus(
+    games: {
+      for (final game in activeGames)
+        game: GameBaselineStatus(
+          completed: min(
+            3,
+            results
+                .where(
+                  (result) =>
+                      result.type == game &&
+                      result.mode == GameMode.official &&
+                      result.rulesVersion == game.rulesVersion &&
+                      !result.isLegacy,
+                )
+                .length,
+          ),
+        ),
+    },
+  );
+}
 
 double trainingLevel({required int difficulty, required double score}) {
   final safeDifficulty = difficulty.clamp(1, 10);
@@ -72,11 +113,16 @@ double trainingLevel({required int difficulty, required double score}) {
       10;
 }
 
-int adaptDifficulty(int current, Iterable<double> recentScores) {
+int adaptDifficulty(
+  int current,
+  Iterable<double> recentScores, {
+  double masteryScore = 85,
+  double struggleScore = 60,
+}) {
   final scores = recentScores.take(3).toList();
   if (scores.length < 3) return current.clamp(1, 10);
-  final mastered = scores.where((score) => score >= 85).length;
-  final struggling = scores.where((score) => score < 60).length;
+  final mastered = scores.where((score) => score >= masteryScore).length;
+  final struggling = scores.where((score) => score < struggleScore).length;
   if (mastered >= 2) return min(10, current + 1);
   if (struggling >= 2) return max(1, current - 1);
   return current.clamp(1, 10);
@@ -127,10 +173,7 @@ SkillTrend skillTrend(GameType type, Iterable<GameResult> history) {
   final eligible = history
       .where((result) => result.type == type && result.contributesToTrends)
       .toList();
-  final latestRules = eligible.fold<int>(
-    0,
-    (v, result) => max(v, result.rulesVersion),
-  );
+  final latestRules = type.rulesVersion;
   final sessions =
       eligible.where((result) => result.rulesVersion == latestRules).toList()
         ..sort((a, b) => a.completedAt!.compareTo(b.completedAt!));
@@ -188,9 +231,9 @@ WeeklyReview weeklyReview({
     return date != null && !date.isBefore(start);
   }).length;
   final trends = {
-    for (final type in GameType.values) type: skillTrend(type, history),
+    for (final type in activeGames) type: skillTrend(type, history),
   };
-  final ranked = [...GameType.values]
+  final ranked = [...activeGames]
     ..sort((a, b) {
       final aTrend = trends[a]!;
       final bTrend = trends[b]!;
@@ -233,6 +276,29 @@ String sessionTip(GameResult result) {
           : 'Keep your finger relaxed and compare results on the same device.',
     GameType.visualSearch =>
       'Scan in a consistent path instead of jumping randomly around the grid.',
+    GameType.signalStop =>
+      'Prioritize successful stops; fast go responses only help when control stays accurate.',
+    GameType.peripheralFocus =>
+      'Keep your gaze centered and use peripheral vision instead of chasing the target.',
+    GameType.nBackNavigator =>
+      'Update one position at a time instead of rehearsing the whole sequence.',
+    GameType.ruleSwitch =>
+      'Read the rule cue before the item, especially immediately after a switch.',
+    GameType.arrowGuard =>
+      'Anchor attention on the center arrow and let the surrounding arrows blur.',
+    GameType.pairLink =>
+      'Create a quick mental connection between each pair before recall begins.',
+    GameType.symbolSprint =>
+      'Check the key before answering; accuracy builds speed more reliably than guessing.',
+    GameType.objectTracker =>
+      'Spread attention across the targets instead of following only one object.',
+    GameType.towerPlanner => 'Plan the first two moves before touching a disk.',
+    GameType.dualTaskDash =>
+      'Use a steady rhythm and protect accuracy on both tasks.',
+    GameType.logicSeries =>
+      'Look for one changing feature at a time before combining rules.',
+    GameType.spatialRotation =>
+      'Choose one distinctive corner and mentally track it through the rotation.',
   };
 }
 
@@ -245,26 +311,6 @@ double _medianDouble(Iterable<double> values) {
       : (sorted[middle - 1] + sorted[middle]) / 2;
 }
 
-class GameScore {
-  const GameScore({
-    required this.normalized,
-    required this.accuracyContribution,
-    required this.paceContribution,
-    required this.penalty,
-  });
-
-  final double normalized;
-  final double accuracyContribution;
-  final double paceContribution;
-  final double penalty;
-
-  Map<String, double> toJson() => {
-    'accuracy': accuracyContribution,
-    'pace': paceContribution,
-    'penalty': penalty,
-  };
-}
-
 GameScore scoreGameDetails({
   required GameType type,
   required int difficulty,
@@ -273,27 +319,14 @@ GameScore scoreGameDetails({
   int span = 0,
   int falseStarts = 0,
 }) {
-  final safeAccuracy = accuracy.clamp(0, 1);
-  final pace = switch (type) {
-    GameType.colorClash => _pace(medianResponseMs, fast: 450, slow: 1600),
-    GameType.mathBlitz => _pace(medianResponseMs, fast: 900, slow: 3500),
-    GameType.memoryTiles => (span / max(1, 4 + difficulty)).clamp(0, 1),
-    GameType.reflexTap => _pace(medianResponseMs, fast: 180, slow: 700),
-    GameType.visualSearch => _pace(medianResponseMs, fast: 550, slow: 3000),
-  };
-  final accuracyWeight = type == GameType.reflexTap ? .35 : .7;
-  final accuracyContribution = 100 * safeAccuracy * accuracyWeight;
-  final paceContribution = 100 * pace * (1 - accuracyWeight);
-  final falseStartPenalty = type == GameType.reflexTap
-      ? falseStarts * 6.0
-      : 0.0;
-  return GameScore(
-    normalized: (accuracyContribution + paceContribution - falseStartPenalty)
-        .clamp(0, 100)
-        .toDouble(),
-    accuracyContribution: accuracyContribution,
-    paceContribution: paceContribution,
-    penalty: falseStartPenalty,
+  return gameDefinition(type).scorer(
+    GameScoreInput(
+      difficulty: difficulty,
+      accuracy: accuracy,
+      medianResponseMs: medianResponseMs,
+      span: span,
+      falseStarts: falseStarts,
+    ),
   );
 }
 
@@ -312,8 +345,3 @@ double scoreGame({
   span: span,
   falseStarts: falseStarts,
 ).normalized;
-
-double _pace(int value, {required int fast, required int slow}) {
-  if (value <= 0) return 0;
-  return ((slow - value) / (slow - fast)).clamp(0, 1).toDouble();
-}

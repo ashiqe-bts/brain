@@ -57,7 +57,7 @@ class NotificationService {
       title: 'Your BrainFlex workout is ready',
       body: streakWarning
           ? 'Your streak is still alive. Today’s workout takes about 4 minutes.'
-          : 'A short five-skill training session is ready.',
+          : 'Five games from your balanced training rotation are ready.',
       scheduledDate: when,
       notificationDetails: const NotificationDetails(
         android: AndroidNotificationDetails(

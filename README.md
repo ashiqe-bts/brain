@@ -1,22 +1,18 @@
 # BrainFlex
 
-BrainFlex is an offline personal cognitive gym built with Flutter. It helps people practise and measure their own performance in five tasks:
+BrainFlex is an offline personal cognitive gym built with Flutter. It contains 15 research-informed tasks spanning interference control, calculation, visual and working memory, response inhibition, processing speed, cognitive flexibility, attention, associative memory, planning, dual-task control, and spatial reasoning.
 
-- Focus — Color Clash
-- Calculation — Math Blitz
-- Memory — Memory Tiles
-- Reaction — Reflex Tap
-- Visual search — Visual Search
-
-The first three completed daily workouts form a progressive personal baseline. After that, BrainFlex shows compatible per-skill trends, weekly reviews, and suggested practice. It compares each user only with their own sessions under matching rules and conditions.
+Each daily workout contains five games. A deterministic three-workout cycle covers all 15 games once before reshuffling the next cycle. Every game builds its own baseline from three official results under the current rules version, so a complete baseline requires at least nine workouts.
 
 BrainFlex does not claim to measure IQ, diagnose a condition, prevent cognitive decline, or prove improvement outside its trained tasks.
 
+Every Train card includes a research-basis sheet naming the studied paradigm, population, source PMID, and important limitation. Evidence is described as research-informed rather than clinically proven because transfer beyond the trained or closely related task is often limited.
+
 ## Product behaviour
 
-- Today provides one standardized round for every skill, baseline status, streaks, and practice recommendations.
+- Today provides five games from the current balanced rotation, baseline status, streaks, and practice recommendations.
 - Train offers Standard, Relaxed, and Personal Best sessions.
-- Insights provides five separate skill profiles, history, rolling trends, weekly reviews, and achievements.
+- Insights provides 15 separate game profiles, history, rolling trends, weekly reviews, and achievements.
 - Standard and official sessions contribute to trends. Relaxed sessions are untimed and excluded.
 - Personal Best comparisons require the same game rules version and difficulty.
 - XP and the overall training level measure participation only. Skill levels are shown separately with raw metrics.

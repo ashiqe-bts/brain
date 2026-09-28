@@ -9,6 +9,7 @@ import '../../core/training/training_analytics.dart';
 import '../../core/widgets/common.dart';
 import '../../app/theme/brain_theme.dart';
 import 'game_engine.dart';
+import 'research_game_screen.dart';
 
 class GameScreen extends StatefulWidget {
   const GameScreen({
@@ -31,6 +32,12 @@ class GameScreen extends StatefulWidget {
 }
 
 class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
+  bool get usesResearchGame =>
+      widget.type != GameType.colorClash &&
+      widget.type != GameType.mathBlitz &&
+      widget.type != GameType.reflexTap &&
+      widget.type != GameType.visualSearch;
+
   late final Random random;
   late final GameTrialFactory trialFactory;
   late final List<ColorTrial> colorTrials;
@@ -53,14 +60,13 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
   late ColorTrial colorTrial;
   late MathTrial mathTrial;
   late VisualSearchTrial visualTrial;
-  int memoryRound = 0, gridSize = 4;
-  int maxMemorySpan = 0;
-  Set<int> memoryTarget = {}, memorySelected = {};
-  bool memoryShowing = true;
   int reflexTrial = -1, falseStarts = 0;
   bool reflexGo = false;
   final reactions = <int>[];
   final responseTimes = <int>[];
+  final colorConditionAttempts = <String, int>{};
+  final colorConditionCorrect = <String, int>{};
+  final colorConditionTimes = <String, List<int>>{};
   bool? lastAnswerCorrect;
   static const names = ['RED', 'BLUE', 'GREEN', 'YELLOW'];
   @override
@@ -77,6 +83,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
     colorTrials = trialFactory.colorTrials(120);
     mathTrials = trialFactory.mathTrials(widget.difficulty, count: 120);
     timeLeft = 30;
+    if (usesResearchGame) return;
     _countdown();
   }
 
@@ -131,19 +138,30 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
       case GameType.mathBlitz:
         _nextMath();
       case GameType.memoryTiles:
-        _nextMemory();
+        return;
       case GameType.reflexTap:
         _scheduleReflex();
       case GameType.visualSearch:
         _nextOdd();
+      case GameType.signalStop ||
+          GameType.peripheralFocus ||
+          GameType.nBackNavigator ||
+          GameType.ruleSwitch ||
+          GameType.arrowGuard ||
+          GameType.pairLink ||
+          GameType.symbolSprint ||
+          GameType.objectTracker ||
+          GameType.towerPlanner ||
+          GameType.dualTaskDash ||
+          GameType.logicSeries ||
+          GameType.spatialRotation:
+        return;
     }
     _startTimer();
   }
 
   bool get timed =>
-      widget.mode != GameMode.relaxed &&
-      widget.type != GameType.memoryTiles &&
-      widget.type != GameType.reflexTap;
+      widget.mode != GameMode.relaxed && widget.type != GameType.reflexTap;
   void _startTimer() {
     if (!timed) return;
     timer?.cancel();
@@ -168,10 +186,23 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
   }
 
   void _answerColor(int value) {
-    _answer(
-      value == colorTrial.colorIndex,
-      responseMs: trialWatch.elapsedMilliseconds,
+    final condition = colorTrial.isCongruent ? 'congruent' : 'incongruent';
+    final ok = value == colorTrial.colorIndex;
+    final responseMs = trialWatch.elapsedMilliseconds;
+    colorConditionAttempts.update(
+      condition,
+      (count) => count + 1,
+      ifAbsent: () => 1,
     );
+    if (ok) {
+      colorConditionCorrect.update(
+        condition,
+        (count) => count + 1,
+        ifAbsent: () => 1,
+      );
+      colorConditionTimes.putIfAbsent(condition, () => []).add(responseMs);
+    }
+    _answer(ok, responseMs: responseMs);
     _nextColor();
   }
 
@@ -235,53 +266,6 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
     setState(() {});
   }
 
-  void _nextMemory() {
-    const roundTarget = 3;
-    if (memoryRound >= roundTarget) {
-      _finish();
-      return;
-    }
-    gridSize = widget.difficulty >= 7
-        ? 6
-        : widget.difficulty >= 4
-        ? 5
-        : 4;
-    final count = min(
-      gridSize * gridSize - 1,
-      3 + widget.difficulty + memoryRound,
-    );
-    memoryTarget = {};
-    while (memoryTarget.length < count) {
-      memoryTarget.add(random.nextInt(gridSize * gridSize));
-    }
-    memorySelected = {};
-    memoryShowing = true;
-    setState(() {});
-    delayTimer = Timer(
-      Duration(milliseconds: max(900, 1800 - widget.difficulty * 80)),
-      () {
-        if (mounted) setState(() => memoryShowing = false);
-      },
-    );
-  }
-
-  void _tapMemory(int i) {
-    if (memoryShowing) return;
-    setState(() => memorySelected.add(i));
-    if (memorySelected.length >= memoryTarget.length) {
-      attempts += memoryTarget.length;
-      final hits = memorySelected.intersection(memoryTarget).length;
-      correct += hits;
-      score += hits;
-      mistakes += memoryTarget.length - hits;
-      if (hits == memoryTarget.length) {
-        maxMemorySpan = max(maxMemorySpan, memoryTarget.length);
-      }
-      memoryRound++;
-      delayTimer = Timer(const Duration(milliseconds: 350), _nextMemory);
-    }
-  }
-
   void _scheduleReflex() {
     if (reflexTrial >= 5) {
       _finish();
@@ -340,7 +324,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
       difficulty: widget.difficulty,
       accuracy: accuracy,
       medianResponseMs: responseMedian,
-      span: maxMemorySpan,
+      span: 0,
       falseStarts: falseStarts,
     );
     final reaction = widget.type == GameType.reflexTap && responseMedian > 0
@@ -360,16 +344,22 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
       attempts: attempts,
       checkpoints: checkpoints,
       completedAt: widget.now?.call() ?? DateTime.now(),
-      rulesVersion: 2,
+      rulesVersion: widget.type.rulesVersion,
       metrics: {
         'medianResponseMs': responseMedian.toDouble(),
         'falseStarts': falseStarts.toDouble(),
-        'span': maxMemorySpan.toDouble(),
-        'exposureDurationMs': max(
-          900,
-          1800 - widget.difficulty * 80,
-        ).toDouble(),
-        'rounds': memoryRound.toDouble(),
+        for (final entry in colorConditionAttempts.entries)
+          '${entry.key}Attempts': entry.value.toDouble(),
+        for (final entry in colorConditionCorrect.entries)
+          '${entry.key}Correct': entry.value.toDouble(),
+        for (final entry in colorConditionTimes.entries)
+          '${entry.key}MedianMs': medianMilliseconds(entry.value).toDouble(),
+        if (colorConditionTimes.containsKey('congruent') &&
+            colorConditionTimes.containsKey('incongruent'))
+          'interferenceCostMs':
+              (medianMilliseconds(colorConditionTimes['incongruent']!) -
+                      medianMilliseconds(colorConditionTimes['congruent']!))
+                  .toDouble(),
       },
       scoreComponents: scoreDetails.toJson(),
     );
@@ -447,6 +437,16 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
+    if (usesResearchGame) {
+      return ResearchGameScreen(
+        type: widget.type,
+        mode: widget.mode,
+        difficulty: widget.difficulty,
+        personalBest: widget.personalBest,
+        randomSeed: widget.randomSeed,
+        now: widget.now,
+      );
+    }
     return PopScope(
       canPop: lifecycle == GameLifecycle.completed,
       onPopInvokedWithResult: (didPop, _) {
@@ -572,9 +572,10 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
             child: switch (widget.type) {
               GameType.colorClash => _color(),
               GameType.mathBlitz => _math(),
-              GameType.memoryTiles => _memory(),
+              GameType.memoryTiles => const SizedBox.shrink(),
               GameType.reflexTap => _reflex(),
               GameType.visualSearch => _visualSearch(),
+              _ => const SizedBox.shrink(),
             },
           ),
           if (widget.mode == GameMode.relaxed)
@@ -661,66 +662,6 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
             ),
           ),
         ],
-      ),
-    ],
-  );
-  Widget _memory() => Column(
-    mainAxisAlignment: MainAxisAlignment.center,
-    children: [
-      Text(
-        memoryShowing ? 'Remember the glowing tiles' : 'Repeat the pattern',
-        style: Theme.of(context).textTheme.titleMedium,
-      ),
-      const SizedBox(height: 20),
-      AspectRatio(
-        aspectRatio: 1,
-        child: GridView.builder(
-          physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: gridSize,
-            mainAxisSpacing: 7,
-            crossAxisSpacing: 7,
-          ),
-          itemCount: gridSize * gridSize,
-          itemBuilder: (context, i) {
-            final active = memoryShowing
-                ? memoryTarget.contains(i)
-                : memorySelected.contains(i);
-            return Semantics(
-              label: 'Memory tile ${i + 1}',
-              button: true,
-              child: InkWell(
-                onTap: () => _tapMemory(i),
-                borderRadius: BorderRadius.circular(10),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 180),
-                  decoration: BoxDecoration(
-                    color: active
-                        ? Theme.of(context).colorScheme.secondary
-                        : Theme.of(context).colorScheme.surfaceContainerHighest,
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(
-                      color: Theme.of(
-                        context,
-                      ).extension<BrainPalette>()!.outline,
-                      width: 3,
-                    ),
-                    boxShadow: active
-                        ? [
-                            BoxShadow(
-                              color: Theme.of(
-                                context,
-                              ).colorScheme.secondary.withValues(alpha: .5),
-                              blurRadius: 12,
-                            ),
-                          ]
-                        : null,
-                  ),
-                ),
-              ),
-            );
-          },
-        ),
       ),
     ],
   );

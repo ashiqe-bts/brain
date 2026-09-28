@@ -2,7 +2,7 @@
 
 ## 1. Product intent
 
-BrainFlex is an offline personal training app for practising five specific cognitive tasks. It is designed for all ages in the sense that its instructions are universally understandable and its feedback is based on self-comparison rather than age norms.
+BrainFlex is an offline personal training app for practising 15 research-informed cognitive tasks. It is designed for all ages in the sense that its instructions are broadly understandable and its feedback is based on self-comparison rather than age norms.
 
 The product promise is deliberately narrow: BrainFlex helps users practise and measure performance in the tasks included in the app. It must not claim to measure IQ, diagnose or prevent a medical condition, or establish improvement in general real-world cognition.
 
@@ -20,21 +20,21 @@ The product promise is deliberately narrow: BrainFlex helps users practise and m
 ### Today
 
 - Shows the daily standardized workout, baseline status, current streak, workout count, and participation XP.
-- A daily workout contains one official round from each of the five skills.
+- A daily workout contains five official rounds from a deterministic three-workout rotation that covers every active game once per cycle.
 - Each completed round is saved so an interrupted workout can resume safely.
 - After baseline completion, recommends optional practice for the two least-trained or weakest-trending skills.
 
 ### Train
 
-- Lists all five games with their skill, current difficulty, and compatible personal best.
+- Lists all 15 active games grouped by cognitive domain, with current difficulty, compatible personal best, and a transparent research-basis sheet.
 - Standard mode contributes comparable data.
 - Relaxed mode is untimed and excluded from performance trends.
 - Personal Best mode compares only against compatible runs using the same rules version and difficulty.
 
 ### Insights
 
-- Shows baseline progress, five separate skill profiles, recent sessions, weekly review, workout calendar, and achievements.
-- Never combines the five skills into a composite cognitive score.
+- Shows per-game baseline progress, 15 separate game profiles, recent sessions, weekly review, workout calendar, and achievements.
+- Never combines the games into a composite cognitive score.
 - Always displays a skill level together with raw measures such as accuracy, span, or median response time.
 
 ## 4. Training tasks
@@ -53,22 +53,25 @@ The product promise is deliberately narrow: BrainFlex helps users practise and m
 
 ### Memory — Memory Tiles
 
-- Present an increasing sequence or set of highlighted tiles for recall.
-- Measure maximum span, recall accuracy, exposure duration, and round progression.
+- Present a tile pattern briefly, change exactly one tile, and ask the user to identify the change.
+- Measure change-detection accuracy, capacity, and exposure duration.
 
-### Reaction — Reflex Tap
+### Additional active tasks
 
-- Use a monotonic stopwatch.
-- Include one unmeasured warm-up trial followed by measured trials.
-- Measure median latency and false starts.
-- Explain that hardware and display differences can affect device-to-device comparisons.
+- Signal Stop trains response inhibition with variable go/stop trials.
+- Peripheral Focus combines central identification with peripheral localization.
+- N-Back Navigator trains working-memory updating from one- to three-back.
+- Rule Switch measures accuracy and switch cost across changing classification rules.
+- Arrow Guard uses congruent and incongruent flanker trials.
+- Pair Link trains abstract paired-associate recall.
+- Symbol Sprint uses a changing symbol-number substitution key.
+- Object Tracker trains distributed attention across moving targets.
+- Tower Planner uses constrained minimum-move planning problems.
+- Dual Task Dash requires simultaneous counting and classification.
+- Logic Series uses adaptive inductive sequences.
+- Spatial Rotation compares rotated and mirrored abstract shapes.
 
-### Visual Search
-
-- Present a target followed by a distractor grid containing exactly one match.
-- Systematically vary orientation, shape, fill, colour, and target position.
-- Measure accuracy and median correct-search time.
-- Shape, fill, and orientation must keep the task playable without colour perception.
+Reflex Tap and the earlier Visual Search task are archived. Their stored results remain readable but they are excluded from active workouts, adaptation, missions, and recommendations.
 
 ## 5. Scoring and comparability
 
@@ -83,7 +86,7 @@ Skill training levels range from 1.0 to 10.0. They combine the played difficulty
 
 ## 6. Baseline and adaptation
 
-The first three completed daily workouts form the progressive baseline. Before completion, Insights shows `workout N of 3`, partial results, and a clear confidence limitation.
+Each game forms its own progressive baseline from three official results under its current rules version. A balanced rotation can complete all 15 baselines after nine workouts. Insights shows partial per-game progress and does not label a trend until that game also has three compatible post-baseline observations.
 
 After each comparable session, difficulty reviews the latest three sessions at the same game, rules version, and difficulty:
 
@@ -144,8 +147,8 @@ Release candidates require:
 
 Profile targets are a cold interactive startup under two seconds, input feedback on the next rendered frame, no recurring build or raster frame over 16.7 ms during ordinary 60 Hz gameplay, and no full-history decoding or database scan on a gameplay path.
 
-Automated coverage includes every engine and scorer, seeded generation, adaptation boundaries, comparison rules, baseline and rolling trends, weekly recommendation, streaks, migration, all five game screens, pause/quit, reviews, Insights states, accessibility configurations, restart/persistence, and removal of retired product surfaces.
+Automated coverage includes every engine and scorer, seeded generation, rotation coverage, adaptation boundaries, comparison rules, per-game baselines and rolling trends, weekly recommendation, streaks, migration, all 15 game screens, pause/quit, reviews, Insights states, accessibility configurations, and restart/persistence.
 
 ## 11. Out of scope
 
-This release does not include additional games, leaderboards, social competition, AI coaching, accounts, cloud sync, a backend, ads, age norms, diagnosis, clinical claims, or scored gameplay modifiers.
+This release does not include leaderboards, social competition, AI coaching, accounts, cloud sync, a backend, ads, age norms, diagnosis, clinical claims, or scored gameplay modifiers.

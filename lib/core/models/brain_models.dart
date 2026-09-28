@@ -3,9 +3,57 @@ import 'dart:math';
 
 enum BrainTheme { midnight, oled, daydream, highContrast }
 
-enum SkillDomain { focus, calculation, memory, reaction, visualSearch }
+enum SkillDomain {
+  focus,
+  calculation,
+  memory,
+  reaction,
+  visualSearch,
+  executiveControl,
+  processingSpeed,
+  reasoning,
+  spatial,
+}
 
-enum GameType { colorClash, mathBlitz, memoryTiles, reflexTap, visualSearch }
+enum GameType {
+  colorClash,
+  mathBlitz,
+  memoryTiles,
+  reflexTap,
+  visualSearch,
+  signalStop,
+  peripheralFocus,
+  nBackNavigator,
+  ruleSwitch,
+  arrowGuard,
+  pairLink,
+  symbolSprint,
+  objectTracker,
+  towerPlanner,
+  dualTaskDash,
+  logicSeries,
+  spatialRotation,
+}
+
+const activeGames = <GameType>[
+  GameType.colorClash,
+  GameType.mathBlitz,
+  GameType.memoryTiles,
+  GameType.signalStop,
+  GameType.peripheralFocus,
+  GameType.nBackNavigator,
+  GameType.ruleSwitch,
+  GameType.arrowGuard,
+  GameType.pairLink,
+  GameType.symbolSprint,
+  GameType.objectTracker,
+  GameType.towerPlanner,
+  GameType.dualTaskDash,
+  GameType.logicSeries,
+  GameType.spatialRotation,
+];
+
+const archivedGames = <GameType>{GameType.reflexTap, GameType.visualSearch};
 
 enum GameMode { standard, relaxed, personalBest, official }
 
@@ -21,6 +69,18 @@ extension GameTypeX on GameType {
     GameType.memoryTiles => 'Memory Tiles',
     GameType.reflexTap => 'Reflex Tap',
     GameType.visualSearch => 'Visual Search',
+    GameType.signalStop => 'Signal Stop',
+    GameType.peripheralFocus => 'Peripheral Focus',
+    GameType.nBackNavigator => 'N-Back Navigator',
+    GameType.ruleSwitch => 'Rule Switch',
+    GameType.arrowGuard => 'Arrow Guard',
+    GameType.pairLink => 'Pair Link',
+    GameType.symbolSprint => 'Symbol Sprint',
+    GameType.objectTracker => 'Object Tracker',
+    GameType.towerPlanner => 'Tower Planner',
+    GameType.dualTaskDash => 'Dual Task Dash',
+    GameType.logicSeries => 'Logic Series',
+    GameType.spatialRotation => 'Spatial Rotation',
   };
   SkillDomain get skill => switch (this) {
     GameType.colorClash => SkillDomain.focus,
@@ -28,6 +88,18 @@ extension GameTypeX on GameType {
     GameType.memoryTiles => SkillDomain.memory,
     GameType.reflexTap => SkillDomain.reaction,
     GameType.visualSearch => SkillDomain.visualSearch,
+    GameType.signalStop => SkillDomain.executiveControl,
+    GameType.peripheralFocus => SkillDomain.processingSpeed,
+    GameType.nBackNavigator => SkillDomain.memory,
+    GameType.ruleSwitch => SkillDomain.executiveControl,
+    GameType.arrowGuard => SkillDomain.focus,
+    GameType.pairLink => SkillDomain.memory,
+    GameType.symbolSprint => SkillDomain.processingSpeed,
+    GameType.objectTracker => SkillDomain.focus,
+    GameType.towerPlanner => SkillDomain.reasoning,
+    GameType.dualTaskDash => SkillDomain.executiveControl,
+    GameType.logicSeries => SkillDomain.reasoning,
+    GameType.spatialRotation => SkillDomain.spatial,
   };
   String get domain => switch (this) {
     GameType.colorClash => 'Focus',
@@ -35,6 +107,18 @@ extension GameTypeX on GameType {
     GameType.memoryTiles => 'Memory',
     GameType.reflexTap => 'Reaction',
     GameType.visualSearch => 'Visual search',
+    GameType.signalStop => 'Response inhibition',
+    GameType.peripheralFocus => 'Visual processing speed',
+    GameType.nBackNavigator => 'Working memory',
+    GameType.ruleSwitch => 'Cognitive flexibility',
+    GameType.arrowGuard => 'Selective attention',
+    GameType.pairLink => 'Associative memory',
+    GameType.symbolSprint => 'Processing speed',
+    GameType.objectTracker => 'Divided attention',
+    GameType.towerPlanner => 'Planning',
+    GameType.dualTaskDash => 'Dual-task control',
+    GameType.logicSeries => 'Inductive reasoning',
+    GameType.spatialRotation => 'Spatial reasoning',
   };
   String get emoji => switch (this) {
     GameType.colorClash => '🎨',
@@ -42,7 +126,27 @@ extension GameTypeX on GameType {
     GameType.memoryTiles => '🧩',
     GameType.reflexTap => '⚡',
     GameType.visualSearch => '🔎',
+    GameType.signalStop => '🛑',
+    GameType.peripheralFocus => '👁️',
+    GameType.nBackNavigator => '🧭',
+    GameType.ruleSwitch => '🔀',
+    GameType.arrowGuard => '➡️',
+    GameType.pairLink => '🔗',
+    GameType.symbolSprint => '🔣',
+    GameType.objectTracker => '🎯',
+    GameType.towerPlanner => '🏰',
+    GameType.dualTaskDash => '🎛️',
+    GameType.logicSeries => '🧠',
+    GameType.spatialRotation => '🔄',
   };
+
+  int get rulesVersion => switch (this) {
+    GameType.colorClash || GameType.mathBlitz || GameType.memoryTiles => 3,
+    GameType.reflexTap || GameType.visualSearch => 2,
+    _ => 1,
+  };
+
+  bool get isActive => activeGames.contains(this);
 }
 
 GameType gameTypeFromName(String name) => switch (name) {
@@ -122,6 +226,11 @@ final class VisualSearchMetrics extends RawGameMetrics {
   final int medianCorrectSearchMs;
 }
 
+final class GenericGameMetrics extends RawGameMetrics {
+  const GenericGameMetrics(this.values);
+  final Map<String, double> values;
+}
+
 class GameResult {
   const GameResult({
     required this.type,
@@ -188,6 +297,7 @@ class GameResult {
     GameType.visualSearch => VisualSearchMetrics(
       metrics['medianResponseMs']?.round() ?? 0,
     ),
+    _ => GenericGameMetrics(metrics),
   };
 
   bool get contributesToTrends =>
@@ -280,12 +390,14 @@ class DailySummary {
     this.reactionMs,
     required this.results,
     this.skillRatings = const {},
+    this.gameRatings = const {},
   });
   final String date;
   final int brainScore, focus, memory, speed, math, accuracy;
   final int? reactionMs;
   final List<GameResult> results;
   final Map<SkillDomain, double> skillRatings;
+  final Map<GameType, double> gameRatings;
   Map<String, dynamic> toJson() => {
     'date': date,
     'brainScore': brainScore,
@@ -297,6 +409,7 @@ class DailySummary {
     'reactionMs': reactionMs,
     'results': results.map((e) => e.toJson()).toList(),
     'skillRatings': skillRatings.map((key, value) => MapEntry(key.name, value)),
+    'gameRatings': gameRatings.map((key, value) => MapEntry(key.name, value)),
   };
   factory DailySummary.fromJson(Map<String, dynamic> j) => DailySummary(
     date: j['date'] as String,
@@ -315,6 +428,10 @@ class DailySummary {
         SkillDomain.values.byName(key as String),
         (value as num).toDouble(),
       ),
+    ),
+    gameRatings: (j['gameRatings'] as Map? ?? const {}).map(
+      (key, value) =>
+          MapEntry(gameTypeFromName(key as String), (value as num).toDouble()),
     ),
   );
 }
@@ -519,8 +636,15 @@ int stableSeed(String input) {
   return hash;
 }
 
-List<GameType> dailyOrder(String date) {
-  final list = [...GameType.values];
-  list.shuffle(Random(stableSeed('$date|2|brainflex-training')));
-  return list;
+List<GameType> dailyOrderForWorkout(int completedWorkouts) {
+  final safeIndex = max(0, completedWorkouts);
+  final cycle = safeIndex ~/ 3;
+  final slot = safeIndex % 3;
+  final cycleGames = [...activeGames]
+    ..shuffle(Random(stableSeed('cycle|$cycle|brainflex-training-v3')));
+  return List.unmodifiable(cycleGames.skip(slot * 5).take(5));
 }
+
+@Deprecated('Use dailyOrderForWorkout so skipped dates do not lose coverage.')
+List<GameType> dailyOrder(String date) =>
+    dailyOrderForWorkout(stableSeed(date) % 3);

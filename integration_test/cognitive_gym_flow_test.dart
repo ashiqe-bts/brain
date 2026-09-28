@@ -11,7 +11,7 @@ import 'package:integration_test/integration_test.dart';
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
-  testWidgets('first launch and persisted three-workout baseline flow', (
+  testWidgets('first launch and persisted per-game baseline flow', (
     tester,
   ) async {
     final database = AppDatabase.forTesting(NativeDatabase.memory());
@@ -33,7 +33,7 @@ void main() {
     await repository.save(
       BrainState(
         onboarded: true,
-        workouts: 3,
+        workouts: 9,
         daily: [
           _summary('2026-09-21'),
           _summary('2026-09-22'),
@@ -41,6 +41,25 @@ void main() {
         ],
       ),
     );
+    for (var repetition = 0; repetition < 3; repetition++) {
+      for (final game in activeGames) {
+        await repository.saveGame(
+          GameResult(
+            type: game,
+            mode: GameMode.official,
+            score: 80,
+            normalized: 80,
+            accuracy: .8,
+            durationMs: 30000,
+            difficulty: 3,
+            completedAt: DateTime.utc(2026, 9, 21 + repetition),
+            rulesVersion: game.rulesVersion,
+            correct: 8,
+            attempts: 10,
+          ),
+        );
+      }
+    }
     final restoredCubit = BrainCubit(repository, await repository.load());
     addTearDown(restoredCubit.close);
 
@@ -51,8 +70,8 @@ void main() {
     await tester.tap(find.text('Insights'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Personal baseline complete'), findsOneWidget);
-    expect(find.text('FIVE-SKILL PROFILE'), findsOneWidget);
+    expect(find.text('All game baselines complete'), findsOneWidget);
+    expect(find.text('FIFTEEN-GAME PROFILE'), findsOneWidget);
   });
 }
 

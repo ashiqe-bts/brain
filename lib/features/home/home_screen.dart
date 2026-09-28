@@ -17,7 +17,7 @@ class HomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final data = context.watch<BrainCubit>().state.data;
     final done = data.daily.any((summary) => summary.date == localDate());
-    final baseline = baselineStatus(data.daily);
+    final baseline = baselineStatus(data.history);
     final review = weeklyReview(daily: data.daily, history: data.history);
     return Scaffold(
       appBar: AppBar(
@@ -150,16 +150,14 @@ class HomeScreen extends StatelessWidget {
             const SizedBox(height: 12),
             Text(
               done
-                  ? 'Five skills trained today'
-                  : '5 standardized rounds · about 5 minutes',
+                  ? 'Five research-informed tasks trained today'
+                  : '5 of 15 rotating tasks · about 5 minutes',
               style: Theme.of(
                 context,
               ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w900),
             ),
             const SizedBox(height: 8),
-            const Text(
-              'Focus · Calculation · Memory · Reaction · Visual search',
-            ),
+            const Text('A balanced three-workout cycle covers every game.'),
             const SizedBox(height: 18),
             ArcadeButton(
               expanded: true,
@@ -204,16 +202,20 @@ class HomeScreen extends StatelessWidget {
                 ),
               ),
             ),
-            Text('${baseline.completed}/${baseline.required}'),
+            Text('${baseline.readyGames}/${activeGames.length} games'),
           ],
         ),
         const SizedBox(height: 10),
-        LinearProgressIndicator(value: baseline.completed / baseline.required),
+        LinearProgressIndicator(
+          value: baseline.required == 0
+              ? 0
+              : baseline.completed / baseline.required,
+        ),
         const SizedBox(height: 10),
         Text(
           baseline.isComplete
               ? 'Insights compare you with your own compatible sessions.'
-              : '${baseline.remaining} more daily workout${baseline.remaining == 1 ? '' : 's'} before trend guidance unlocks.',
+              : '${baseline.remaining} more compatible game round${baseline.remaining == 1 ? '' : 's'} across the rotation. Each game unlocks its own baseline after three rounds.',
         ),
       ],
     ),

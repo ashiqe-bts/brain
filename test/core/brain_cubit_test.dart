@@ -52,7 +52,7 @@ void main() {
   });
 
   test('recorded sessions always receive a completion timestamp', () async {
-    const result = GameResult(
+    final result = GameResult(
       type: GameType.colorClash,
       mode: GameMode.standard,
       score: 8,
@@ -60,7 +60,7 @@ void main() {
       accuracy: .8,
       durationMs: 30000,
       difficulty: 4,
-      rulesVersion: 2,
+      rulesVersion: GameType.colorClash.rulesVersion,
     );
 
     await cubit.recordResult(result);
@@ -68,6 +68,40 @@ void main() {
     expect(cubit.data.history.single.completedAt, isNotNull);
     expect(cubit.data.history.single.isLegacy, isFalse);
   });
+
+  test(
+    'daily workout uses five-game rotation and stores dynamic ratings',
+    () async {
+      await cubit.startWorkout();
+      final order = cubit.data.draft!.order;
+      expect(order, dailyOrderForWorkout(0));
+      expect(order, hasLength(5));
+
+      for (final game in order) {
+        await cubit.recordResult(
+          GameResult(
+            type: game,
+            mode: GameMode.official,
+            score: 80,
+            normalized: 80,
+            accuracy: .8,
+            durationMs: 30000,
+            difficulty: 4,
+            completedAt: DateTime.utc(2026, 1, 1),
+            rulesVersion: game.rulesVersion,
+            correct: 8,
+            attempts: 10,
+          ),
+        );
+      }
+
+      final summary = await cubit.completeWorkout();
+      expect(summary, isNotNull);
+      expect(summary!.results.map((result) => result.type), order);
+      expect(summary.gameRatings.keys.toSet(), order.toSet());
+      expect(cubit.data.workouts, 1);
+    },
+  );
 }
 
 GameResult _result(
@@ -84,5 +118,5 @@ GameResult _result(
   durationMs: 30000,
   difficulty: difficulty,
   completedAt: DateTime.utc(2026, 1, day),
-  rulesVersion: 2,
+  rulesVersion: GameType.colorClash.rulesVersion,
 );

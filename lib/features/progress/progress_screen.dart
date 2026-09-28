@@ -6,7 +6,9 @@ import '../../app/theme/brain_theme.dart';
 import '../../core/models/brain_models.dart';
 import '../../core/state/brain_cubit.dart';
 import '../../core/training/training_analytics.dart';
+import '../../core/training/game_catalog.dart';
 import '../../core/widgets/common.dart';
+import '../games/research_basis_sheet.dart';
 
 class ProgressScreen extends StatefulWidget {
   const ProgressScreen({super.key});
@@ -17,12 +19,14 @@ class ProgressScreen extends StatefulWidget {
 
 class _ProgressScreenState extends State<ProgressScreen> {
   int monthOffset = 0;
+  SkillDomain? selectedDomain;
 
   @override
   Widget build(BuildContext context) {
     final data = context.watch<BrainCubit>().state.data;
-    final baseline = baselineStatus(data.daily);
+    final baseline = baselineStatus(data.history);
     final review = weeklyReview(daily: data.daily, history: data.history);
+    final domains = activeGames.map((game) => game.skill).toSet().toList();
     return Scaffold(
       appBar: AppBar(toolbarHeight: 70, title: const Text('INSIGHTS')),
       body: SafeArea(
@@ -36,11 +40,45 @@ class _ProgressScreenState extends State<ProgressScreen> {
                 child: Column(
                   children: [
                     _baseline(context, baseline),
-                    const SectionTitle('Five-skill profile'),
-                    ...GameType.values.map(
-                      (game) =>
-                          _skillCard(context, game, review.trends[game]!, data),
+                    const SectionTitle('Fifteen-game profile'),
+                    Semantics(
+                      label: 'Filter insights by cognitive domain',
+                      child: Wrap(
+                        alignment: WrapAlignment.center,
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          FilterChip(
+                            label: const Text('All'),
+                            selected: selectedDomain == null,
+                            onSelected: (_) =>
+                                setState(() => selectedDomain = null),
+                          ),
+                          for (final domain in domains)
+                            FilterChip(
+                              label: Text(_domainLabel(domain)),
+                              selected: selectedDomain == domain,
+                              onSelected: (_) =>
+                                  setState(() => selectedDomain = domain),
+                            ),
+                        ],
+                      ),
                     ),
+                    for (final domain in domains)
+                      if (selectedDomain == null ||
+                          selectedDomain == domain) ...[
+                        SectionTitle(_domainLabel(domain)),
+                        ...activeGames
+                            .where((game) => game.skill == domain)
+                            .map(
+                              (game) => _skillCard(
+                                context,
+                                game,
+                                review.trends[game]!,
+                                data,
+                              ),
+                            ),
+                      ],
                     const SectionTitle('Weekly review'),
                     _weeklyReview(context, review, baseline.isComplete),
                     const SectionTitle('Recent sessions'),
@@ -76,8 +114,8 @@ class _ProgressScreenState extends State<ProgressScreen> {
             Expanded(
               child: Text(
                 baseline.isComplete
-                    ? 'Personal baseline complete'
-                    : 'Baseline ${baseline.completed} of ${baseline.required}',
+                    ? 'All game baselines complete'
+                    : '${baseline.readyGames} of ${activeGames.length} game baselines ready',
                 style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w900,
@@ -92,7 +130,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
         Text(
           baseline.isComplete
               ? 'Trends use comparable, versioned sessions and rolling medians.'
-              : 'Complete ${baseline.remaining} more daily workout${baseline.remaining == 1 ? '' : 's'}. Early results are shown without trend claims.',
+              : '${baseline.remaining} compatible game round${baseline.remaining == 1 ? '' : 's'} remain. Individual games unlock after three official results.',
         ),
       ],
     ),
@@ -109,6 +147,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
             .where(
               (result) => result.type == game && result.contributesToTrends,
             )
+            .where((result) => result.rulesVersion == game.rulesVersion)
             .toList()
           ..sort(
             (a, b) => (b.completedAt ?? DateTime(1970)).compareTo(
@@ -144,15 +183,22 @@ class _ProgressScreenState extends State<ProgressScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        game.domain,
+                        game.title,
                         style: const TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.w900,
                         ),
                       ),
-                      Text('${trend.samples} comparable sessions'),
+                      Text(
+                        '${game.domain} · ${trend.samples} comparable sessions',
+                      ),
                     ],
                   ),
+                ),
+                IconButton(
+                  tooltip: 'Research basis for ${game.title}',
+                  onPressed: () => showResearchBasisSheet(context, game),
+                  icon: const Icon(Icons.science_outlined),
                 ),
                 Icon(icon),
                 const SizedBox(width: 6),
@@ -175,14 +221,23 @@ class _ProgressScreenState extends State<ProgressScreen> {
     );
   }
 
+  String _domainLabel(SkillDomain domain) => switch (domain) {
+    SkillDomain.focus => 'Focus and attention',
+    SkillDomain.calculation => 'Calculation',
+    SkillDomain.memory => 'Memory',
+    SkillDomain.reaction => 'Reaction',
+    SkillDomain.visualSearch => 'Visual search',
+    SkillDomain.executiveControl => 'Executive control',
+    SkillDomain.processingSpeed => 'Processing speed',
+    SkillDomain.reasoning => 'Reasoning and planning',
+    SkillDomain.spatial => 'Spatial reasoning',
+  };
+
   String _metric(GameResult result) {
     if (result.type == GameType.reflexTap && result.reactionMs != null) {
       return ' · ${result.reactionMs} ms median';
     }
-    final span = result.metrics['span']?.round() ?? 0;
-    if (result.type == GameType.memoryTiles && span > 0) return ' · span $span';
-    final response = result.metrics['medianResponseMs']?.round() ?? 0;
-    return response > 0 ? ' · $response ms median' : '';
+    return gameDefinition(result.type).rawMetricFormatter(result.metrics);
   }
 
   Widget _weeklyReview(
@@ -201,7 +256,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
         Text(
           baselineReady
               ? 'Next week, prioritize ${review.recommendations.map((item) => item.game.domain).join(' and ')}.'
-              : 'Recommendations unlock after your three-workout baseline.',
+              : 'Recommendations unlock after all per-game baselines are ready.',
         ),
         const SizedBox(height: 8),
         const Text(

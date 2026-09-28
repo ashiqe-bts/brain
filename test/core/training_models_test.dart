@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:brainflex/core/models/brain_models.dart';
+import 'package:brainflex/core/training/game_catalog.dart';
 import 'package:brainflex/core/training/training_analytics.dart';
 
 void main() {
@@ -25,6 +26,47 @@ void main() {
 
       expect(migrated[GameType.visualSearch.name], 6);
       expect(migrated, isNot(contains('oddOneOut')));
+    });
+  });
+
+  group('research-informed game catalog', () {
+    test('contains fifteen active and two archived games', () {
+      expect(activeGames, hasLength(15));
+      expect(activeGames.toSet(), hasLength(15));
+      expect(archivedGames, {GameType.reflexTap, GameType.visualSearch});
+      expect(activeGames, isNot(contains(GameType.reflexTap)));
+      expect(activeGames, isNot(contains(GameType.visualSearch)));
+    });
+
+    test('three consecutive workouts cover every active game once', () {
+      final rounds = [
+        dailyOrderForWorkout(0),
+        dailyOrderForWorkout(1),
+        dailyOrderForWorkout(2),
+      ];
+
+      expect(rounds.every((round) => round.length == 5), isTrue);
+      expect(rounds.expand((round) => round).toSet(), activeGames.toSet());
+      expect(rounds.expand((round) => round), hasLength(15));
+    });
+
+    test('rotation is stable for the same workout number', () {
+      expect(dailyOrderForWorkout(7), dailyOrderForWorkout(7));
+    });
+
+    test('every active game has a transparent research note', () {
+      for (final game in activeGames) {
+        final definition = gameDefinition(game);
+        expect(definition.instructions, isNotEmpty, reason: game.name);
+        expect(definition.evidence.summary, isNotEmpty, reason: game.name);
+        expect(definition.evidence.population, isNotEmpty, reason: game.name);
+        expect(definition.evidence.limitation, isNotEmpty, reason: game.name);
+        expect(definition.evidence.reference, contains('PMID'));
+        expect(definition.supportedModes, contains(GameMode.official));
+        expect(definition.minimumDifficulty, 1);
+        expect(definition.maximumDifficulty, 10);
+        expect(definition.rawMetricFormatter(const {}), isA<String>());
+      }
     });
   });
 
@@ -71,24 +113,79 @@ void main() {
     });
   });
 
-  group('progressive baseline', () {
-    test('requires three completed daily workouts', () {
-      expect(baselineStatus(const []).remaining, 3);
-      expect(
-        baselineStatus([
-          _summary('2026-01-01'),
-          _summary('2026-01-02'),
-        ]).remaining,
-        1,
+  group('per-game baseline', () {
+    test('requires three current official results for every active game', () {
+      final history = <GameResult>[];
+      for (var repetition = 0; repetition < 3; repetition++) {
+        for (final game in activeGames) {
+          history.add(
+            _result(
+              day: repetition + 1,
+              normalized: 80,
+              type: game,
+              rulesVersion: game.rulesVersion,
+            ),
+          );
+        }
+      }
+
+      final status = baselineStatus(history);
+      expect(status.completedRounds, 45);
+      expect(status.requiredRounds, 45);
+      expect(status.isComplete, isTrue);
+      expect(status.forGame(GameType.colorClash).isComplete, isTrue);
+
+      final incomplete = baselineStatus(history.take(44));
+      expect(incomplete.completedRounds, 44);
+      expect(incomplete.isComplete, isFalse);
+    });
+
+    test('ignores relaxed and older-rule results', () {
+      final game = GameType.colorClash;
+      final status = baselineStatus([
+        _result(
+          day: 1,
+          normalized: 80,
+          type: game,
+          mode: GameMode.relaxed,
+          rulesVersion: game.rulesVersion,
+        ),
+        _result(
+          day: 2,
+          normalized: 80,
+          type: game,
+          rulesVersion: game.rulesVersion - 1,
+        ),
+      ]);
+
+      expect(status.forGame(game).completed, 0);
+      expect(status.isComplete, isFalse);
+    });
+  });
+
+  group('daily summary compatibility', () {
+    test('round-trips dynamic per-game ratings', () {
+      final summary = DailySummary(
+        date: '2026-01-01',
+        results: const [],
+        gameRatings: const {
+          GameType.signalStop: 3.2,
+          GameType.logicSeries: 4.1,
+        },
       );
-      expect(
-        baselineStatus([
-          _summary('2026-01-01'),
-          _summary('2026-01-02'),
-          _summary('2026-01-03'),
-        ]).isComplete,
-        isTrue,
-      );
+
+      final decoded = DailySummary.fromJson(summary.toJson());
+      expect(decoded.gameRatings[GameType.signalStop], 3.2);
+      expect(decoded.gameRatings[GameType.logicSeries], 4.1);
+    });
+
+    test('decodes older summaries without dynamic ratings', () {
+      final decoded = DailySummary.fromJson({
+        'date': '2025-12-01',
+        'results': <Object>[],
+      });
+
+      expect(decoded.gameRatings, isEmpty);
     });
   });
 
@@ -102,6 +199,13 @@ void main() {
       expect(adaptDifficulty(4, [42, 58, 75]), 3);
       expect(adaptDifficulty(4, [42, 72, 75]), 4);
       expect(adaptDifficulty(1, [20, 30, 80]), 1);
+    });
+
+    test('supports versioned game-specific mastery bands', () {
+      expect(
+        adaptDifficulty(4, [82, 83, 70], masteryScore: 82, struggleScore: 55),
+        5,
+      );
     });
   });
 
@@ -130,6 +234,24 @@ void main() {
       expect(trend.direction, TrendDirection.improving);
       expect(trend.delta, greaterThan(.2));
       expect(trend.samples, 6);
+    });
+
+    test('ignores results from an older rules version', () {
+      final current = _result(
+        day: 2,
+        normalized: 80,
+        rulesVersion: GameType.colorClash.rulesVersion,
+      );
+      final older = _result(
+        day: 1,
+        normalized: 100,
+        rulesVersion: GameType.colorClash.rulesVersion - 1,
+      );
+
+      final trend = skillTrend(GameType.colorClash, [older, current]);
+      expect(trend.samples, 1);
+      expect(trend.currentLevel, trainingLevel(difficulty: 4, score: 80));
+      expect(skillTrend(GameType.colorClash, [older]).samples, 0);
     });
 
     test('feedback recommends accuracy before speed', () {
@@ -186,8 +308,10 @@ GameResult _result({
   required double normalized,
   double accuracy = .9,
   GameMode mode = GameMode.official,
+  GameType type = GameType.colorClash,
+  int? rulesVersion,
 }) => GameResult(
-  type: GameType.colorClash,
+  type: type,
   mode: mode,
   score: normalized.round(),
   normalized: normalized,
@@ -195,5 +319,5 @@ GameResult _result({
   durationMs: 30000,
   difficulty: 4,
   completedAt: DateTime.utc(2026, 1, day),
-  rulesVersion: 2,
+  rulesVersion: rulesVersion ?? type.rulesVersion,
 );

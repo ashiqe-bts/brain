@@ -3,6 +3,7 @@ import 'package:brainflex/core/models/brain_models.dart';
 import 'package:brainflex/core/state/brain_cubit.dart';
 import 'package:brainflex/core/storage/app_database.dart';
 import 'package:brainflex/core/storage/brain_repository.dart';
+import 'package:brainflex/core/training/game_catalog.dart';
 import 'package:brainflex/features/games/game_screen.dart';
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
@@ -28,12 +29,8 @@ void main() {
     await repository.close();
   });
 
-  for (final entry in <GameType, String>{
-    GameType.colorClash: 'Tap the INK color, not the word',
-    GameType.mathBlitz: 'Is this equation correct?',
-    GameType.memoryTiles: 'Remember the glowing tiles',
-    GameType.reflexTap: 'WAIT…',
-    GameType.visualSearch: 'Find the target',
+  for (final entry in {
+    for (final game in activeGames) game: gameDefinition(game).instructions,
   }.entries) {
     testWidgets('${entry.key.name} starts with accessible instructions', (
       tester,
@@ -62,7 +59,7 @@ void main() {
     });
   }
 
-  testWidgets('visual search exposes target and grid semantics', (
+  testWidgets('peripheral focus exposes the trial and answer semantics', (
     tester,
   ) async {
     final semantics = tester.ensureSemantics();
@@ -72,7 +69,7 @@ void main() {
         child: MaterialApp(
           theme: buildBrainTheme(BrainTheme.midnight),
           home: const GameScreen(
-            type: GameType.visualSearch,
+            type: GameType.peripheralFocus,
             mode: GameMode.relaxed,
             difficulty: 1,
           ),
@@ -80,18 +77,22 @@ void main() {
       ),
     );
     await tester.pump(const Duration(milliseconds: 3100));
+    await tester.pump(const Duration(milliseconds: 1500));
 
     expect(
       find.byWidgetPredicate(
         (widget) =>
-            widget is Semantics && widget.properties.label == 'Target symbol',
+            widget is Semantics &&
+            (widget.properties.label ?? '').startsWith(
+              'Research game stimulus:',
+            ),
       ),
       findsOneWidget,
     );
     expect(
       find.byWidgetPredicate(
         (widget) =>
-            widget is Semantics && widget.properties.label == 'Search item 1',
+            widget is Semantics && widget.properties.label == 'Answer option 1',
       ),
       findsOneWidget,
     );

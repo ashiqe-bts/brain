@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../models/brain_models.dart';
 import '../storage/brain_repository.dart';
 import '../training/training_analytics.dart';
+import '../training/game_catalog.dart';
 
 class BrainViewState extends Equatable {
   const BrainViewState(this.data, this.revision, {this.ready = true});
@@ -35,7 +36,7 @@ class BrainCubit extends Cubit<BrainViewState> {
     final today = localDate();
     if (data.lastMissionDate != today) {
       final seeded = Random(stableSeed('$today|missions'));
-      final game = GameType.values[seeded.nextInt(GameType.values.length)];
+      final game = activeGames[seeded.nextInt(activeGames.length)];
       data.missions = [
         const Mission(
           id: 'workout',
@@ -112,7 +113,10 @@ class BrainCubit extends Cubit<BrainViewState> {
   Future<void> startWorkout() async {
     final today = localDate();
     if (data.daily.any((e) => e.date == today)) return;
-    data.draft ??= WorkoutDraft(date: today, order: dailyOrder(today));
+    data.draft ??= WorkoutDraft(
+      date: today,
+      order: dailyOrderForWorkout(data.workouts),
+    );
     await _commit();
   }
 
@@ -148,9 +152,12 @@ class BrainCubit extends Cubit<BrainViewState> {
             ),
           );
     if (recorded.contributesToTrends) {
+      final definition = gameDefinition(recorded.type);
       data.difficulties[recorded.type.name] = adaptDifficulty(
         recorded.difficulty,
         recentComparable.take(3).map((item) => item.normalized),
+        masteryScore: definition.masteryScore,
+        struggleScore: definition.struggleScore,
       );
     }
     if (recorded.mode == GameMode.official) {
@@ -179,14 +186,14 @@ class BrainCubit extends Cubit<BrainViewState> {
     GameType type,
     GameMode mode, {
     int? difficulty,
-    int rulesVersion = 2,
+    int? rulesVersion,
   }) {
     if (mode == GameMode.relaxed) return null;
     final items = data.history
         .where(
           (e) =>
               e.type == type &&
-              e.rulesVersion == rulesVersion &&
+              e.rulesVersion == (rulesVersion ?? type.rulesVersion) &&
               (difficulty == null || e.difficulty == difficulty) &&
               (mode == GameMode.personalBest
                   ? e.mode == GameMode.personalBest ||
@@ -208,18 +215,18 @@ class BrainCubit extends Cubit<BrainViewState> {
 
   Future<DailySummary?> completeWorkout() async {
     final draft = data.draft;
-    if (draft == null || draft.results.length < 5) return null;
-    int value(GameType g) =>
-        (draft.results.firstWhere((e) => e.type == g).normalized).round();
-    final focus = value(GameType.colorClash),
-        memory = value(GameType.memoryTiles),
-        math = value(GameType.mathBlitz);
-    final reflex = draft.results.firstWhere(
-      (e) => e.type == GameType.reflexTap,
-    );
-    final speed = ((value(GameType.visualSearch) + reflex.normalized) / 2)
-        .round();
-    final answers = draft.results.where((e) => e.type != GameType.reflexTap);
+    if (draft == null || draft.results.length < draft.order.length) return null;
+    int legacyValue(GameType game) =>
+        draft.results
+            .where((result) => result.type == game)
+            .map((result) => result.normalized.round())
+            .firstOrNull ??
+        0;
+    final focus = legacyValue(GameType.colorClash),
+        memory = legacyValue(GameType.memoryTiles),
+        math = legacyValue(GameType.mathBlitz),
+        speed = legacyValue(GameType.peripheralFocus);
+    final answers = draft.results;
     final attempts = answers.fold<int>(0, (s, e) => s + e.attempts),
         correct = answers.fold<int>(0, (s, e) => s + e.correct);
     final accuracy = attempts == 0 ? 0 : (100 * correct / attempts).round();
@@ -230,11 +237,18 @@ class BrainCubit extends Cubit<BrainViewState> {
       speed: speed,
       math: math,
       accuracy: accuracy,
-      reactionMs: reflex.reactionMs,
+      reactionMs: null,
       results: draft.results,
       skillRatings: {
         for (final result in draft.results)
           result.type.skill: trainingLevel(
+            difficulty: result.difficulty,
+            score: result.normalized,
+          ),
+      },
+      gameRatings: {
+        for (final result in draft.results)
+          result.type: trainingLevel(
             difficulty: result.difficulty,
             score: result.normalized,
           ),
