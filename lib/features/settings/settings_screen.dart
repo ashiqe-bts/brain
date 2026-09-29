@@ -53,18 +53,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
               children: [
                 _header('Appearance'),
                 SwitchListTile(
-                  value: d.theme != BrainTheme.daydream,
+                  value: d.theme != BrainTheme.calmLight,
                   onChanged: (dark) => context.read<BrainCubit>().setTheme(
-                    dark ? BrainTheme.midnight : BrainTheme.daydream,
+                    dark ? BrainTheme.calmDark : BrainTheme.calmLight,
                   ),
                   secondary: Icon(
-                    d.theme == BrainTheme.daydream
+                    d.theme == BrainTheme.calmLight
                         ? Icons.light_mode_rounded
                         : Icons.dark_mode_rounded,
                   ),
                   title: const Text('Dark mode'),
                   subtitle: Text(
-                    d.theme == BrainTheme.daydream
+                    d.theme == BrainTheme.calmLight
                         ? 'Light colors are active'
                         : 'Dark colors are active',
                   ),
@@ -227,9 +227,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
         title: Text(title),
       );
   String _themeName(BrainTheme t) => switch (t) {
-    BrainTheme.midnight => 'Midnight',
-    BrainTheme.oled => 'True Black OLED',
-    BrainTheme.daydream => 'Daylight',
+    BrainTheme.calmLight => 'Calm Light',
+    BrainTheme.calmDark => 'Calm Dark',
     BrainTheme.highContrast => 'High Contrast',
   };
   Future<void> _toggleReminder(bool value, BrainState d) async {

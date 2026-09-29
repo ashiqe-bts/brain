@@ -67,7 +67,7 @@ void main() {
       BlocProvider.value(
         value: cubit,
         child: MaterialApp(
-          theme: buildBrainTheme(BrainTheme.midnight),
+            theme: buildBrainTheme(BrainTheme.calmDark),
           home: const GameScreen(
             type: GameType.peripheralFocus,
             mode: GameMode.relaxed,

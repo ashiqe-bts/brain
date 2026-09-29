@@ -1,7 +1,14 @@
 import 'dart:convert';
 import 'dart:math';
 
-enum BrainTheme { midnight, oled, daydream, highContrast }
+enum BrainTheme { calmLight, calmDark, highContrast }
+
+BrainTheme brainThemeFromName(String? name) => switch (name) {
+  'calmDark' || 'midnight' || 'oled' => BrainTheme.calmDark,
+  'highContrast' => BrainTheme.highContrast,
+  'calmLight' || 'daydream' || null => BrainTheme.calmLight,
+  _ => BrainTheme.calmLight,
+};
 
 enum SkillDomain {
   focus,
@@ -527,7 +534,7 @@ class BrainState {
   BrainState({
     this.onboarded = false,
     this.displayName,
-    this.theme = BrainTheme.midnight,
+    this.theme = BrainTheme.calmLight,
     this.sound = true,
     this.music = true,
     this.haptics = true,
@@ -617,7 +624,7 @@ class BrainState {
     return BrainState(
       onboarded: j['onboarded'] as bool? ?? false,
       displayName: j['displayName'] as String?,
-      theme: BrainTheme.values.byName(j['theme'] as String? ?? 'midnight'),
+      theme: brainThemeFromName(j['theme'] as String?),
       sound: j['sound'] as bool? ?? true,
       music: j['music'] as bool? ?? true,
       haptics: j['haptics'] as bool? ?? true,

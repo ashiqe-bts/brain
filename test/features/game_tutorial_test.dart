@@ -59,7 +59,7 @@ void main() {
     bool? completed;
     await tester.pumpWidget(
       MaterialApp(
-        theme: buildBrainTheme(BrainTheme.midnight),
+        theme: buildBrainTheme(BrainTheme.calmDark),
         home: Builder(
           builder: (context) => FilledButton(
             onPressed: () async {
@@ -96,7 +96,7 @@ void main() {
   ) async {
     await tester.pumpWidget(
       MaterialApp(
-        theme: buildBrainTheme(BrainTheme.midnight),
+        theme: buildBrainTheme(BrainTheme.calmDark),
         home: const GameTutorialScreen(type: GameType.signalStop),
       ),
     );

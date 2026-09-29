@@ -18,6 +18,9 @@ class BrainPalette extends ThemeExtension<BrainPalette> {
     required this.highlight,
     required this.frame,
     required this.hud,
+    required this.textMuted,
+    required this.focus,
+    required this.warning,
   });
 
   final Color background,
@@ -34,6 +37,7 @@ class BrainPalette extends ThemeExtension<BrainPalette> {
       highlight,
       frame,
       hud;
+  final Color textMuted, focus, warning;
 
   @override
   BrainPalette copyWith({
@@ -51,6 +55,9 @@ class BrainPalette extends ThemeExtension<BrainPalette> {
     Color? highlight,
     Color? frame,
     Color? hud,
+    Color? textMuted,
+    Color? focus,
+    Color? warning,
   }) => BrainPalette(
     background: background ?? this.background,
     surface: surface ?? this.surface,
@@ -66,6 +73,9 @@ class BrainPalette extends ThemeExtension<BrainPalette> {
     highlight: highlight ?? this.highlight,
     frame: frame ?? this.frame,
     hud: hud ?? this.hud,
+    textMuted: textMuted ?? this.textMuted,
+    focus: focus ?? this.focus,
+    warning: warning ?? this.warning,
   );
 
   @override
@@ -87,58 +97,51 @@ class BrainPalette extends ThemeExtension<BrainPalette> {
       highlight: mix(highlight, other.highlight),
       frame: mix(frame, other.frame),
       hud: mix(hud, other.hud),
+      textMuted: mix(textMuted, other.textMuted),
+      focus: mix(focus, other.focus),
+      warning: mix(warning, other.warning),
     );
   }
 }
 
 BrainPalette paletteFor(BrainTheme theme) => switch (theme) {
-  BrainTheme.midnight => const BrainPalette(
-    background: Color(0xFF11172E),
-    surface: Color(0xFF263B52),
-    surfaceHigh: Color(0xFF35556D),
-    primary: Color(0xFFB33BFF),
-    secondary: Color(0xFF38C7FF),
-    reward: Color(0xFFFFD83D),
-    success: Color(0xFF80D42B),
-    danger: Color(0xFFFF4963),
-    text: Color(0xFFF9F7EF),
-    outline: Color(0xFF142735),
-    shadow: Color(0xFF07121A),
+  BrainTheme.calmLight => const BrainPalette(
+    background: Color(0xFFF4F7F5),
+    surface: Color(0xFFFFFFFF),
+    surfaceHigh: Color(0xFFE8F0EC),
+    primary: Color(0xFF126E68),
+    secondary: Color(0xFF315C83),
+    reward: Color(0xFFE9A23B),
+    success: Color(0xFF2E7D5A),
+    danger: Color(0xFFB64A4A),
+    text: Color(0xFF172B2A),
+    outline: Color(0xFFB7C9C4),
+    shadow: Color(0xFF0B2824),
     highlight: Color(0xFFFFFFFF),
-    frame: Color(0xFF4E6B7B),
-    hud: Color(0xFF1C3042),
+    frame: Color(0xFFD5E1DD),
+    hud: Color(0xFFEDF3F0),
+    textMuted: Color(0xFF536966),
+    focus: Color(0xFF315C83),
+    warning: Color(0xFF9A650D),
   ),
-  BrainTheme.oled => const BrainPalette(
-    background: Colors.black,
-    surface: Color(0xFF17171D),
-    surfaceHigh: Color(0xFF292A35),
-    primary: Color(0xFFC044FF),
-    secondary: Color(0xFF35CAFF),
-    reward: Color(0xFFFFD83D),
-    success: Color(0xFF7ED52D),
-    danger: Color(0xFFFF4963),
-    text: Colors.white,
-    outline: Color(0xFF050505),
-    shadow: Colors.black,
+  BrainTheme.calmDark => const BrainPalette(
+    background: Color(0xFF0F1B1C),
+    surface: Color(0xFF172728),
+    surfaceHigh: Color(0xFF213536),
+    primary: Color(0xFF6ED6CA),
+    secondary: Color(0xFF8EB8E0),
+    reward: Color(0xFFF3BB62),
+    success: Color(0xFF78CCA7),
+    danger: Color(0xFFFFA3A3),
+    text: Color(0xFFF2F7F5),
+    outline: Color(0xFF6F8884),
+    shadow: Color(0xFF000000),
     highlight: Color(0xFFFFFFFF),
-    frame: Color(0xFF41424F),
-    hud: Color(0xFF111116),
-  ),
-  BrainTheme.daydream => const BrainPalette(
-    background: Color(0xFFF0EFEC),
-    surface: Color(0xFFFFF4D8),
-    surfaceHigh: Color(0xFFFFFFFF),
-    primary: Color(0xFF8D2BD1),
-    secondary: Color(0xFF087FBC),
-    reward: Color(0xFFFFC62E),
-    success: Color(0xFF64AD1F),
-    danger: Color(0xFFD9324D),
-    text: Color(0xFF20333F),
-    outline: Color(0xFF1E3440),
-    shadow: Color(0xFFA8AFB1),
-    highlight: Color(0xFFFFFFFF),
-    frame: Color(0xFF9B482B),
-    hud: Color(0xFFD8E7ED),
+    frame: Color(0xFF334A49),
+    hud: Color(0xFF1B2F30),
+    textMuted: Color(0xFFB5C8C4),
+    focus: Color(0xFFF3BB62),
+    warning: Color(0xFFF3BB62),
   ),
   BrainTheme.highContrast => const BrainPalette(
     background: Colors.black,
@@ -155,12 +158,15 @@ BrainPalette paletteFor(BrainTheme theme) => switch (theme) {
     highlight: Colors.white,
     frame: Color(0xFFFFFF00),
     hud: Colors.black,
+    textMuted: Color(0xFFE4E4E4),
+    focus: Color(0xFFFFFF00),
+    warning: Color(0xFFFFD000),
   ),
 };
 
 ThemeData buildBrainTheme(BrainTheme value) {
   final p = paletteFor(value);
-  final light = value == BrainTheme.daydream;
+  final light = value == BrainTheme.calmLight;
   final onPrimary = contrastColorFor(p.primary, p);
   final onSecondary = contrastColorFor(p.secondary, p);
   final onError = contrastColorFor(p.danger, p);
@@ -206,29 +212,21 @@ ThemeData buildBrainTheme(BrainTheme value) {
     iconTheme: IconThemeData(color: p.text),
     textTheme: baseText.copyWith(
       displayLarge: baseText.displayLarge?.copyWith(
-        fontFamily: 'Fredoka',
         fontWeight: FontWeight.w700,
       ),
       displayMedium: baseText.displayMedium?.copyWith(
-        fontFamily: 'Fredoka',
         fontWeight: FontWeight.w700,
       ),
       headlineLarge: baseText.headlineLarge?.copyWith(
-        fontFamily: 'Fredoka',
         fontWeight: FontWeight.w700,
       ),
       headlineMedium: baseText.headlineMedium?.copyWith(
-        fontFamily: 'Fredoka',
         fontWeight: FontWeight.w700,
       ),
       headlineSmall: baseText.headlineSmall?.copyWith(
-        fontFamily: 'Fredoka',
         fontWeight: FontWeight.w700,
       ),
-      titleLarge: baseText.titleLarge?.copyWith(
-        fontFamily: 'Fredoka',
-        fontWeight: FontWeight.w700,
-      ),
+      titleLarge: baseText.titleLarge?.copyWith(fontWeight: FontWeight.w700),
     ),
     appBarTheme: AppBarTheme(
       backgroundColor: p.background,
@@ -236,8 +234,8 @@ ThemeData buildBrainTheme(BrainTheme value) {
       centerTitle: false,
       elevation: 0,
       titleTextStyle: TextStyle(
-        fontFamily: 'Fredoka',
-        fontSize: 24,
+        fontFamily: 'Nunito',
+        fontSize: 22,
         fontWeight: FontWeight.w700,
         color: p.text,
       ),
@@ -247,37 +245,26 @@ ThemeData buildBrainTheme(BrainTheme value) {
       elevation: 0,
       margin: EdgeInsets.zero,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(18),
-        side: BorderSide(color: p.outline, width: 3),
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: p.outline),
       ),
     ),
     filledButtonTheme: FilledButtonThemeData(
       style: FilledButton.styleFrom(
         minimumSize: const Size(88, 52),
-        backgroundColor: p.success,
-        foregroundColor: const Color(0xFF162A20),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(15),
-          side: BorderSide(color: p.outline, width: 3),
-        ),
-        textStyle: const TextStyle(
-          fontFamily: 'Fredoka',
-          fontWeight: FontWeight.w700,
-          fontSize: 16,
-          letterSpacing: .5,
-        ),
+        backgroundColor: p.primary,
+        foregroundColor: onPrimary,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        textStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
       ),
     ),
     outlinedButtonTheme: OutlinedButtonThemeData(
       style: OutlinedButton.styleFrom(
         minimumSize: const Size(88, 50),
         foregroundColor: p.text,
-        side: BorderSide(color: p.outline, width: 3),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-        textStyle: const TextStyle(
-          fontFamily: 'Fredoka',
-          fontWeight: FontWeight.w700,
-        ),
+        side: BorderSide(color: p.outline),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        textStyle: const TextStyle(fontWeight: FontWeight.w700),
       ),
     ),
     switchTheme: SwitchThemeData(
@@ -295,11 +282,11 @@ ThemeData buildBrainTheme(BrainTheme value) {
       labelStyle: TextStyle(color: p.text.withValues(alpha: .72)),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: p.outline, width: 2),
+        borderSide: BorderSide(color: p.outline),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: p.primary, width: 3),
+        borderSide: BorderSide(color: p.focus, width: 2),
       ),
     ),
     listTileTheme: ListTileThemeData(
@@ -311,7 +298,7 @@ ThemeData buildBrainTheme(BrainTheme value) {
       backgroundColor: p.surfaceHigh,
       selectedColor: p.reward,
       labelStyle: TextStyle(color: p.text, fontWeight: FontWeight.w700),
-      side: BorderSide(color: p.outline, width: 2),
+      side: BorderSide(color: p.outline),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
     ),
     snackBarTheme: SnackBarThemeData(
@@ -319,14 +306,14 @@ ThemeData buildBrainTheme(BrainTheme value) {
       contentTextStyle: TextStyle(color: contrastColorFor(p.hud, p)),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(14),
-        side: BorderSide(color: p.outline, width: 2),
+        side: BorderSide(color: p.outline),
       ),
       behavior: SnackBarBehavior.floating,
     ),
     progressIndicatorTheme: ProgressIndicatorThemeData(
       color: p.secondary,
       linearTrackColor: p.hud,
-      linearMinHeight: 12,
+      linearMinHeight: 8,
       borderRadius: BorderRadius.circular(8),
     ),
     dialogTheme: DialogThemeData(
@@ -334,7 +321,7 @@ ThemeData buildBrainTheme(BrainTheme value) {
       elevation: 12,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20),
-        side: BorderSide(color: p.outline, width: 4),
+        side: BorderSide(color: p.outline),
       ),
     ),
     bottomSheetTheme: BottomSheetThemeData(
@@ -342,7 +329,7 @@ ThemeData buildBrainTheme(BrainTheme value) {
       modalBackgroundColor: p.surface,
       shape: RoundedRectangleBorder(
         borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-        side: BorderSide(color: p.outline, width: 4),
+        side: BorderSide(color: p.outline),
       ),
     ),
   );
@@ -375,16 +362,16 @@ extension BrainContext on BuildContext {
 }
 
 Color contrastColorFor(Color background, BrainPalette palette) {
-  final dark = palette.outline;
+  const dark = Color(0xFF102321);
   const light = Colors.white;
-  double contrast(Color a, Color b) {
-    final l1 = a.computeLuminance(), l2 = b.computeLuminance();
-    return (l1 > l2 ? l1 + .05 : l2 + .05) / (l1 > l2 ? l2 + .05 : l1 + .05);
-  }
-
-  return contrast(background, dark) >= contrast(background, light)
+  return contrastRatio(background, dark) >= contrastRatio(background, light)
       ? dark
       : light;
+}
+
+double contrastRatio(Color a, Color b) {
+  final l1 = a.computeLuminance(), l2 = b.computeLuminance();
+  return (l1 > l2 ? l1 + .05 : l2 + .05) / (l1 > l2 ? l2 + .05 : l1 + .05);
 }
 
 Color _gameAccent(GameType type, {required bool light}) =>

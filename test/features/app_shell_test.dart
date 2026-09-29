@@ -36,7 +36,7 @@ void main() {
       BlocProvider.value(
         value: cubit,
         child: MaterialApp(
-          theme: buildBrainTheme(BrainTheme.midnight),
+          theme: buildBrainTheme(BrainTheme.calmDark),
           home: const AppShell(),
         ),
       ),

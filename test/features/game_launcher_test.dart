@@ -74,7 +74,7 @@ void main() {
 Widget _harness(BrainCubit cubit) => BlocProvider.value(
   value: cubit,
   child: MaterialApp(
-    theme: buildBrainTheme(BrainTheme.midnight),
+    theme: buildBrainTheme(BrainTheme.calmDark),
     home: Builder(
       builder: (context) => Scaffold(
         body: Center(

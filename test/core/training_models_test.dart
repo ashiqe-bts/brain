@@ -202,6 +202,27 @@ void main() {
   });
 
   group('local profile compatibility', () {
+    test('migrates legacy themes to calm equivalents', () {
+      expect(
+        BrainState.decode('{"theme":"midnight"}').theme,
+        BrainTheme.calmDark,
+      );
+      expect(BrainState.decode('{"theme":"oled"}').theme, BrainTheme.calmDark);
+      expect(
+        BrainState.decode('{"theme":"daydream"}').theme,
+        BrainTheme.calmLight,
+      );
+      expect(
+        BrainState.decode('{"theme":"highContrast"}').theme,
+        BrainTheme.highContrast,
+      );
+    });
+
+    test('new profiles default to calm light', () {
+      expect(BrainState().theme, BrainTheme.calmLight);
+      expect(BrainState.decode('{}').theme, BrainTheme.calmLight);
+    });
+
     test('round-trips display name and versioned tutorial completion', () {
       final state = BrainState(
         onboarded: true,
