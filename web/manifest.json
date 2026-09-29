@@ -3,10 +3,9 @@
     "short_name": "BrainFlex",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0A1023",
-    "theme_color": "#9B6DFF",
-    "description": "A new Flutter project.",
-    "orientation": "portrait-primary",
+    "background_color": "#F4F7F5",
+    "theme_color": "#126E68",
+    "description": "A calm, private daily practice for focus, memory, and reasoning.",
     "prefer_related_applications": false,
     "icons": [
         {

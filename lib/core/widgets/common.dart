@@ -79,6 +79,7 @@ class _AppCardState extends State<AppCard> {
             borderRadius: BorderRadius.circular(16),
             clipBehavior: Clip.antiAlias,
             child: InkWell(
+              canRequestFocus: false,
               onTap: widget.onTap,
               child: Padding(padding: widget.padding, child: widget.child),
             ),

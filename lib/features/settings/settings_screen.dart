@@ -274,13 +274,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(dialogContext),
-              child: const Text('CANCEL'),
+              child: const Text('Cancel'),
             ),
             FilledButton(
               onPressed: displayNameError(controller.text) == null
                   ? () => Navigator.pop(dialogContext, controller.text)
                   : null,
-              child: const Text('SAVE'),
+              child: const Text('Save'),
             ),
           ],
         ),
