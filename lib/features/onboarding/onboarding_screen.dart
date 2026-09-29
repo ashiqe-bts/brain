@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../app/theme/brain_theme.dart';
 import '../../core/services/notification_service.dart';
 import '../../core/state/brain_cubit.dart';
+import '../../core/models/brain_models.dart';
 import '../../core/widgets/common.dart';
 
 class OnboardingScreen extends StatefulWidget {
@@ -16,10 +17,18 @@ class OnboardingScreen extends StatefulWidget {
 class _OnboardingScreenState extends State<OnboardingScreen> {
   final controller = PageController();
   final notifications = NotificationService();
+  final nameController = TextEditingController();
   int page = 0;
   int sampleScore = 0;
   TimeOfDay reminder = const TimeOfDay(hour: 19, minute: 0);
   bool reminders = false;
+
+  @override
+  void dispose() {
+    nameController.dispose();
+    controller.dispose();
+    super.dispose();
+  }
 
   @override
   void initState() {
@@ -105,9 +114,29 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   Widget _welcome() => _frame(
     'BRAINFLEX',
-    'A personal cognitive gym',
-    'Practice focus, calculation, memory, reaction, and visual search in short daily sessions.',
-    const Icon(Icons.psychology_alt_rounded, size: 120),
+    'What should we call you?',
+    'Your name stays on this device. BrainFlex is you versus your own previous practice.',
+    Column(
+      children: [
+        TextFormField(
+          controller: nameController,
+          autofocus: true,
+          maxLength: 30,
+          textInputAction: TextInputAction.done,
+          decoration: const InputDecoration(
+            labelText: 'Your name',
+            hintText: 'Enter a display name',
+            border: OutlineInputBorder(),
+          ),
+          autovalidateMode: AutovalidateMode.onUserInteraction,
+          validator: (value) => displayNameError(value ?? ''),
+          onChanged: (_) => setState(() {}),
+          onFieldSubmitted: (_) => _next(),
+        ),
+        const SizedBox(height: 12),
+        const Icon(Icons.psychology_alt_rounded, size: 72),
+      ],
+    ),
   );
 
   Widget _baseline() => _frame(
@@ -198,6 +227,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   );
 
   Future<void> _next() async {
+    if (page == 0 && displayNameError(nameController.text) != null) {
+      setState(() {});
+      return;
+    }
     if (page < 3) {
       controller.nextPage(
         duration: const Duration(milliseconds: 250),
@@ -217,6 +250,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     }
     if (!mounted) return;
     await context.read<BrainCubit>().finishOnboarding(
+      displayName: nameController.text,
       hour: reminder.hour,
       minute: reminder.minute,
       reminders: reminders,

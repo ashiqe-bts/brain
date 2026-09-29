@@ -29,6 +29,27 @@ class BrainCubit extends Cubit<BrainViewState> {
 
   Future<void> bootstrap() async {
     ensureToday();
+    for (final result in data.history) {
+      if (result.type.isActive &&
+          result.rulesVersion == result.type.rulesVersion) {
+        data.completedTutorials.add(result.type.tutorialKey);
+      }
+    }
+    await _commit();
+  }
+
+  Future<void> setDisplayName(String value) async {
+    final error = displayNameError(value);
+    if (error != null) throw ArgumentError.value(value, 'value', error);
+    data.displayName = normalizeDisplayName(value);
+    await _commit();
+  }
+
+  bool hasCompletedTutorial(GameType type) =>
+      data.completedTutorials.contains(type.tutorialKey);
+
+  Future<void> completeTutorial(GameType type) async {
+    data.completedTutorials.add(type.tutorialKey);
     await _commit();
   }
 
@@ -63,12 +84,18 @@ class BrainCubit extends Cubit<BrainViewState> {
   }
 
   Future<void> finishOnboarding({
+    required String displayName,
     required int hour,
     required int minute,
     required bool reminders,
   }) async {
+    final error = displayNameError(displayName);
+    if (error != null) {
+      throw ArgumentError.value(displayName, 'displayName', error);
+    }
     data
       ..onboarded = true
+      ..displayName = normalizeDisplayName(displayName)
       ..reminderHour = hour
       ..reminderMinute = minute
       ..reminderEnabled = reminders;

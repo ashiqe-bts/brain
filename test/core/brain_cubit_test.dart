@@ -102,6 +102,26 @@ void main() {
       expect(cubit.data.workouts, 1);
     },
   );
+
+  test('stores a normalized local name and tutorial completion', () async {
+    await cubit.setDisplayName('  Asha  ');
+    await cubit.completeTutorial(GameType.signalStop);
+
+    expect(cubit.data.displayName, 'Asha');
+    expect(cubit.hasCompletedTutorial(GameType.signalStop), isTrue);
+    expect(cubit.hasCompletedTutorial(GameType.colorClash), isFalse);
+  });
+
+  test(
+    'bootstrap treats current-version history as prior tutorial play',
+    () async {
+      cubit.data.history.add(_result(1, 80));
+
+      await cubit.bootstrap();
+
+      expect(cubit.hasCompletedTutorial(GameType.colorClash), isTrue);
+    },
+  );
 }
 
 GameResult _result(

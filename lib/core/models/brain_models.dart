@@ -147,6 +147,20 @@ extension GameTypeX on GameType {
   };
 
   bool get isActive => activeGames.contains(this);
+
+  String get tutorialKey => '$name:v$rulesVersion';
+}
+
+String normalizeDisplayName(String value) => value.trim();
+
+String? displayNameError(String value) {
+  final normalized = normalizeDisplayName(value);
+  if (normalized.isEmpty) return 'Enter your name';
+  if (RegExp(r'[\x00-\x1F\x7F]').hasMatch(normalized)) {
+    return 'Use a single line without control characters';
+  }
+  if (normalized.runes.length > 30) return 'Use 30 characters or fewer';
+  return null;
 }
 
 GameType gameTypeFromName(String name) => switch (name) {
@@ -503,6 +517,7 @@ class WorkoutDraft {
 class BrainState {
   BrainState({
     this.onboarded = false,
+    this.displayName,
     this.theme = BrainTheme.midnight,
     this.sound = true,
     this.music = true,
@@ -523,13 +538,15 @@ class BrainState {
     List<GameResult>? history,
     List<Mission>? missions,
     Set<String>? achievements,
+    Set<String>? completedTutorials,
     this.draft,
     this.lastMissionDate,
   }) : difficulties = migrateDifficulties(difficulties),
        daily = daily ?? [],
        history = history ?? [],
        missions = missions ?? [],
-       achievements = achievements ?? {};
+       achievements = achievements ?? {},
+       completedTutorials = completedTutorials ?? {};
   bool onboarded,
       sound,
       music,
@@ -538,6 +555,7 @@ class BrainState {
       streakWarning,
       reminderEnabled;
   BrainTheme theme;
+  String? displayName;
   int reminderHour,
       reminderMinute,
       xp,
@@ -551,11 +569,13 @@ class BrainState {
   List<GameResult> history;
   List<Mission> missions;
   Set<String> achievements;
+  Set<String> completedTutorials;
   WorkoutDraft? draft;
 
   int get xpNeeded => 300 + 50 * (level - 1);
   Map<String, dynamic> toJson() => {
     'onboarded': onboarded,
+    'displayName': displayName,
     'theme': theme.name,
     'sound': sound,
     'music': music,
@@ -578,6 +598,7 @@ class BrainState {
     'history': history.where((e) => e.isLegacy).map((e) => e.toJson()).toList(),
     'missions': missions.map((e) => e.toJson()).toList(),
     'achievements': achievements.toList(),
+    'completedTutorials': completedTutorials.toList(),
     'draft': draft?.toJson(),
     'lastMissionDate': lastMissionDate,
   };
@@ -586,6 +607,7 @@ class BrainState {
     final j = Map<String, dynamic>.from(jsonDecode(value) as Map);
     return BrainState(
       onboarded: j['onboarded'] as bool? ?? false,
+      displayName: j['displayName'] as String?,
       theme: BrainTheme.values.byName(j['theme'] as String? ?? 'midnight'),
       sound: j['sound'] as bool? ?? true,
       music: j['music'] as bool? ?? true,
@@ -614,6 +636,9 @@ class BrainState {
           .map((e) => Mission.fromJson(Map<String, dynamic>.from(e as Map)))
           .toList(),
       achievements: Set<String>.from(j['achievements'] as List? ?? []),
+      completedTutorials: Set<String>.from(
+        j['completedTutorials'] as List? ?? [],
+      ),
       draft: j['draft'] == null
           ? null
           : WorkoutDraft.fromJson(Map<String, dynamic>.from(j['draft'] as Map)),

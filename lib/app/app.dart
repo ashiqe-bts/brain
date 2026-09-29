@@ -1,7 +1,9 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../core/models/brain_models.dart';
 import '../core/state/brain_cubit.dart';
+import '../features/onboarding/name_capture_screen.dart';
 import '../features/onboarding/onboarding_screen.dart';
 import '../features/shell/app_shell.dart';
 import 'theme/brain_theme.dart';
@@ -37,7 +39,11 @@ class BrainFlexApp extends StatelessWidget {
         ),
         child: child!,
       ),
-      home: state.data.onboarded ? const AppShell() : const OnboardingScreen(),
+      home: !state.data.onboarded
+          ? const OnboardingScreen()
+          : displayNameError(state.data.displayName ?? '') != null
+          ? const NameCaptureScreen()
+          : const AppShell(),
     ),
   );
 }

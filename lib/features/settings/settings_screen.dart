@@ -34,6 +34,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
             style: GamePanelStyle.inset,
             child: Column(
               children: [
+                _header('Profile'),
+                ListTile(
+                  leading: const Icon(Icons.person_outline_rounded),
+                  title: Text(d.displayName ?? 'Add your name'),
+                  subtitle: const Text('Stored only on this device'),
+                  trailing: const Icon(Icons.edit_outlined),
+                  onTap: () => _editName(d.displayName ?? ''),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 18),
+          BrainCard(
+            style: GamePanelStyle.inset,
+            child: Column(
+              children: [
                 _header('Appearance'),
                 SwitchListTile(
                   value: d.theme != BrainTheme.daydream,
@@ -229,6 +245,52 @@ class _SettingsScreenState extends State<SettingsScreen> {
       minute: value.minute,
       streakWarning: d.streakWarning,
     );
+  }
+
+  Future<void> _editName(String current) async {
+    final controller = TextEditingController(text: current);
+    final value = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text('Edit your name'),
+          content: TextFormField(
+            controller: controller,
+            autofocus: true,
+            maxLength: 30,
+            textInputAction: TextInputAction.done,
+            decoration: const InputDecoration(
+              labelText: 'Your name',
+              border: OutlineInputBorder(),
+            ),
+            autovalidateMode: AutovalidateMode.onUserInteraction,
+            validator: (text) => displayNameError(text ?? ''),
+            onChanged: (_) => setDialogState(() {}),
+            onFieldSubmitted: (text) {
+              if (displayNameError(text) == null) {
+                Navigator.pop(dialogContext, text);
+              }
+            },
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('CANCEL'),
+            ),
+            FilledButton(
+              onPressed: displayNameError(controller.text) == null
+                  ? () => Navigator.pop(dialogContext, controller.text)
+                  : null,
+              child: const Text('SAVE'),
+            ),
+          ],
+        ),
+      ),
+    );
+    controller.dispose();
+    if (value != null && mounted) {
+      await context.read<BrainCubit>().setDisplayName(value);
+    }
   }
 }
 

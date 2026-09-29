@@ -30,7 +30,7 @@ class HomeScreen extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('TODAY'),
+            Text('HEY, ${data.displayName}'),
             Text(
               DateFormat('EEEE, MMM d').format(DateTime.now()),
               style: Theme.of(context).textTheme.labelMedium,

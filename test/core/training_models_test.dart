@@ -189,6 +189,39 @@ void main() {
     });
   });
 
+  group('local profile compatibility', () {
+    test('round-trips display name and versioned tutorial completion', () {
+      final state = BrainState(
+        onboarded: true,
+        displayName: 'Asha',
+        completedTutorials: {
+          GameType.colorClash.tutorialKey,
+          GameType.signalStop.tutorialKey,
+        },
+      );
+
+      final decoded = BrainState.decode(state.encode());
+
+      expect(decoded.displayName, 'Asha');
+      expect(decoded.completedTutorials, state.completedTutorials);
+    });
+
+    test('decodes older state without profile or tutorials', () {
+      final decoded = BrainState.decode('{"onboarded":true}');
+
+      expect(decoded.displayName, isNull);
+      expect(decoded.completedTutorials, isEmpty);
+    });
+
+    test('validates and normalizes local display names', () {
+      expect(normalizeDisplayName('  Asha  '), 'Asha');
+      expect(displayNameError('  '), isNotNull);
+      expect(displayNameError('Asha\nPatel'), isNotNull);
+      expect(displayNameError(List.filled(31, 'a').join()), isNotNull);
+      expect(displayNameError('Renée'), isNull);
+    });
+  });
+
   group('adaptive difficulty', () {
     test('moves at most one step after two mastered results', () {
       expect(adaptDifficulty(4, [88, 91, 70]), 5);

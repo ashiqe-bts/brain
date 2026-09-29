@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:brainflex/app/theme/brain_theme.dart';
+import 'package:brainflex/app/app.dart';
 import 'package:brainflex/core/models/brain_models.dart';
 import 'package:brainflex/core/state/brain_cubit.dart';
 import 'package:brainflex/core/storage/app_database.dart';
@@ -17,7 +18,10 @@ void main() {
   setUp(() {
     database = AppDatabase.forTesting(NativeDatabase.memory());
     repository = BrainRepository(database);
-    cubit = BrainCubit(repository, BrainState(onboarded: true));
+    cubit = BrainCubit(
+      repository,
+      BrainState(onboarded: true, displayName: 'Asha'),
+    );
   });
 
   tearDown(() async {
@@ -40,6 +44,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Today'), findsOneWidget);
+    expect(find.text('HEY, Asha'), findsOneWidget);
     expect(find.text('Train'), findsOneWidget);
     expect(find.text('Insights'), findsOneWidget);
     expect(find.text('Lab'), findsNothing);
@@ -52,6 +57,21 @@ void main() {
     expect(find.text('0 of 15 game baselines ready'), findsOneWidget);
     expect(find.text('All'), findsOneWidget);
     expect(find.byTooltip('Research basis for Color Clash'), findsOneWidget);
+  });
+
+  testWidgets('existing users without a name receive the profile gate', (
+    tester,
+  ) async {
+    final unnamedCubit = BrainCubit(repository, BrainState(onboarded: true));
+    addTearDown(unnamedCubit.close);
+
+    await tester.pumpWidget(
+      BlocProvider.value(value: unnamedCubit, child: const BrainFlexApp()),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Add your name'), findsOneWidget);
+    expect(find.text('Today'), findsNothing);
   });
 
   testWidgets('supports 200 percent text and high contrast navigation', (
