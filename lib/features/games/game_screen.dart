@@ -388,7 +388,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
                 color: context.gameAccent(widget.type),
               ),
               const SizedBox(height: 12),
-              TitlePlaque(
+              PageEyebrow(
                 '${widget.type.domain} review',
                 color: context.gameAccent(widget.type),
               ),
@@ -418,7 +418,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
                 Text('Your best matching score: ${widget.personalBest!.score}'),
               ],
               const SizedBox(height: 20),
-              ArcadeButton(
+              PrimaryAction(
                 expanded: true,
                 color: context.brain.success,
                 onPressed: () {
@@ -560,7 +560,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
             ],
           ),
           const SizedBox(height: 16),
-          ResourceBar(
+          ProgressMeter(
             label: widget.mode.displayTitle,
             value: timed ? timeLeft / 30 : min(1, correct / 10),
             color: context.gameAccent(widget.type),
@@ -619,7 +619,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
         crossAxisSpacing: 12,
         childAspectRatio: 2.2,
         children: List.generate(4, (i) {
-          return ArcadeButton(
+          return PrimaryAction(
             color: context.clashColor(i),
             onPressed: () => _answerColor(i),
             label: '${['●', '◆', '■', '▲'][i]} ${names[i]}',
@@ -641,7 +641,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
       Row(
         children: [
           Expanded(
-            child: ArcadeButton(
+            child: PrimaryAction(
               expanded: true,
               color: context.brain.success,
               onPressed: () => _answerMath(true),
@@ -651,7 +651,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
           ),
           const SizedBox(width: 14),
           Expanded(
-            child: ArcadeButton(
+            child: PrimaryAction(
               expanded: true,
               color: context.brain.danger,
               onPressed: () => _answerMath(false),

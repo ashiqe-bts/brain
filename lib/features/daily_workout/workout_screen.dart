@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../app/theme/brain_theme.dart';
+import '../../app/theme/game_visuals.dart';
 import '../../core/models/brain_models.dart';
 import '../../core/state/brain_cubit.dart';
 import '../../core/training/training_analytics.dart';
@@ -100,7 +101,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                 ),
               ),
               const SizedBox(height: 18),
-              ResourceBar(
+              ProgressMeter(
                 label: 'Workout progress',
                 value: total == 0 ? 0 : complete / total,
                 color: context.brain.success,
@@ -113,7 +114,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
               ),
               const Spacer(),
               if (!running)
-                ArcadeButton(
+                PrimaryAction(
                   onPressed: _run,
                   icon: Icons.play_arrow,
                   label: 'RESUME WORKOUT',
@@ -163,15 +164,16 @@ class WorkoutResultScreen extends StatelessWidget {
             for (final result in summary.results)
               Padding(
                 padding: const EdgeInsets.only(bottom: 10),
-                child: BrainCard(
+                child: AppCard(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
                         children: [
-                          Text(
-                            result.type.emoji,
-                            style: const TextStyle(fontSize: 26),
+                          GameIcon(
+                            game: result.type,
+                            size: 26,
+                            decorated: true,
                           ),
                           const SizedBox(width: 10),
                           Expanded(
@@ -204,7 +206,7 @@ class WorkoutResultScreen extends StatelessWidget {
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 20),
-            ArcadeButton(
+            PrimaryAction(
               expanded: true,
               color: context.brain.success,
               onPressed: () => Navigator.pop(context),

@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 
 import '../../app/theme/brain_theme.dart';
+import '../../app/theme/game_visuals.dart';
 import '../../core/models/brain_models.dart';
 import '../../core/state/brain_cubit.dart';
 import '../../core/training/training_analytics.dart';
@@ -66,19 +67,19 @@ class HomeScreen extends StatelessWidget {
                       const SizedBox(height: 14),
                       Row(
                         children: [
-                          StatPill(
+                          MetricTile(
                             icon: Icons.local_fire_department_rounded,
                             label: 'day streak',
                             value: '${data.currentStreak}',
                           ),
                           const SizedBox(width: 10),
-                          StatPill(
+                          MetricTile(
                             icon: Icons.fitness_center_rounded,
                             label: 'workouts',
                             value: '${data.workouts}',
                           ),
                           const SizedBox(width: 10),
-                          StatPill(
+                          MetricTile(
                             icon: Icons.bolt_rounded,
                             label: 'training XP',
                             value: '${data.xp}',
@@ -86,8 +87,8 @@ class HomeScreen extends StatelessWidget {
                         ],
                       ),
                       if (baseline.isComplete) ...[
-                        const SectionTitle('Recommended practice'),
-                        BrainCard(
+                        const SectionHeader('Recommended practice'),
+                        AppCard(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -100,9 +101,9 @@ class HomeScreen extends StatelessWidget {
                                   in review.recommendations)
                                 ListTile(
                                   contentPadding: EdgeInsets.zero,
-                                  leading: Text(
-                                    recommendation.game.emoji,
-                                    style: const TextStyle(fontSize: 24),
+                                  leading: GameIcon(
+                                    game: recommendation.game,
+                                    decorated: true,
                                   ),
                                   title: Text(recommendation.game.title),
                                   subtitle: Text(
@@ -116,11 +117,11 @@ class HomeScreen extends StatelessWidget {
                           ),
                         ),
                       ],
-                      const SectionTitle('Daily goals'),
+                      const SectionHeader('Daily goals'),
                       ...data.missions.map(
                         (mission) => _mission(context, mission),
                       ),
-                      const SectionTitle('This week'),
+                      const SectionHeader('This week'),
                       _weekStrip(context, data),
                     ],
                   ),
@@ -134,12 +135,12 @@ class HomeScreen extends StatelessWidget {
   }
 
   Widget _workoutCard(BuildContext context, BrainState data, bool done) =>
-      BrainCard(
+      AppCard(
         color: done ? context.brain.surfaceHigh : context.brain.success,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            TitlePlaque(
+            PageEyebrow(
               done
                   ? 'DAILY TRAINING COMPLETE'
                   : data.draft != null
@@ -159,7 +160,7 @@ class HomeScreen extends StatelessWidget {
             const SizedBox(height: 8),
             const Text('A balanced three-workout cycle covers every game.'),
             const SizedBox(height: 18),
-            ArcadeButton(
+            PrimaryAction(
               expanded: true,
               color: done ? context.brain.frame : context.brain.success,
               onPressed: done
@@ -180,8 +181,7 @@ class HomeScreen extends StatelessWidget {
   Widget _baselineCard(
     BuildContext context,
     BaselineStatus baseline,
-  ) => BrainCard(
-    style: GamePanelStyle.inset,
+  ) => AppCard(
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -223,7 +223,7 @@ class HomeScreen extends StatelessWidget {
 
   Widget _mission(BuildContext context, Mission mission) => Padding(
     padding: const EdgeInsets.only(bottom: 8),
-    child: BrainCard(
+    child: AppCard(
       padding: const EdgeInsets.all(14),
       child: Row(
         children: [
@@ -259,7 +259,7 @@ class HomeScreen extends StatelessWidget {
 
   Widget _weekStrip(BuildContext context, BrainState data) {
     final now = DateTime.now();
-    return BrainCard(
+    return AppCard(
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: List.generate(7, (index) {

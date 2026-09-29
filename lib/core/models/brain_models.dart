@@ -136,26 +136,6 @@ extension GameTypeX on GameType {
     GameType.logicSeries => 'Inductive reasoning',
     GameType.spatialRotation => 'Spatial reasoning',
   };
-  String get emoji => switch (this) {
-    GameType.colorClash => '🎨',
-    GameType.mathBlitz => '➗',
-    GameType.memoryTiles => '🧩',
-    GameType.reflexTap => '⚡',
-    GameType.visualSearch => '🔎',
-    GameType.signalStop => '🛑',
-    GameType.peripheralFocus => '👁️',
-    GameType.nBackNavigator => '🧭',
-    GameType.ruleSwitch => '🔀',
-    GameType.arrowGuard => '➡️',
-    GameType.pairLink => '🔗',
-    GameType.symbolSprint => '🔣',
-    GameType.objectTracker => '🎯',
-    GameType.towerPlanner => '🏰',
-    GameType.dualTaskDash => '🎛️',
-    GameType.logicSeries => '🧠',
-    GameType.spatialRotation => '🔄',
-  };
-
   int get rulesVersion => switch (this) {
     GameType.colorClash || GameType.mathBlitz || GameType.memoryTiles => 3,
     GameType.reflexTap || GameType.visualSearch => 2,

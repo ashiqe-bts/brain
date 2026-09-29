@@ -40,8 +40,7 @@ class _NameCaptureScreenState extends State<NameCaptureScreen> {
           padding: const EdgeInsets.all(22),
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 520),
-            child: BrainCard(
-              style: GamePanelStyle.inset,
+            child: AppCard(
               padding: const EdgeInsets.all(24),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -73,7 +72,7 @@ class _NameCaptureScreenState extends State<NameCaptureScreen> {
                     onFieldSubmitted: (_) => _save(),
                   ),
                   const SizedBox(height: 12),
-                  ArcadeButton(
+                  PrimaryAction(
                     expanded: true,
                     color: context.brain.primary,
                     onPressed: displayNameError(controller.text) == null

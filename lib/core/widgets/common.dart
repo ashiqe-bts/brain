@@ -1,127 +1,86 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+
 import '../../app/theme/brain_theme.dart';
 
-enum GamePanelStyle { standard, raised, inset, purple, wood }
-
-class BrainCard extends StatefulWidget {
-  const BrainCard({
+class AppCard extends StatefulWidget {
+  const AppCard({
     super.key,
     required this.child,
-    this.padding = const EdgeInsets.all(18),
+    this.padding = const EdgeInsets.all(20),
     this.onTap,
     this.color,
-    this.style = GamePanelStyle.raised,
+    this.tonal = false,
   });
+
   final Widget child;
   final EdgeInsets padding;
   final VoidCallback? onTap;
   final Color? color;
-  final GamePanelStyle style;
+  final bool tonal;
+
   @override
-  State<BrainCard> createState() => _BrainCardState();
+  State<AppCard> createState() => _AppCardState();
 }
 
-class _BrainCardState extends State<BrainCard> {
-  bool hover = false, pressed = false, focused = false;
+class _AppCardState extends State<AppCard> {
+  bool hovered = false;
+  bool focused = false;
+
   @override
   Widget build(BuildContext context) {
-    final p = context.brain;
-    final still = MediaQuery.disableAnimationsOf(context);
+    final palette = context.brain;
     final base =
-        widget.color ??
-        switch (widget.style) {
-          GamePanelStyle.purple => p.primary,
-          GamePanelStyle.wood => const Color(0xFFA94F2E),
-          GamePanelStyle.inset => p.hud,
-          _ => p.surface,
-        };
-    final ink = context.onColor(base);
+        widget.color ?? (widget.tonal ? palette.surfaceHigh : palette.surface);
+    final still = MediaQuery.disableAnimationsOf(context);
     return Semantics(
       button: widget.onTap != null,
-      child: Focus(
-        canRequestFocus: widget.onTap != null,
-        onFocusChange: (value) => setState(() => focused = value),
-        onKeyEvent: (_, event) {
-          if (widget.onTap != null &&
-              event is KeyDownEvent &&
-              (event.logicalKey == LogicalKeyboardKey.enter ||
-                  event.logicalKey == LogicalKeyboardKey.space)) {
-            widget.onTap!();
-            return KeyEventResult.handled;
-          }
-          return KeyEventResult.ignored;
+      child: FocusableActionDetector(
+        enabled: widget.onTap != null,
+        mouseCursor: widget.onTap == null
+            ? MouseCursor.defer
+            : SystemMouseCursors.click,
+        onShowFocusHighlight: (value) => setState(() => focused = value),
+        onShowHoverHighlight: (value) => setState(() => hovered = value),
+        actions: {
+          ActivateIntent: CallbackAction<ActivateIntent>(
+            onInvoke: (_) {
+              widget.onTap?.call();
+              return null;
+            },
+          ),
         },
-        child: MouseRegion(
-          cursor: widget.onTap == null
-              ? MouseCursor.defer
-              : SystemMouseCursors.click,
-          onEnter: (_) => setState(() => hover = true),
-          onExit: (_) => setState(() {
-            hover = false;
-            pressed = false;
-          }),
-          child: GestureDetector(
-            onTapDown: widget.onTap == null
-                ? null
-                : (_) => setState(() => pressed = true),
-            onTapCancel: widget.onTap == null
-                ? null
-                : () => setState(() => pressed = false),
-            onTapUp: widget.onTap == null
-                ? null
-                : (_) => setState(() => pressed = false),
-            onTap: widget.onTap,
-            child: AnimatedContainer(
-              duration: still
-                  ? Duration.zero
-                  : const Duration(milliseconds: 150),
-              transform: Matrix4.translationValues(
-                0,
-                still
-                    ? 0
-                    : pressed
-                    ? 4
-                    : hover
-                    ? -2
-                    : 0,
-                0,
-              ),
-              padding: widget.padding,
-              decoration: BoxDecoration(
-                color: Color.lerp(base, p.highlight, hover ? .06 : 0),
-                borderRadius: BorderRadius.circular(18),
-                border: Border.all(
-                  color: focused ? p.reward : p.outline,
-                  width: focused ? 4 : 3,
+        child: AnimatedContainer(
+          duration: still ? Duration.zero : const Duration(milliseconds: 180),
+          decoration: BoxDecoration(
+            color: Color.lerp(base, palette.primary, hovered ? .035 : 0),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: focused
+                  ? palette.focus
+                  : palette.outline.withValues(alpha: .72),
+              width: focused ? 2 : 1,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: palette.shadow.withValues(
+                  alpha: Theme.of(context).brightness == Brightness.light
+                      ? .07
+                      : .22,
                 ),
-                boxShadow: widget.style == GamePanelStyle.inset
-                    ? [
-                        BoxShadow(
-                          color: p.shadow.withValues(alpha: .6),
-                          offset: const Offset(0, 3),
-                          blurRadius: 1,
-                          spreadRadius: -1,
-                        ),
-                      ]
-                    : [
-                        BoxShadow(
-                          color: p.shadow.withValues(alpha: .85),
-                          offset: Offset(0, pressed ? 2 : 7),
-                        ),
-                        BoxShadow(
-                          color: p.highlight.withValues(alpha: .12),
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
+                blurRadius: hovered ? 18 : 12,
+                offset: Offset(0, hovered ? 5 : 3),
               ),
-              child: DefaultTextStyle.merge(
-                style: TextStyle(color: ink),
-                child: IconTheme.merge(
-                  data: IconThemeData(color: ink),
-                  child: widget.child,
-                ),
-              ),
+            ],
+          ),
+          child: Material(
+            color: Colors.transparent,
+            borderRadius: BorderRadius.circular(16),
+            clipBehavior: Clip.antiAlias,
+            child: InkWell(
+              onTap: widget.onTap,
+              child: Padding(padding: widget.padding, child: widget.child),
             ),
           ),
         ),
@@ -130,8 +89,8 @@ class _BrainCardState extends State<BrainCard> {
   }
 }
 
-class ArcadeButton extends StatefulWidget {
-  const ArcadeButton({
+class PrimaryAction extends StatelessWidget {
+  const PrimaryAction({
     super.key,
     required this.label,
     required this.onPressed,
@@ -139,290 +98,235 @@ class ArcadeButton extends StatefulWidget {
     this.color,
     this.expanded = false,
   });
+
   final String label;
   final VoidCallback? onPressed;
   final IconData? icon;
   final Color? color;
   final bool expanded;
-  @override
-  State<ArcadeButton> createState() => _ArcadeButtonState();
-}
 
-class _ArcadeButtonState extends State<ArcadeButton> {
-  bool hover = false, down = false, focused = false;
   @override
   Widget build(BuildContext context) {
-    final p = context.brain, enabled = widget.onPressed != null;
-    final still = MediaQuery.disableAnimationsOf(context);
-    final buttonColor = widget.color ?? p.success;
-    final foreground = context.onColor(buttonColor);
-    final button = Focus(
-      canRequestFocus: enabled,
-      onFocusChange: (value) => setState(() => focused = value),
-      onKeyEvent: (_, event) {
-        if (enabled &&
-            event is KeyDownEvent &&
-            (event.logicalKey == LogicalKeyboardKey.enter ||
-                event.logicalKey == LogicalKeyboardKey.space)) {
-          widget.onPressed!();
-          return KeyEventResult.handled;
-        }
-        return KeyEventResult.ignored;
-      },
-      child: MouseRegion(
-        cursor: enabled
-            ? SystemMouseCursors.click
-            : SystemMouseCursors.forbidden,
-        onEnter: (_) => setState(() => hover = true),
-        onExit: (_) => setState(() {
-          hover = false;
-          down = false;
-        }),
-        child: GestureDetector(
-          onTapDown: enabled ? (_) => setState(() => down = true) : null,
-          onTapCancel: enabled ? () => setState(() => down = false) : null,
-          onTapUp: enabled ? (_) => setState(() => down = false) : null,
-          onTap: widget.onPressed,
-          child: AnimatedContainer(
-            duration: still ? Duration.zero : const Duration(milliseconds: 120),
-            transform: Matrix4.translationValues(
-              0,
-              still
-                  ? 0
-                  : down
-                  ? 5
-                  : hover
-                  ? -2
-                  : 0,
-              0,
+    final button = FilledButton.icon(
+      onPressed: onPressed,
+      style: color == null
+          ? null
+          : FilledButton.styleFrom(
+              backgroundColor: color,
+              foregroundColor: context.onColor(color!),
             ),
-            constraints: const BoxConstraints(minHeight: 54, minWidth: 96),
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-            decoration: BoxDecoration(
-              color: enabled ? buttonColor : p.surfaceHigh,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: focused ? p.reward : p.outline,
-                width: focused ? 4 : 3,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: enabled
-                      ? Color.lerp(buttonColor, Colors.black, .28)!
-                      : p.shadow,
-                  offset: Offset(0, down ? 1 : 6),
-                ),
-              ],
-            ),
-            child: Row(
-              mainAxisSize: widget.expanded
-                  ? MainAxisSize.max
-                  : MainAxisSize.min,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                if (widget.icon != null) ...[
-                  Icon(
-                    widget.icon,
-                    color: enabled ? foreground : p.text.withValues(alpha: .5),
-                  ),
-                  const SizedBox(width: 8),
-                ],
-                Flexible(
-                  child: Text(
-                    widget.label,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontFamily: 'Fredoka',
-                      fontWeight: FontWeight.w700,
-                      fontSize: 16,
-                      color: enabled
-                          ? foreground
-                          : p.text.withValues(alpha: .45),
-                      letterSpacing: .5,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
+      icon: icon == null ? const SizedBox.shrink() : Icon(icon),
+      label: Text(label),
     );
-    return Semantics(
-      button: true,
-      enabled: enabled,
-      label: widget.label,
-      child: widget.expanded
-          ? SizedBox(width: double.infinity, child: button)
-          : button,
-    );
+    return expanded ? SizedBox(width: double.infinity, child: button) : button;
   }
 }
 
-class TitlePlaque extends StatelessWidget {
-  const TitlePlaque(this.title, {super.key, this.color});
+class PageEyebrow extends StatelessWidget {
+  const PageEyebrow(this.title, {super.key, this.color});
+
   final String title;
   final Color? color;
+
   @override
-  Widget build(BuildContext context) {
-    final plaqueColor = color ?? context.brain.reward;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
-      decoration: BoxDecoration(
-        color: plaqueColor,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: context.brain.outline, width: 3),
-        boxShadow: [
-          BoxShadow(
-            color: Color.lerp(plaqueColor, Colors.black, .25)!,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Text(
-        title.toUpperCase(),
-        textAlign: TextAlign.center,
-        style: TextStyle(
-          fontFamily: 'Fredoka',
-          fontWeight: FontWeight.w700,
-          fontSize: 18,
-          color: context.onColor(plaqueColor),
-          letterSpacing: .5,
-        ),
-      ),
-    );
-  }
+  Widget build(BuildContext context) => Text(
+    title,
+    textAlign: TextAlign.center,
+    style: Theme.of(context).textTheme.labelLarge?.copyWith(
+      color: color ?? context.brain.primary,
+      fontWeight: FontWeight.w800,
+      letterSpacing: .2,
+    ),
+  );
 }
 
-class ResourceBar extends StatelessWidget {
-  const ResourceBar({
+class ProgressMeter extends StatelessWidget {
+  const ProgressMeter({
     super.key,
     required this.label,
     required this.value,
     this.color,
     this.trailing,
   });
+
   final String label;
   final double value;
   final Color? color;
   final String? trailing;
-  @override
-  Widget build(BuildContext context) => Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      Row(
-        children: [
-          Text(
-            label.toUpperCase(),
-            style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 12),
-          ),
-          const Spacer(),
-          if (trailing != null)
-            Text(
-              trailing!,
-              style: const TextStyle(fontWeight: FontWeight.w800),
-            ),
-        ],
-      ),
-      const SizedBox(height: 5),
-      Container(
-        height: 16,
-        decoration: BoxDecoration(
-          color: context.brain.hud,
-          borderRadius: BorderRadius.circular(7),
-          border: Border.all(color: context.brain.outline, width: 3),
-        ),
-        child: FractionallySizedBox(
-          widthFactor: value.clamp(0, 1),
-          alignment: Alignment.centerLeft,
-          child: Container(
-            decoration: BoxDecoration(
-              color: color ?? context.brain.secondary,
-              borderRadius: BorderRadius.circular(4),
-              boxShadow: [
-                BoxShadow(
-                  color: context.brain.highlight.withValues(alpha: .35),
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    ],
-  );
-}
 
-class SectionTitle extends StatelessWidget {
-  const SectionTitle(this.title, {super.key, this.trailing});
-  final String title;
-  final Widget? trailing;
   @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.fromLTRB(2, 24, 2, 12),
-    child: Row(
+  Widget build(BuildContext context) => Semantics(
+    label: '$label, ${(value.clamp(0, 1) * 100).round()} percent',
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Expanded(
-          child: Text(
-            title.toUpperCase(),
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-              fontFamily: 'Fredoka',
-              fontWeight: FontWeight.w700,
-              letterSpacing: .6,
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                label,
+                style: const TextStyle(fontWeight: FontWeight.w700),
+              ),
             ),
-          ),
+            if (trailing != null)
+              Text(trailing!, style: TextStyle(color: context.brain.textMuted)),
+          ],
         ),
-        trailing ?? const SizedBox.shrink(),
+        const SizedBox(height: 8),
+        LinearProgressIndicator(
+          value: value.clamp(0, 1),
+          color: color ?? context.brain.primary,
+        ),
       ],
     ),
   );
 }
 
-class StatPill extends StatelessWidget {
-  const StatPill({
+class SectionHeader extends StatelessWidget {
+  const SectionHeader(this.title, {super.key, this.trailing});
+
+  final String title;
+  final Widget? trailing;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.fromLTRB(0, 28, 0, 12),
+    child: Row(
+      children: [
+        Expanded(
+          child: Text(
+            title,
+            style: Theme.of(
+              context,
+            ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
+          ),
+        ),
+        ?trailing,
+      ],
+    ),
+  );
+}
+
+class MetricTile extends StatelessWidget {
+  const MetricTile({
     super.key,
     required this.icon,
     required this.label,
     required this.value,
     this.color,
   });
+
   final IconData icon;
-  final String label, value;
+  final String label;
+  final String value;
   final Color? color;
+
   @override
   Widget build(BuildContext context) => Expanded(
     child: Container(
-      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 11),
+      constraints: const BoxConstraints(minHeight: 88),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
       decoration: BoxDecoration(
-        color: color ?? context.brain.surfaceHigh,
+        color: color ?? context.brain.surface,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: context.brain.outline, width: 3),
-        boxShadow: [
-          BoxShadow(color: context.brain.shadow, offset: const Offset(0, 4)),
-        ],
+        border: Border.all(color: context.brain.outline.withValues(alpha: .72)),
       ),
       child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(icon, size: 21, color: context.rewardInk),
-          const SizedBox(height: 4),
+          Icon(icon, size: 21, color: context.brain.primary),
+          const SizedBox(height: 5),
           Text(
             value,
-            style: const TextStyle(
-              fontFamily: 'Fredoka',
-              fontSize: 17,
-              fontWeight: FontWeight.w700,
-            ),
+            style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800),
           ),
           Text(
             label,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: Theme.of(context).textTheme.labelSmall,
+            style: Theme.of(
+              context,
+            ).textTheme.labelSmall?.copyWith(color: context.brain.textMuted),
           ),
         ],
       ),
     ),
   );
+}
+
+class ResponsiveContent extends StatelessWidget {
+  const ResponsiveContent({
+    super.key,
+    required this.child,
+    this.maxWidth = 840,
+  });
+
+  final Widget child;
+  final double maxWidth;
+
+  @override
+  Widget build(BuildContext context) => Center(
+    child: ConstrainedBox(
+      constraints: BoxConstraints(maxWidth: maxWidth),
+      child: child,
+    ),
+  );
+}
+
+class BrandMark extends StatelessWidget {
+  const BrandMark({super.key, this.size = 88});
+
+  final double size;
+
+  @override
+  Widget build(BuildContext context) => Semantics(
+    image: true,
+    label: 'BrainFlex focus mark',
+    child: SizedBox.square(
+      dimension: size,
+      child: CustomPaint(
+        painter: _BrandMarkPainter(
+          context.brain.primary,
+          context.brain.secondary,
+        ),
+      ),
+    ),
+  );
+}
+
+class _BrandMarkPainter extends CustomPainter {
+  const _BrandMarkPainter(this.primary, this.secondary);
+
+  final Color primary;
+  final Color secondary;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = size.center(Offset.zero);
+    final stroke = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round
+      ..strokeWidth = math.max(2, size.width * .055);
+    for (final ring in <(double, Color)>[
+      (.38, primary),
+      (.25, secondary),
+      (.12, primary),
+    ]) {
+      stroke.color = ring.$2;
+      canvas.drawCircle(center, size.shortestSide * ring.$1, stroke);
+    }
+    final dot = Paint()..color = primary;
+    canvas.drawCircle(center, size.shortestSide * .055, dot);
+    canvas.drawCircle(
+      Offset(size.width * .78, size.height * .28),
+      size.shortestSide * .045,
+      dot,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _BrandMarkPainter oldDelegate) =>
+      oldDelegate.primary != primary || oldDelegate.secondary != secondary;
 }
 
 class GamePageTitle extends StatelessWidget {
@@ -432,12 +336,14 @@ class GamePageTitle extends StatelessWidget {
     this.subtitle,
     this.trailing,
   });
+
   final String title;
   final String? subtitle;
   final Widget? trailing;
+
   @override
   Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.fromLTRB(16, 10, 16, 8),
+    padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
     child: Row(
       children: [
         Expanded(
@@ -445,7 +351,11 @@ class GamePageTitle extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(title, style: Theme.of(context).textTheme.headlineSmall),
-              if (subtitle != null) Text(subtitle!),
+              if (subtitle != null)
+                Text(
+                  subtitle!,
+                  style: TextStyle(color: context.brain.textMuted),
+                ),
             ],
           ),
         ),

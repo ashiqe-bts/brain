@@ -35,8 +35,7 @@ class ResearchGameBoard extends StatelessWidget {
         Semantics(
           label:
               'Research game stimulus: ${showingStimulus ? trial.prompt : trial.cue}',
-          child: BrainCard(
-            style: GamePanelStyle.inset,
+          child: AppCard(
             child: ConstrainedBox(
               constraints: const BoxConstraints(minHeight: 150),
               child: Center(child: _stimulus(context)),
@@ -50,7 +49,7 @@ class ResearchGameBoard extends StatelessWidget {
             style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
           )
         else if (isStop)
-          ArcadeButton(
+          PrimaryAction(
             color: context.brain.danger,
             onPressed: () => onAnswer(0),
             label: 'TAP',
@@ -67,7 +66,7 @@ class ResearchGameBoard extends StatelessWidget {
                 button: true,
                 child: SizedBox(
                   width: 145,
-                  child: ArcadeButton(
+                  child: PrimaryAction(
                     expanded: true,
                     color: context.gameAccent(type),
                     onPressed: () => onAnswer(index),

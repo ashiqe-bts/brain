@@ -29,10 +29,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 28),
         children: [
-          const Center(child: TitlePlaque('Control board')),
+          const Center(child: PageEyebrow('Control board')),
           const SizedBox(height: 20),
-          BrainCard(
-            style: GamePanelStyle.inset,
+          AppCard(
             child: Column(
               children: [
                 _header('Profile'),
@@ -47,8 +46,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ),
           const SizedBox(height: 18),
-          BrainCard(
-            style: GamePanelStyle.inset,
+          AppCard(
             child: Column(
               children: [
                 _header('Appearance'),
@@ -103,8 +101,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ),
           const SizedBox(height: 18),
-          BrainCard(
-            style: GamePanelStyle.inset,
+          AppCard(
             child: Column(
               children: [
                 _header('Feedback'),
@@ -115,8 +112,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ),
           const SizedBox(height: 18),
-          BrainCard(
-            style: GamePanelStyle.inset,
+          AppCard(
             child: Column(
               children: [
                 _header('Reminders'),
@@ -171,8 +167,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ),
           const SizedBox(height: 18),
-          BrainCard(
-            style: GamePanelStyle.inset,
+          AppCard(
             child: Column(
               children: [
                 _header('About'),

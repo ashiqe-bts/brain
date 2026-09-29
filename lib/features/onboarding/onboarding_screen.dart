@@ -63,7 +63,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     child: const Text('BACK'),
                   ),
                 const Spacer(),
-                ArcadeButton(
+                PrimaryAction(
                   onPressed: _next,
                   color: page == 3
                       ? context.brain.success
@@ -87,13 +87,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         child: Center(
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 620),
-            child: BrainCard(
-              style: GamePanelStyle.inset,
+            child: AppCard(
               padding: const EdgeInsets.all(24),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  TitlePlaque(eyebrow),
+                  PageEyebrow(eyebrow),
                   const SizedBox(height: 14),
                   Text(
                     title,
@@ -173,7 +172,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           runSpacing: 10,
           children: ['RED', 'BLUE', 'GREEN', 'YELLOW']
               .map(
-                (label) => ArcadeButton(
+                (label) => PrimaryAction(
                   color: context.clashColor(
                     const ['RED', 'BLUE', 'GREEN', 'YELLOW'].indexOf(label),
                   ),

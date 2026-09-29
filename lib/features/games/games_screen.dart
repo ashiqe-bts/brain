@@ -5,6 +5,7 @@ import '../../core/state/brain_cubit.dart';
 import '../../core/training/training_analytics.dart';
 import '../../core/widgets/common.dart';
 import '../../app/theme/brain_theme.dart';
+import '../../app/theme/game_visuals.dart';
 import 'game_launcher.dart';
 import 'research_basis_sheet.dart';
 
@@ -31,7 +32,7 @@ class _GamesScreenState extends State<GamesScreen> {
               child: ListView(
                 padding: const EdgeInsets.fromLTRB(16, 4, 16, 18),
                 children: [
-                  const Center(child: TitlePlaque('Choose a challenge')),
+                  const Center(child: PageEyebrow('Choose a challenge')),
                   const SizedBox(height: 14),
                   const Text(
                     'You vs you: each game compares only with your own compatible practice. Relaxed sessions never affect trends.',
@@ -70,7 +71,7 @@ class _GamesScreenState extends State<GamesScreen> {
                           for (final domain in domains)
                             if (selectedDomain == null ||
                                 selectedDomain == domain) ...[
-                              SectionTitle(_domainLabel(domain)),
+                              SectionHeader(_domainLabel(domain)),
                               _gameGrid(
                                 context,
                                 activeGames
@@ -119,27 +120,11 @@ class _GamesScreenState extends State<GamesScreen> {
       difficulty: difficulty,
     );
     final accent = context.gameAccent(game);
-    return BrainCard(
+    return AppCard(
       color: Color.lerp(accent, context.brain.surface, .68),
       child: Row(
         children: [
-          Container(
-            width: 58,
-            height: 58,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: accent,
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: context.brain.outline, width: 3),
-              boxShadow: [
-                BoxShadow(
-                  color: context.brain.shadow,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: Text(game.emoji, style: const TextStyle(fontSize: 28)),
-          ),
+          GameIcon(game: game, size: 28, decorated: true),
           const SizedBox(width: 14),
           Expanded(
             child: Column(
@@ -210,7 +195,7 @@ class _GamesScreenState extends State<GamesScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Center(
-                child: TitlePlaque(game.title, color: context.gameAccent(game)),
+                child: PageEyebrow(game.title, color: context.gameAccent(game)),
               ),
               const SizedBox(height: 18),
               ...[
@@ -232,7 +217,7 @@ class _GamesScreenState extends State<GamesScreen> {
               ].map(
                 (m) => Padding(
                   padding: const EdgeInsets.only(bottom: 10),
-                  child: BrainCard(
+                  child: AppCard(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 14,
                       vertical: 10,

@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 
 import '../../app/theme/brain_theme.dart';
+import '../../app/theme/game_visuals.dart';
 import '../../core/models/brain_models.dart';
 import '../../core/state/brain_cubit.dart';
 import '../../core/training/training_analytics.dart';
@@ -40,7 +41,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
                 child: Column(
                   children: [
                     _baseline(context, baseline),
-                    const SectionTitle('Fifteen-game profile'),
+                    const SectionHeader('Fifteen-game profile'),
                     Semantics(
                       label: 'Filter insights by cognitive domain',
                       child: Wrap(
@@ -67,7 +68,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
                     for (final domain in domains)
                       if (selectedDomain == null ||
                           selectedDomain == domain) ...[
-                        SectionTitle(_domainLabel(domain)),
+                        SectionHeader(_domainLabel(domain)),
                         ...activeGames
                             .where((game) => game.skill == domain)
                             .map(
@@ -79,13 +80,13 @@ class _ProgressScreenState extends State<ProgressScreen> {
                               ),
                             ),
                       ],
-                    const SectionTitle('Weekly review'),
+                    const SectionHeader('Weekly review'),
                     _weeklyReview(context, review, baseline.isComplete),
-                    const SectionTitle('Recent sessions'),
+                    const SectionHeader('Recent sessions'),
                     _history(context, data),
-                    const SectionTitle('Activity calendar'),
-                    BrainCard(child: _calendar(context, data)),
-                    const SectionTitle('Achievements'),
+                    const SectionHeader('Activity calendar'),
+                    AppCard(child: _calendar(context, data)),
+                    const SectionHeader('Achievements'),
                     _achievements(context, data),
                     const SizedBox(height: 16),
                     const Text(
@@ -102,8 +103,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
     );
   }
 
-  Widget _baseline(BuildContext context, BaselineStatus baseline) => BrainCard(
-    style: GamePanelStyle.inset,
+  Widget _baseline(BuildContext context, BaselineStatus baseline) => AppCard(
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -169,14 +169,14 @@ class _ProgressScreenState extends State<ProgressScreen> {
     };
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
-      child: BrainCard(
+      child: AppCard(
         color: Color.lerp(context.gameAccent(game), context.brain.surface, .78),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
-                Text(game.emoji, style: const TextStyle(fontSize: 28)),
+                GameIcon(game: game, size: 28, decorated: true),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(
@@ -244,7 +244,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
     BuildContext context,
     WeeklyReview review,
     bool baselineReady,
-  ) => BrainCard(
+  ) => AppCard(
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -274,19 +274,19 @@ class _ProgressScreenState extends State<ProgressScreen> {
         ),
       );
     if (recent.isEmpty) {
-      return const BrainCard(
+      return const AppCard(
         child: Text(
           'Complete a Standard or daily session to start your history.',
         ),
       );
     }
-    return BrainCard(
+    return AppCard(
       child: Column(
         children: recent.take(20).map((result) {
           final time = result.completedAt?.toLocal();
           return ListTile(
             contentPadding: EdgeInsets.zero,
-            leading: Text(result.type.emoji),
+            leading: GameIcon(game: result.type, decorated: true),
             title: Text(result.type.title),
             subtitle: Text(
               '${result.mode.displayTitle} · ${time == null ? 'Earlier version' : DateFormat.MMMd().add_jm().format(time)}',
@@ -390,7 +390,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
       'Unstoppable': 'Reach a 30-day streak',
       'Perfectionist': 'Finish a workout above 95% accuracy',
     };
-    return BrainCard(
+    return AppCard(
       child: Column(
         children: all.entries.map((entry) {
           final earned = data.achievements.contains(entry.key);

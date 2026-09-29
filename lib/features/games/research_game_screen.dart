@@ -367,7 +367,7 @@ class _ResearchGameScreenState extends State<ResearchGameScreen>
                 color: context.gameAccent(widget.type),
               ),
               const SizedBox(height: 12),
-              TitlePlaque(
+              PageEyebrow(
                 '${widget.type.domain} review',
                 color: context.gameAccent(widget.type),
               ),
@@ -386,7 +386,7 @@ class _ResearchGameScreenState extends State<ResearchGameScreen>
               const SizedBox(height: 8),
               Text(sessionTip(result), textAlign: TextAlign.center),
               const SizedBox(height: 20),
-              ArcadeButton(
+              PrimaryAction(
                 expanded: true,
                 color: context.brain.success,
                 onPressed: () {
@@ -480,7 +480,7 @@ class _ResearchGameScreenState extends State<ResearchGameScreen>
           ],
         ),
         const SizedBox(height: 12),
-        ResourceBar(
+        ProgressMeter(
           label: widget.mode.displayTitle,
           value: timed
               ? timeLeft / max(1, definition.standardSeconds)

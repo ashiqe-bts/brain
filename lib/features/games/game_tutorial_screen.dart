@@ -111,7 +111,7 @@ class _GameTutorialScreenState extends State<GameTutorialScreen> {
         style: Theme.of(context).textTheme.titleMedium,
       ),
       const SizedBox(height: 16),
-      ResourceBar(
+      ProgressMeter(
         label: 'Tutorial progress',
         value: stepIndex / tutorial.steps.length,
         trailing: '${stepIndex + 1} / ${tutorial.steps.length}',
@@ -120,8 +120,7 @@ class _GameTutorialScreenState extends State<GameTutorialScreen> {
       const SizedBox(height: 18),
       Expanded(
         child: SingleChildScrollView(
-          child: BrainCard(
-            style: GamePanelStyle.inset,
+          child: AppCard(
             child: Column(
               children: [
                 Text(
@@ -155,7 +154,7 @@ class _GameTutorialScreenState extends State<GameTutorialScreen> {
                           ? 'Do not press this button'
                           : 'Tutorial answer ${index + 1}',
                       button: true,
-                      child: ArcadeButton(
+                      child: PrimaryAction(
                         color: step.isWaitStep
                             ? context.brain.danger
                             : context.gameAccent(widget.type),
@@ -205,7 +204,7 @@ class _GameTutorialScreenState extends State<GameTutorialScreen> {
         textAlign: TextAlign.center,
       ),
       const SizedBox(height: 24),
-      ArcadeButton(
+      PrimaryAction(
         expanded: true,
         color: context.brain.success,
         onPressed: () => Navigator.pop(context, true),
