@@ -11,28 +11,18 @@ class NotificationService {
     await plugin.initialize(
       settings: const InitializationSettings(
         android: AndroidInitializationSettings('@mipmap/ic_launcher'),
-        iOS: DarwinInitializationSettings(
-          requestAlertPermission: false,
-          requestBadgePermission: false,
-          requestSoundPermission: false,
-        ),
       ),
     );
   }
 
   Future<bool> requestPermission() async {
-    if (kIsWeb) return true;
+    if (kIsWeb) return false;
     final android = await plugin
         .resolvePlatformSpecificImplementation<
           AndroidFlutterLocalNotificationsPlugin
         >()
         ?.requestNotificationsPermission();
-    final ios = await plugin
-        .resolvePlatformSpecificImplementation<
-          IOSFlutterLocalNotificationsPlugin
-        >()
-        ?.requestPermissions(alert: true, badge: true, sound: true);
-    return android ?? ios ?? true;
+    return android ?? true;
   }
 
   Future<void> scheduleDaily({
@@ -54,10 +44,10 @@ class NotificationService {
     if (!when.isAfter(now)) when = when.add(const Duration(days: 1));
     await plugin.zonedSchedule(
       id: 0,
-      title: 'Your BrainFlex workout is ready',
+      title: 'Ready for today’s you-vs-you practice?',
       body: streakWarning
-          ? 'Your streak is still alive. Today’s workout takes about 4 minutes.'
-          : 'Five games from your balanced training rotation are ready.',
+          ? 'Keep your routine going and see how today feels.'
+          : 'Five games are ready to compare with your own practice.',
       scheduledDate: when,
       notificationDetails: const NotificationDetails(
         android: AndroidNotificationDetails(
@@ -65,7 +55,6 @@ class NotificationService {
           'Daily BrainFlex',
           channelDescription: 'One gentle daily workout reminder',
         ),
-        iOS: DarwinNotificationDetails(),
       ),
       androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
       matchDateTimeComponents: DateTimeComponents.time,

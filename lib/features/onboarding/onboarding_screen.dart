@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../app/theme/brain_theme.dart';
@@ -201,27 +202,35 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     'Your results stay on this device. A single optional local reminder can help you build a routine.',
     Column(
       children: [
-        SwitchListTile(
-          value: reminders,
-          onChanged: (value) => setState(() => reminders = value),
-          title: const Text('Daily reminder'),
-          subtitle: const Text('Scheduled only on this device'),
-        ),
-        ListTile(
-          enabled: reminders,
-          leading: const Icon(Icons.schedule),
-          title: Text(reminder.format(context)),
-          trailing: const Icon(Icons.chevron_right),
-          onTap: reminders
-              ? () async {
-                  final picked = await showTimePicker(
-                    context: context,
-                    initialTime: reminder,
-                  );
-                  if (picked != null) setState(() => reminder = picked);
-                }
-              : null,
-        ),
+        if (kIsWeb)
+          const ListTile(
+            leading: Icon(Icons.notifications_off_outlined),
+            title: Text('Reminders unavailable in Chrome'),
+            subtitle: Text('Daily reminders are supported on Android only.'),
+          )
+        else ...[
+          SwitchListTile(
+            value: reminders,
+            onChanged: (value) => setState(() => reminders = value),
+            title: const Text('Daily reminder'),
+            subtitle: const Text('Scheduled only on this Android device'),
+          ),
+          ListTile(
+            enabled: reminders,
+            leading: const Icon(Icons.schedule),
+            title: Text(reminder.format(context)),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: reminders
+                ? () async {
+                    final picked = await showTimePicker(
+                      context: context,
+                      initialTime: reminder,
+                    );
+                    if (picked != null) setState(() => reminder = picked);
+                  }
+                : null,
+          ),
+        ],
       ],
     ),
   );

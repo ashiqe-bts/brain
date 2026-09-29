@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../core/models/brain_models.dart';
 import '../../core/services/notification_service.dart';
@@ -119,40 +120,53 @@ class _SettingsScreenState extends State<SettingsScreen> {
             child: Column(
               children: [
                 _header('Reminders'),
-                SwitchListTile(
-                  value: d.reminderEnabled,
-                  onChanged: (v) => _toggleReminder(v, d),
-                  secondary: const Icon(Icons.notifications_active_outlined),
-                  title: const Text('Daily reminder'),
-                  subtitle: Text(
-                    '${TimeOfDay(hour: d.reminderHour, minute: d.reminderMinute).format(context)} · at most one per day',
+                if (kIsWeb)
+                  const ListTile(
+                    leading: Icon(Icons.notifications_off_outlined),
+                    title: Text('Reminders unavailable in Chrome'),
+                    subtitle: Text(
+                      'Daily reminders are supported on Android only.',
+                    ),
+                  )
+                else ...[
+                  SwitchListTile(
+                    value: d.reminderEnabled,
+                    onChanged: (v) => _toggleReminder(v, d),
+                    secondary: const Icon(Icons.notifications_active_outlined),
+                    title: const Text('Daily reminder'),
+                    subtitle: Text(
+                      '${TimeOfDay(hour: d.reminderHour, minute: d.reminderMinute).format(context)} · at most one per day',
+                    ),
                   ),
-                ),
-                ListTile(
-                  enabled: d.reminderEnabled,
-                  leading: const Icon(Icons.schedule),
-                  title: const Text('Reminder time'),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () => _pickTime(d),
-                ),
-                SwitchListTile(
-                  value: d.streakWarning,
-                  onChanged: (v) async {
-                    await context.read<BrainCubit>().toggle('streakWarning', v);
-                    if (d.reminderEnabled) {
-                      await notifications.scheduleDaily(
-                        hour: d.reminderHour,
-                        minute: d.reminderMinute,
-                        streakWarning: v,
+                  ListTile(
+                    enabled: d.reminderEnabled,
+                    leading: const Icon(Icons.schedule),
+                    title: const Text('Reminder time'),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () => _pickTime(d),
+                  ),
+                  SwitchListTile(
+                    value: d.streakWarning,
+                    onChanged: (v) async {
+                      await context.read<BrainCubit>().toggle(
+                        'streakWarning',
+                        v,
                       );
-                    }
-                  },
-                  secondary: const Icon(Icons.local_fire_department_outlined),
-                  title: const Text('Streak-aware wording'),
-                  subtitle: const Text(
-                    'Replaces the normal reminder; it does not add another',
+                      if (d.reminderEnabled) {
+                        await notifications.scheduleDaily(
+                          hour: d.reminderHour,
+                          minute: d.reminderMinute,
+                          streakWarning: v,
+                        );
+                      }
+                    },
+                    secondary: const Icon(Icons.local_fire_department_outlined),
+                    title: const Text('Streak-aware wording'),
+                    subtitle: const Text(
+                      'Replaces the normal reminder; it does not add another',
+                    ),
                   ),
-                ),
+                ],
               ],
             ),
           ),

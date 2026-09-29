@@ -14,8 +14,17 @@ The product promise is deliberately narrow: BrainFlex helps users practise and m
 4. Keep participation rewards separate from cognitive performance.
 5. Keep all personal information on the device.
 6. Make every task usable without relying on colour alone.
+7. Keep the experience strictly “you vs you”; never rank users against peers.
 
-## 3. Navigation and core flows
+## 3. Supported platforms and identity
+
+- Android and Flutter web in Chrome are the supported release targets. Other browsers are not intentionally blocked.
+- Local scheduled reminders are Android-only. Chrome explicitly describes reminders as unavailable.
+- First launch requires a trimmed 1–30-character Unicode display name without line breaks or control characters.
+- Existing onboarded users without a valid name see the name prompt once without losing progress.
+- The name remains local, is editable in Settings, and Home greets the user with `HEY, {name}` above the date.
+
+## 4. Navigation and core flows
 
 ### Today
 
@@ -26,10 +35,10 @@ The product promise is deliberately narrow: BrainFlex helps users practise and m
 
 ### Train
 
-- Lists all 15 active games grouped by cognitive domain, with current difficulty, compatible personal best, and a transparent research-basis sheet.
+- Lists all 15 active games grouped by cognitive domain, with current difficulty, compatible best result, a replayable Tutorial action, and a transparent research-basis sheet.
 - Standard mode contributes comparable data.
 - Relaxed mode is untimed and excluded from performance trends.
-- Personal Best mode compares only against compatible runs using the same rules version and difficulty.
+- Challenge My Best mode compares only against compatible runs using the same rules version and difficulty.
 
 ### Insights
 
@@ -37,7 +46,7 @@ The product promise is deliberately narrow: BrainFlex helps users practise and m
 - Never combines the games into a composite cognitive score.
 - Always displays a skill level together with raw measures such as accuracy, span, or median response time.
 
-## 4. Training tasks
+## 5. Training tasks
 
 ### Focus — Color Clash
 
@@ -73,18 +82,27 @@ The product promise is deliberately narrow: BrainFlex helps users practise and m
 
 Reflex Tap and the earlier Visual Search task are archived. Their stored results remain readable but they are excluded from active workouts, adaptation, missions, and recommendations.
 
-## 5. Scoring and comparability
+### Interactive tutorials
+
+- Every active game supplies versioned tutorial metadata and deterministic easy practice steps.
+- The first launch of any Standard, Relaxed, Challenge My Best, or official session must complete that game’s current-version tutorial before play begins.
+- Exiting a required tutorial starts no game and records nothing. An interrupted daily workout remains on the same round.
+- Tutorial completion persists immediately. A rules-version change requires the revised tutorial once.
+- Replay is always available from Train and never changes tutorial state, history, scores, XP, missions, baselines, trends, best results, or difficulty.
+- Tutorial timers and scoring are frozen. Incorrect answers explain the rule and retry until successful; touch, keyboard, screen readers, high contrast, reduced motion, and 200% text are supported.
+
+## 6. Scoring and comparability
 
 - Each game has a versioned, game-specific scorer. A generic accuracy/pace score is prohibited.
 - Every stored result includes a stable ID, completion timestamp, game and rules version, session kind, difficulty, duration, accuracy, raw metrics, and score components.
 - Comparable trend sessions are Standard or official sessions with a timestamp and matching rules.
 - A rules-version change starts a new comparison series without deleting earlier history.
-- Personal Best additionally requires matching difficulty.
+- Challenge My Best additionally requires matching difficulty.
 - Participation XP and the overall participation level must never be presented as cognitive performance.
 
 Skill training levels range from 1.0 to 10.0. They combine the played difficulty with within-level task performance. They are an app-specific training indicator and are always accompanied by raw metrics.
 
-## 6. Baseline and adaptation
+## 7. Baseline and adaptation
 
 Each game forms its own progressive baseline from three official results under its current rules version. A balanced rotation can complete all 15 baselines after nine workouts. Insights shows partial per-game progress and does not label a trend until that game also has three compatible post-baseline observations.
 
@@ -97,12 +115,13 @@ After each comparable session, difficulty reviews the latest three sessions at t
 
 Thresholds belong to versioned game configuration and require boundary tests.
 
-## 7. Reviews and recommendations
+## 8. Reviews and recommendations
 
 ### Session review
 
 - Show the raw result for each trained skill.
-- Show change from baseline and the previous compatible attempt when available.
+- Compare only with the latest scored result for the same game and rules version. Say “yesterday” only when it was the previous local calendar day; otherwise say “your last run.”
+- Describe a match neutrally, and describe lower results as normal session variation rather than decline.
 - Provide one deterministic, task-specific actionable tip.
 - Explain when compatible data is insufficient.
 
@@ -114,17 +133,19 @@ Thresholds belong to versioned game configuration and require boundary tests.
 - Provide one deterministic next-week recommendation.
 - Do not label a trend until there are at least three compatible post-baseline observations.
 
-## 8. Storage, privacy, and migration
+## 9. Storage, privacy, and migration
 
 Drift game-session rows are the source of truth for dated history. History queries are indexed by game and completion time and must be bounded or paginated. Gameplay must not decode the full database or scan all historical rows.
 
-Migration from the original product must preserve settings, onboarding, reminders, themes, streaks, XP, participation levels, achievements, workouts, daily summaries, and meaningful game results. Timestamped records are reconstructed where possible. Undated snapshot-only results remain eligible for historical personal-best display but are excluded from time-based trends. A pre-migration state snapshot is retained until the new state saves successfully.
+Migration from the original product must preserve settings, onboarding, reminders, themes, streaks, XP, participation levels, achievements, workouts, daily summaries, and meaningful game results. Timestamped records are reconstructed where possible. Undated snapshot-only results remain eligible for historical best-result display but are excluded from time-based trends. A pre-migration state snapshot is retained until the new state saves successfully.
+
+State also stores the nullable local display name and completed tutorial keys in `gameId:rulesVersion` form. Current-version historical play marks that tutorial complete during migration; older-version play does not.
 
 Unrecognized legacy snapshot fields are ignored after migration and are not exposed in the product.
 
 There are no accounts, backend, cloud synchronization, advertising SDKs, or product telemetry. On web, local data uses browser-managed storage; clearing site data removes it.
 
-## 9. Accessibility
+## 10. Accessibility
 
 - Support screen readers with descriptive labels and live result feedback.
 - Support 200% text scaling without clipped essential content.
@@ -133,15 +154,15 @@ There are no accounts, backend, cloud synchronization, advertising SDKs, or prod
 - Respect reduced-motion settings and avoid flashing content.
 - Pause safely when the app becomes inactive and allow users to quit without corrupting saved progress.
 
-## 10. Performance and release gates
+## 11. Performance and release gates
 
 Release candidates require:
 
 - `flutter analyze`
 - unit and widget tests
-- web build
+- Chrome web build and responsive/accessibility smoke test
 - Android debug build
-- iOS simulator build
+- Android integration flow
 - manual screen-reader, large-text, high-contrast, reduced-motion, and colour-independence review
 - Flutter profile-mode startup and gameplay review on the agreed reference device
 
@@ -149,6 +170,6 @@ Profile targets are a cold interactive startup under two seconds, input feedback
 
 Automated coverage includes every engine and scorer, seeded generation, rotation coverage, adaptation boundaries, comparison rules, per-game baselines and rolling trends, weekly recommendation, streaks, migration, all 15 game screens, pause/quit, reviews, Insights states, accessibility configurations, and restart/persistence.
 
-## 11. Out of scope
+## 12. Out of scope
 
 This release does not include leaderboards, social competition, AI coaching, accounts, cloud sync, a backend, ads, age norms, diagnosis, clinical claims, or scored gameplay modifiers.

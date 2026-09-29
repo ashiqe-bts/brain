@@ -27,12 +27,13 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('A personal cognitive gym'), findsOneWidget);
+    expect(find.text('What should we call you?'), findsOneWidget);
     expect(find.textContaining('Demo Ad'), findsNothing);
 
     await repository.save(
       BrainState(
         onboarded: true,
+        displayName: 'Asha',
         workouts: 9,
         daily: [
           _summary('2026-09-21'),
