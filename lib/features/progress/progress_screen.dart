@@ -199,9 +199,19 @@ class _ProgressScreenState extends State<ProgressScreen> {
                   onPressed: () => showResearchBasisSheet(context, game),
                   icon: const Icon(Icons.science_outlined),
                 ),
-                Icon(icon),
-                const SizedBox(width: 6),
-                Text(label),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                Icon(icon, size: 20, color: context.brain.primary),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    label,
+                    style: const TextStyle(fontWeight: FontWeight.w700),
+                  ),
+                ),
               ],
             ),
             const SizedBox(height: 12),

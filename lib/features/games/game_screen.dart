@@ -512,7 +512,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
                 _startTimer();
               }
             },
-            child: const Text('RESUME'),
+            child: const Text('Resume'),
           ),
         ],
       ),
@@ -774,11 +774,11 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('STAY'),
+            child: const Text('Stay'),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('LEAVE'),
+            child: const Text('Leave'),
           ),
         ],
       ),

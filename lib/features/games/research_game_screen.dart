@@ -451,7 +451,7 @@ class _ResearchGameScreenState extends State<ResearchGameScreen>
         const SizedBox(height: 16),
         Text('Paused', style: Theme.of(context).textTheme.headlineSmall),
         const SizedBox(height: 16),
-        FilledButton(onPressed: _resume, child: const Text('RESUME')),
+        FilledButton(onPressed: _resume, child: const Text('Resume')),
       ],
     ),
   );
@@ -524,11 +524,11 @@ class _ResearchGameScreenState extends State<ResearchGameScreen>
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext, false),
-            child: const Text('KEEP PLAYING'),
+            child: const Text('Keep playing'),
           ),
           TextButton(
             onPressed: () => Navigator.pop(dialogContext, true),
-            child: const Text('LEAVE'),
+            child: const Text('Leave'),
           ),
         ],
       ),

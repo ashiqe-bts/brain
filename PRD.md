@@ -20,15 +20,17 @@ The product promise is deliberately narrow: BrainFlex helps users practise and m
 
 - Android and Flutter web in Chrome are the supported release targets. Other browsers are not intentionally blocked.
 - Local scheduled reminders are Android-only. Chrome explicitly describes reminders as unavailable.
-- First launch requires a trimmed 1–30-character Unicode display name without line breaks or control characters.
+- First launch begins with a value-first welcome, then requires a trimmed 1–30-character Unicode display name without line breaks or control characters.
 - Existing onboarded users without a valid name see the name prompt once without losing progress.
-- The name remains local, is editable in Settings, and Home greets the user with `HEY, {name}` above the date.
+- The name remains local, is editable in Settings, and Home greets the user with `Hey, {name}` above the date.
 
 ## 4. Navigation and core flows
 
+Compact layouts use bottom navigation; expanded Chrome layouts use a navigation rail. Calm Light is the default, with Calm Dark and High Contrast available in Settings.
+
 ### Today
 
-- Shows the daily standardized workout, baseline status, current streak, workout count, and participation XP.
+- Shows the daily standardized workout, its five-game rotation, baseline status, current streak, and workout count. Participation XP is not a primary Home metric.
 - A daily workout contains five official rounds from a deterministic three-workout rotation that covers every active game once per cycle.
 - Each completed round is saved so an interrupted workout can resume safely.
 - After baseline completion, recommends optional practice for the two least-trained or weakest-trending skills.
@@ -149,7 +151,7 @@ There are no accounts, backend, cloud synchronization, advertising SDKs, or prod
 
 - Support screen readers with descriptive labels and live result feedback.
 - Support 200% text scaling without clipped essential content.
-- Provide visible focus, minimum 44×44 logical-pixel touch targets, and logical traversal order.
+- Provide visible focus, minimum 48×48 logical-pixel touch targets, and logical traversal order.
 - Provide high-contrast themes and colour-independent game cues.
 - Respect reduced-motion settings and avoid flashing content.
 - Pause safely when the app becomes inactive and allow users to quit without corrupting saved progress.

@@ -11,7 +11,7 @@ class GameTutorialScreen extends StatefulWidget {
   const GameTutorialScreen({
     super.key,
     required this.type,
-    this.completionActionLabel = 'START PLAYING',
+    this.completionActionLabel = 'Start playing',
   });
 
   final GameType type;

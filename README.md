@@ -10,14 +10,15 @@ Every Train card includes a research-basis sheet naming the studied paradigm, po
 
 ## Product behaviour
 
-- First launch asks for a local display name, and Home opens with a personal greeting.
+- First launch opens with a value-first welcome, then asks for a local display name; Home opens with a personal greeting.
 - Today provides five games from the current balanced rotation, baseline status, streaks, and practice recommendations.
 - Every game has a required interactive tutorial on first play for its current rules version; tutorials can be replayed without affecting progress.
 - Train offers Standard, Relaxed, and Challenge My Best sessions.
 - Insights provides 15 separate game profiles, history, rolling trends, weekly reviews, and achievements.
 - Standard and official sessions contribute to trends. Relaxed sessions are untimed and excluded.
 - Challenge My Best requires the same game rules version and difficulty. Result feedback compares only with the latest compatible personal attempt.
-- XP and the overall training level measure participation only. Skill levels are shown separately with raw metrics.
+- Participation XP remains compatible with existing data but is de-emphasized in the interface. Skill levels are shown separately with raw metrics.
+- Calm Light, Calm Dark, and High Contrast themes share a tonal, icon-led Material 3 design. Compact layouts use bottom navigation; wide Chrome layouts use a navigation rail.
 - All data stays on the device. There are no accounts, cloud sync, product telemetry, advertising, or paid gameplay advantages.
 
 ## Run locally
@@ -52,4 +53,4 @@ Performance targets for release review are a cold interactive start under two se
 
 ## Data migration
 
-The current schema migrates older installations non-destructively. Existing users are asked once for a local display name. Settings, reminders, themes, streaks, XP, participation levels, achievements, workouts, daily summaries, and usable session history are retained. Current-version history satisfies the corresponding first-play tutorial; older-rule history does not. Dated sessions move to Drift as the history source of truth; undated legacy results remain available for best-result history but are excluded from time-based trends. A pre-migration snapshot is retained before the new state is saved successfully.
+The current schema migrates older installations non-destructively. Existing users are asked once for a local display name. Midnight and OLED preferences map to Calm Dark, Daydream maps to Calm Light, and High Contrast remains High Contrast. Settings, reminders, streaks, XP, participation levels, achievements, workouts, daily summaries, and usable session history are retained. Current-version history satisfies the corresponding first-play tutorial; older-rule history does not. Dated sessions move to Drift as the history source of truth; undated legacy results remain available for best-result history but are excluded from time-based trends. A pre-migration snapshot is retained before the new state is saved successfully.

@@ -132,4 +132,33 @@ void main() {
     expect(find.byType(NavigationBar), findsNothing);
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets('core destinations fit a 320 pixel Android viewport', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(320, 720);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      BlocProvider.value(
+        value: cubit,
+        child: MaterialApp(
+          theme: buildBrainTheme(BrainTheme.calmLight),
+          home: const AppShell(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+
+    await tester.tap(find.text('Train'));
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+
+    await tester.tap(find.text('Insights'));
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+  });
 }

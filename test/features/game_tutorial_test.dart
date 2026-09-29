@@ -85,7 +85,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 700));
     }
-    await tester.tap(find.text('START PLAYING'));
+    await tester.tap(find.text('Start playing'));
     await tester.pumpAndSettle();
 
     expect(completed, isTrue);
@@ -110,6 +110,6 @@ void main() {
     await tester.pump(const Duration(milliseconds: 1400));
     await tester.pump(const Duration(milliseconds: 700));
 
-    expect(find.text('START PLAYING'), findsOneWidget);
+    expect(find.text('Start playing'), findsOneWidget);
   });
 }
