@@ -107,17 +107,20 @@ class PrimaryAction extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final button = FilledButton.icon(
-      onPressed: onPressed,
-      style: color == null
-          ? null
-          : FilledButton.styleFrom(
-              backgroundColor: color,
-              foregroundColor: context.onColor(color!),
-            ),
-      icon: icon == null ? const SizedBox.shrink() : Icon(icon),
-      label: Text(label),
-    );
+    final style = color == null
+        ? null
+        : FilledButton.styleFrom(
+            backgroundColor: color,
+            foregroundColor: context.onColor(color!),
+          );
+    final button = icon == null
+        ? FilledButton(onPressed: onPressed, style: style, child: Text(label))
+        : FilledButton.icon(
+            onPressed: onPressed,
+            style: style,
+            icon: Icon(icon),
+            label: Text(label),
+          );
     return expanded ? SizedBox(width: double.infinity, child: button) : button;
   }
 }

@@ -210,6 +210,12 @@ ThemeData buildBrainTheme(BrainTheme value) {
     disabledColor: p.text.withValues(alpha: .42),
     fontFamily: 'Nunito',
     iconTheme: IconThemeData(color: p.text),
+    iconButtonTheme: IconButtonThemeData(
+      style: IconButton.styleFrom(
+        minimumSize: const Size.square(48),
+        foregroundColor: p.text,
+      ),
+    ),
     textTheme: baseText.copyWith(
       displayLarge: baseText.displayLarge?.copyWith(
         fontWeight: FontWeight.w700,
@@ -300,6 +306,39 @@ ThemeData buildBrainTheme(BrainTheme value) {
       labelStyle: TextStyle(color: p.text, fontWeight: FontWeight.w700),
       side: BorderSide(color: p.outline),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+    ),
+    navigationBarTheme: NavigationBarThemeData(
+      height: 72,
+      backgroundColor: p.surface,
+      indicatorColor: p.primary.withValues(alpha: .14),
+      iconTheme: WidgetStateProperty.resolveWith(
+        (states) => IconThemeData(
+          color: states.contains(WidgetState.selected)
+              ? p.primary
+              : p.textMuted,
+        ),
+      ),
+      labelTextStyle: WidgetStateProperty.resolveWith(
+        (states) => TextStyle(
+          color: states.contains(WidgetState.selected)
+              ? p.primary
+              : p.textMuted,
+          fontWeight: states.contains(WidgetState.selected)
+              ? FontWeight.w800
+              : FontWeight.w600,
+        ),
+      ),
+    ),
+    navigationRailTheme: NavigationRailThemeData(
+      backgroundColor: p.surface,
+      indicatorColor: p.primary.withValues(alpha: .14),
+      selectedIconTheme: IconThemeData(color: p.primary),
+      unselectedIconTheme: IconThemeData(color: p.textMuted),
+      selectedLabelTextStyle: TextStyle(
+        color: p.primary,
+        fontWeight: FontWeight.w800,
+      ),
+      unselectedLabelTextStyle: TextStyle(color: p.textMuted),
     ),
     snackBarTheme: SnackBarThemeData(
       backgroundColor: p.hud,

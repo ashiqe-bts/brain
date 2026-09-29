@@ -44,7 +44,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Today'), findsOneWidget);
-    expect(find.text('HEY, Asha'), findsOneWidget);
+    expect(find.text('Hey, Asha'), findsOneWidget);
     expect(find.text('Train'), findsOneWidget);
     expect(find.text('Insights'), findsOneWidget);
     expect(find.text('Lab'), findsNothing);
@@ -56,10 +56,10 @@ void main() {
     expect(find.byTooltip('Tutorial for Color Clash'), findsOneWidget);
     expect(find.text('Challenge My Best'), findsNothing);
 
-    await tester.tap(find.byIcon(Icons.insights_rounded));
+    await tester.tap(find.text('Insights'));
     await tester.pumpAndSettle();
 
-    expect(find.text('FIFTEEN-GAME PROFILE'), findsOneWidget);
+    expect(find.text('Fifteen-game profile'), findsOneWidget);
     expect(find.text('0 of 15 game baselines ready'), findsOneWidget);
     expect(find.text('All'), findsOneWidget);
     expect(find.byTooltip('Research basis for Color Clash'), findsOneWidget);
@@ -106,6 +106,30 @@ void main() {
     await tester.pumpAndSettle();
     await tester.scrollUntilVisible(find.text('Color Clash'), 300);
     expect(find.byTooltip('Tutorial for Color Clash'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('uses a navigation rail on expanded Chrome layouts', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1440, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      BlocProvider.value(
+        value: cubit,
+        child: MaterialApp(
+          theme: buildBrainTheme(BrainTheme.calmLight),
+          home: const AppShell(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byType(NavigationRail), findsOneWidget);
+    expect(find.byType(NavigationBar), findsNothing);
     expect(tester.takeException(), isNull);
   });
 }

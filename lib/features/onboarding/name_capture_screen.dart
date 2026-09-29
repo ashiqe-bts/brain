@@ -45,7 +45,7 @@ class _NameCaptureScreenState extends State<NameCaptureScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.person_outline_rounded, size: 72),
+                  const BrandMark(size: 72),
                   const SizedBox(height: 16),
                   Text(
                     'Add your name',
@@ -79,7 +79,7 @@ class _NameCaptureScreenState extends State<NameCaptureScreen> {
                         ? _save
                         : null,
                     icon: Icons.arrow_forward_rounded,
-                    label: saving ? 'SAVING' : 'CONTINUE',
+                    label: saving ? 'Saving' : 'Continue',
                   ),
                 ],
               ),
