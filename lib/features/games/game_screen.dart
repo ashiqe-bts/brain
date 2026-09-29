@@ -415,7 +415,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
               ),
               if (widget.personalBest != null) ...[
                 const SizedBox(height: 8),
-                Text('Personal best: ${widget.personalBest!.score}'),
+                Text('Your best matching score: ${widget.personalBest!.score}'),
               ],
               const SizedBox(height: 20),
               ArcadeButton(
@@ -553,7 +553,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
                     _pill('Score $score'),
                     _pill('Combo $combo'),
                     if (widget.personalBest != null)
-                      _pill('PB ${widget.personalBest!.score}'),
+                      _pill('Best ${widget.personalBest!.score}'),
                   ],
                 ),
               ),
@@ -561,9 +561,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
           ),
           const SizedBox(height: 16),
           ResourceBar(
-            label: widget.mode == GameMode.official
-                ? 'Daily quest'
-                : widget.mode.name,
+            label: widget.mode.displayTitle,
             value: timed ? timeLeft / 30 : min(1, correct / 10),
             color: context.gameAccent(widget.type),
           ),

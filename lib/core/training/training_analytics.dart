@@ -74,10 +74,37 @@ class ReviewRecommendation {
 }
 
 class SessionComparison {
-  const SessionComparison({this.baselineDelta, this.previousDelta});
+  const SessionComparison({
+    this.baselineDelta,
+    this.previousDelta,
+    this.previousCompletedAt,
+  });
 
   final double? baselineDelta;
   final double? previousDelta;
+  final DateTime? previousCompletedAt;
+}
+
+String selfComparisonMessage(
+  SessionComparison comparison, {
+  required DateTime currentAt,
+}) {
+  final change = comparison.previousDelta;
+  if (change == null) return 'This is your personal starting point.';
+  final previousAt = comparison.previousCompletedAt;
+  final currentDay = DateTime(currentAt.year, currentAt.month, currentAt.day);
+  final previousDay = previousAt == null
+      ? null
+      : DateTime(previousAt.year, previousAt.month, previousAt.day);
+  final yesterday =
+      previousDay != null && currentDay.difference(previousDay).inDays == 1;
+  final reference = yesterday ? 'yesterday' : 'your last run';
+  if (change.abs() <= .05) return 'Matched $reference.';
+  if (change > 0) {
+    return 'Better than $reference by ${change.toStringAsFixed(1)} levels.';
+  }
+  return '${change.abs().toStringAsFixed(1)} levels below $reference. '
+      'One session naturally varies.';
 }
 
 BaselineStatus baselineStatus(Iterable<Object> source) {
@@ -153,7 +180,8 @@ SessionComparison sessionComparison({
             (item) =>
                 item.type == result.type &&
                 item.rulesVersion == result.rulesVersion &&
-                item.contributesToTrends &&
+                item.mode != GameMode.relaxed &&
+                !item.isLegacy &&
                 item.completedAt != null &&
                 result.completedAt != null &&
                 item.completedAt!.isBefore(result.completedAt!),
@@ -166,6 +194,7 @@ SessionComparison sessionComparison({
         ? null
         : current - _medianDouble(compatibleBaseline.map(level)),
     previousDelta: previous.isEmpty ? null : current - level(previous.first),
+    previousCompletedAt: previous.isEmpty ? null : previous.first.completedAt,
   );
 }
 

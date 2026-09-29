@@ -122,6 +122,19 @@ void main() {
       expect(cubit.hasCompletedTutorial(GameType.colorClash), isTrue);
     },
   );
+
+  test(
+    'bootstrap does not satisfy a tutorial with older-rule history',
+    () async {
+      cubit.data.history.add(
+        _result(1, 80, rulesVersion: GameType.colorClash.rulesVersion - 1),
+      );
+
+      await cubit.bootstrap();
+
+      expect(cubit.hasCompletedTutorial(GameType.colorClash), isFalse);
+    },
+  );
 }
 
 GameResult _result(
@@ -129,6 +142,7 @@ GameResult _result(
   double score, {
   GameMode mode = GameMode.standard,
   int difficulty = 4,
+  int? rulesVersion,
 }) => GameResult(
   type: GameType.colorClash,
   mode: mode,
@@ -138,5 +152,5 @@ GameResult _result(
   durationMs: 30000,
   difficulty: difficulty,
   completedAt: DateTime.utc(2026, 1, day),
-  rulesVersion: GameType.colorClash.rulesVersion,
+  rulesVersion: rulesVersion ?? GameType.colorClash.rulesVersion,
 );

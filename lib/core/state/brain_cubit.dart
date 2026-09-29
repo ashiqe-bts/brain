@@ -73,7 +73,7 @@ class BrainCubit extends Cubit<BrainViewState> {
         ),
         const Mission(
           id: 'record',
-          title: 'Beat a personal record',
+          title: 'Improve on one of your results',
           target: 1,
           reward: 50,
         ),

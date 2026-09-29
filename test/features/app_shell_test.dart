@@ -50,6 +50,12 @@ void main() {
     expect(find.text('Lab'), findsNothing);
     expect(find.textContaining('Demo Ad'), findsNothing);
 
+    await tester.tap(find.text('Train'));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.text('Color Clash'), 300);
+    expect(find.byTooltip('Tutorial for Color Clash'), findsOneWidget);
+    expect(find.text('Challenge My Best'), findsNothing);
+
     await tester.tap(find.byIcon(Icons.insights_rounded));
     await tester.pumpAndSettle();
 
@@ -94,6 +100,12 @@ void main() {
     expect(find.text('Today'), findsOneWidget);
     expect(find.text('Train'), findsOneWidget);
     expect(find.text('Insights'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+
+    await tester.tap(find.text('Train'));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.text('Color Clash'), 300);
+    expect(find.byTooltip('Tutorial for Color Clash'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 }

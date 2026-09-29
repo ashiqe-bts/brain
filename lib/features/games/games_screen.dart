@@ -5,7 +5,7 @@ import '../../core/state/brain_cubit.dart';
 import '../../core/training/training_analytics.dart';
 import '../../core/widgets/common.dart';
 import '../../app/theme/brain_theme.dart';
-import 'game_screen.dart';
+import 'game_launcher.dart';
 import 'research_basis_sheet.dart';
 
 class GamesScreen extends StatefulWidget {
@@ -34,7 +34,7 @@ class _GamesScreenState extends State<GamesScreen> {
                   const Center(child: TitlePlaque('Choose a challenge')),
                   const SizedBox(height: 14),
                   const Text(
-                    'Research-informed practice measures performance in each task. Relaxed sessions never affect trends.',
+                    'You vs you: each game compares only with your own compatible practice. Relaxed sessions never affect trends.',
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 14),
@@ -167,6 +167,11 @@ class _GamesScreenState extends State<GamesScreen> {
             icon: const Icon(Icons.science_outlined),
           ),
           IconButton(
+            tooltip: 'Tutorial for ${game.title}',
+            onPressed: () => replayGameTutorial(context, game),
+            icon: const Icon(Icons.school_outlined),
+          ),
+          IconButton(
             tooltip: 'Play ${game.title}',
             onPressed: () => _chooseMode(context, game),
             style: IconButton.styleFrom(
@@ -216,7 +221,7 @@ class _GamesScreenState extends State<GamesScreen> {
                 ),
                 (
                   GameMode.personalBest,
-                  'Personal Best',
+                  'Challenge My Best',
                   'Challenge a result with matching rules and difficulty',
                 ),
                 (
@@ -273,28 +278,32 @@ class _GamesScreenState extends State<GamesScreen> {
     final cubit = context.read<BrainCubit>();
     final difficulty = cubit.data.difficulties[game.name] ?? 1;
     final pb = cubit.personalBest(game, mode, difficulty: difficulty);
-    final result = await Navigator.push<GameResult>(
-      context,
-      MaterialPageRoute(
-        builder: (_) => GameScreen(
-          type: game,
-          mode: mode,
-          difficulty: difficulty,
-          personalBest: pb,
-        ),
-      ),
+    final result = await launchGameSession(
+      context: context,
+      type: game,
+      mode: mode,
+      difficulty: difficulty,
+      personalBest: pb,
     );
     if (result == null || !context.mounted) return;
-    final record = await cubit.recordResult(result);
+    final comparison = mode == GameMode.relaxed
+        ? null
+        : sessionComparison(
+            result: result,
+            history: cubit.data.history,
+            daily: cubit.data.daily,
+          );
+    await cubit.recordResult(result);
     if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          record
-              ? 'New comparable personal best'
-              : mode == GameMode.relaxed
+          mode == GameMode.relaxed
               ? 'Relaxed practice complete · not added to trends'
-              : 'Standard practice saved',
+              : selfComparisonMessage(
+                  comparison!,
+                  currentAt: result.completedAt ?? DateTime.now(),
+                ),
         ),
       ),
     );

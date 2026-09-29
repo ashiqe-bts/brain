@@ -66,6 +66,18 @@ void main() {
         expect(definition.minimumDifficulty, 1);
         expect(definition.maximumDifficulty, 10);
         expect(definition.rawMetricFormatter(const {}), isA<String>());
+        expect(definition.tutorial.steps, isNotEmpty, reason: game.name);
+        expect(
+          definition.tutorial.steps.every(
+            (step) =>
+                step.isWaitStep ||
+                (step.options.length >= 2 &&
+                    step.correctIndex >= 0 &&
+                    step.correctIndex < step.options.length),
+          ),
+          isTrue,
+          reason: game.name,
+        );
       }
     });
   });
@@ -314,6 +326,11 @@ void main() {
 
       expect(comparison.baselineDelta, closeTo(.3, .001));
       expect(comparison.previousDelta, closeTo(.2, .001));
+      expect(comparison.previousCompletedAt, DateTime.utc(2026, 1, 3));
+      expect(
+        selfComparisonMessage(comparison, currentAt: current.completedAt!),
+        'Better than yesterday by 0.2 levels.',
+      );
     });
 
     test('session comparison explains insufficient compatible data', () {
@@ -329,6 +346,61 @@ void main() {
 
       expect(comparison.baselineDelta, isNull);
       expect(comparison.previousDelta, isNull);
+      expect(comparison.previousCompletedAt, isNull);
+      expect(
+        selfComparisonMessage(comparison, currentAt: current.completedAt!),
+        'This is your personal starting point.',
+      );
+    });
+
+    test('latest scored comparison includes challenge mode only', () {
+      final standard = _result(day: 1, normalized: 50);
+      final challenge = _result(
+        day: 2,
+        normalized: 80,
+        mode: GameMode.personalBest,
+      );
+      final relaxed = _result(day: 3, normalized: 100, mode: GameMode.relaxed);
+      final current = _result(day: 4, normalized: 90);
+
+      final comparison = sessionComparison(
+        result: current,
+        history: [standard, challenge, relaxed, current],
+        daily: const [],
+      );
+
+      expect(comparison.previousCompletedAt, challenge.completedAt);
+      expect(comparison.previousDelta, closeTo(.1, .001));
+    });
+
+    test('self comparison distinguishes last run, matches, and variation', () {
+      expect(
+        selfComparisonMessage(
+          const SessionComparison(previousDelta: .3, previousCompletedAt: null),
+          currentAt: DateTime(2026, 1, 10),
+        ),
+        'Better than your last run by 0.3 levels.',
+      );
+      expect(
+        selfComparisonMessage(
+          SessionComparison(
+            previousDelta: .01,
+            previousCompletedAt: DateTime(2026, 1, 9),
+          ),
+          currentAt: DateTime(2026, 1, 10),
+        ),
+        'Matched yesterday.',
+      );
+      expect(
+        selfComparisonMessage(
+          SessionComparison(
+            previousDelta: -.4,
+            previousCompletedAt: DateTime(2026, 1, 5),
+          ),
+          currentAt: DateTime(2026, 1, 10),
+        ),
+        '0.4 levels below your last run. One session naturally varies.',
+      );
     });
   });
 }

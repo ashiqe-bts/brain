@@ -481,9 +481,7 @@ class _ResearchGameScreenState extends State<ResearchGameScreen>
         ),
         const SizedBox(height: 12),
         ResourceBar(
-          label: widget.mode == GameMode.official
-              ? 'Daily training'
-              : widget.mode.name,
+          label: widget.mode.displayTitle,
           value: timed
               ? timeLeft / max(1, definition.standardSeconds)
               : min(1, attempts / targetTrials),

@@ -6,7 +6,7 @@ import '../../core/models/brain_models.dart';
 import '../../core/state/brain_cubit.dart';
 import '../../core/training/training_analytics.dart';
 import '../../core/widgets/common.dart';
-import '../games/game_screen.dart';
+import '../games/game_launcher.dart';
 
 class WorkoutScreen extends StatefulWidget {
   const WorkoutScreen({super.key});
@@ -48,17 +48,13 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
         );
       }
       if (!mounted) return;
-      final result = await Navigator.push<GameResult>(
-        context,
-        MaterialPageRoute(
-          builder: (_) => GameScreen(
-            type: type,
-            mode: GameMode.official,
-            difficulty: cubit.data.difficulties[type.name] ?? 1,
-            randomSeed: stableSeed(
-              '${draft.date}|${type.name}|${cubit.data.difficulties[type.name] ?? 1}|${type.rulesVersion}',
-            ),
-          ),
+      final result = await launchGameSession(
+        context: context,
+        type: type,
+        mode: GameMode.official,
+        difficulty: cubit.data.difficulties[type.name] ?? 1,
+        randomSeed: stableSeed(
+          '${draft.date}|${type.name}|${cubit.data.difficulties[type.name] ?? 1}|${type.rulesVersion}',
         ),
       );
       if (result == null) {
@@ -256,9 +252,10 @@ class WorkoutResultScreen extends StatelessWidget {
     final baseline = comparison.baselineDelta == null
         ? 'Baseline change: available after 3 compatible daily results'
         : 'Baseline change: ${delta(comparison.baselineDelta!)} levels';
-    final previous = comparison.previousDelta == null
-        ? 'Previous change: no earlier compatible attempt'
-        : 'Previous change: ${delta(comparison.previousDelta!)} levels';
+    final previous = selfComparisonMessage(
+      comparison,
+      currentAt: result.completedAt ?? DateTime.now(),
+    );
     return '$baseline\n$previous';
   }
 }

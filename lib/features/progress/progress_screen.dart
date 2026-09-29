@@ -289,7 +289,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
             leading: Text(result.type.emoji),
             title: Text(result.type.title),
             subtitle: Text(
-              '${result.mode == GameMode.official ? 'Daily' : result.mode.name} · ${time == null ? 'Earlier version' : DateFormat.MMMd().add_jm().format(time)}',
+              '${result.mode.displayTitle} · ${time == null ? 'Earlier version' : DateFormat.MMMd().add_jm().format(time)}',
             ),
             trailing: Text(
               trainingLevel(

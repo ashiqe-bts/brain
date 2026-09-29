@@ -57,6 +57,15 @@ const archivedGames = <GameType>{GameType.reflexTap, GameType.visualSearch};
 
 enum GameMode { standard, relaxed, personalBest, official }
 
+extension GameModePresentation on GameMode {
+  String get displayTitle => switch (this) {
+    GameMode.standard => 'Standard',
+    GameMode.relaxed => 'Relaxed',
+    GameMode.personalBest => 'Challenge My Best',
+    GameMode.official => 'Daily',
+  };
+}
+
 typedef SessionKind = GameMode;
 typedef GameRulesVersion = int;
 
