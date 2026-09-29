@@ -394,7 +394,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
               ),
               const SizedBox(height: 16),
               Text(
-                'TRAINING LEVEL',
+                'Personal level',
                 style: Theme.of(context).textTheme.titleMedium,
               ),
               const SizedBox(height: 12),
@@ -426,7 +426,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
                   Navigator.pop(context, result);
                 },
                 icon: Icons.arrow_forward_rounded,
-                label: 'CONTINUE',
+                label: 'Continue',
               ),
             ],
           ),
@@ -454,10 +454,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
       },
       child: Scaffold(
         appBar: AppBar(
-          title: Text(
-            widget.type.title.toUpperCase(),
-            style: const TextStyle(fontSize: 20),
-          ),
+          title: Text(widget.type.title, style: const TextStyle(fontSize: 20)),
           actions: [
             if (timed)
               Padding(

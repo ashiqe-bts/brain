@@ -25,12 +25,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Widget build(BuildContext context) {
     final d = context.watch<BrainCubit>().state.data;
     return Scaffold(
-      appBar: AppBar(title: const Text('SETTINGS')),
+      appBar: AppBar(title: const Text('Settings')),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 28),
         children: [
-          const Center(child: PageEyebrow('Control board')),
-          const SizedBox(height: 20),
+          const PageEyebrow('Your preferences stay on this device'),
+          const SizedBox(height: 16),
           AppCard(
             child: Column(
               children: [
@@ -50,43 +50,40 @@ class _SettingsScreenState extends State<SettingsScreen> {
             child: Column(
               children: [
                 _header('Appearance'),
-                SwitchListTile(
-                  value: d.theme != BrainTheme.calmLight,
-                  onChanged: (dark) => context.read<BrainCubit>().setTheme(
-                    dark ? BrainTheme.calmDark : BrainTheme.calmLight,
-                  ),
-                  secondary: Icon(
-                    d.theme == BrainTheme.calmLight
-                        ? Icons.light_mode_rounded
-                        : Icons.dark_mode_rounded,
-                  ),
-                  title: const Text('Dark mode'),
-                  subtitle: Text(
-                    d.theme == BrainTheme.calmLight
-                        ? 'Light colors are active'
-                        : 'Dark colors are active',
-                  ),
-                ),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: DropdownButtonFormField<BrainTheme>(
-                    key: ValueKey(d.theme),
-                    initialValue: d.theme,
-                    decoration: const InputDecoration(
-                      labelText: 'Theme style',
-                      border: OutlineInputBorder(),
-                    ),
-                    items: BrainTheme.values
-                        .map(
-                          (e) => DropdownMenuItem(
-                            value: e,
-                            child: Text(_themeName(e)),
-                          ),
-                        )
-                        .toList(),
-                    onChanged: (v) {
-                      if (v != null) context.read<BrainCubit>().setTheme(v);
-                    },
+                  child: Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children:
+                        const [
+                              (
+                                BrainTheme.calmLight,
+                                Icons.light_mode_outlined,
+                                'Light',
+                              ),
+                              (
+                                BrainTheme.calmDark,
+                                Icons.dark_mode_outlined,
+                                'Dark',
+                              ),
+                              (
+                                BrainTheme.highContrast,
+                                Icons.contrast_rounded,
+                                'High contrast',
+                              ),
+                            ]
+                            .map(
+                              (option) => FilterChip(
+                                avatar: Icon(option.$2, size: 18),
+                                label: Text(option.$3),
+                                selected: d.theme == option.$1,
+                                onSelected: (_) => context
+                                    .read<BrainCubit>()
+                                    .setTheme(option.$1),
+                              ),
+                            )
+                            .toList(),
                   ),
                 ),
                 SwitchListTile(
@@ -206,11 +203,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Widget _header(String text) => Padding(
     padding: const EdgeInsets.fromLTRB(20, 22, 20, 8),
     child: Text(
-      text.toUpperCase(),
+      text,
       style: TextStyle(
-        color: context.rewardInk,
-        fontWeight: FontWeight.w900,
-        letterSpacing: 1.2,
+        color: context.brain.textMuted,
+        fontWeight: FontWeight.w800,
       ),
     ),
   );
@@ -221,11 +217,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
         secondary: Icon(icon),
         title: Text(title),
       );
-  String _themeName(BrainTheme t) => switch (t) {
-    BrainTheme.calmLight => 'Calm Light',
-    BrainTheme.calmDark => 'Calm Dark',
-    BrainTheme.highContrast => 'High Contrast',
-  };
   Future<void> _toggleReminder(bool value, BrainState d) async {
     if (value && !await notifications.requestPermission()) return;
     if (!mounted) return;

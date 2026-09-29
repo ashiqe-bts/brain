@@ -23,7 +23,7 @@ class _GamesScreenState extends State<GamesScreen> {
   Widget build(BuildContext context) {
     final domains = activeGames.map((game) => game.skill).toSet().toList();
     return Scaffold(
-      appBar: AppBar(toolbarHeight: 70, title: const Text('TRAIN')),
+      appBar: AppBar(toolbarHeight: 70, title: const Text('Train')),
       body: SafeArea(
         bottom: false,
         child: Column(
@@ -32,7 +32,7 @@ class _GamesScreenState extends State<GamesScreen> {
               child: ListView(
                 padding: const EdgeInsets.fromLTRB(16, 4, 16, 18),
                 children: [
-                  const Center(child: PageEyebrow('Choose a challenge')),
+                  const Center(child: PageEyebrow('Choose a practice game')),
                   const SizedBox(height: 14),
                   const Text(
                     'You vs you: each game compares only with your own compatible practice. Relaxed sessions never affect trends.',
@@ -119,52 +119,67 @@ class _GamesScreenState extends State<GamesScreen> {
       GameMode.personalBest,
       difficulty: difficulty,
     );
-    final accent = context.gameAccent(game);
     return AppCard(
-      color: Color.lerp(accent, context.brain.surface, .68),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          GameIcon(game: game, size: 28, decorated: true),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  game.title,
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w900,
-                  ),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              GameIcon(game: game, size: 28, decorated: true),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      game.title,
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    Text(
+                      '${game.domain} · Level $difficulty',
+                      style: TextStyle(color: context.brain.textMuted),
+                    ),
+                  ],
                 ),
-                Text('${game.domain} · Level $difficulty'),
-                Text(
-                  best == null
-                      ? 'No standard result yet'
-                      : 'Training ${trainingLevel(difficulty: best.difficulty, score: best.normalized).toStringAsFixed(1)} · ${(best.accuracy * 100).round()}%',
+              ),
+              IconButton.filled(
+                tooltip: 'Play ${game.title}',
+                onPressed: () => _chooseMode(context, game),
+                icon: const Icon(Icons.play_arrow_rounded),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          Text(
+            best == null
+                ? 'Your first standard result will become a personal starting point.'
+                : 'Personal level ${trainingLevel(difficulty: best.difficulty, score: best.normalized).toStringAsFixed(1)} · ${(best.accuracy * 100).round()}% accuracy',
+          ),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 4,
+            children: [
+              Tooltip(
+                message: 'Tutorial for ${game.title}',
+                child: TextButton.icon(
+                  onPressed: () => replayGameTutorial(context, game),
+                  icon: const Icon(Icons.school_outlined),
+                  label: const Text('Tutorial'),
                 ),
-              ],
-            ),
-          ),
-          IconButton(
-            tooltip: 'Research basis for ${game.title}',
-            onPressed: () => showResearchBasisSheet(context, game),
-            icon: const Icon(Icons.science_outlined),
-          ),
-          IconButton(
-            tooltip: 'Tutorial for ${game.title}',
-            onPressed: () => replayGameTutorial(context, game),
-            icon: const Icon(Icons.school_outlined),
-          ),
-          IconButton(
-            tooltip: 'Play ${game.title}',
-            onPressed: () => _chooseMode(context, game),
-            style: IconButton.styleFrom(
-              backgroundColor: accent,
-              foregroundColor: context.onColor(accent),
-              side: BorderSide(color: context.brain.outline, width: 2),
-            ),
-            icon: const Icon(Icons.play_arrow_rounded),
+              ),
+              Tooltip(
+                message: 'Research basis for ${game.title}',
+                child: TextButton.icon(
+                  onPressed: () => showResearchBasisSheet(context, game),
+                  icon: const Icon(Icons.science_outlined),
+                  label: const Text('Research basis'),
+                ),
+              ),
+            ],
           ),
         ],
       ),

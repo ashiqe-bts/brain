@@ -394,7 +394,7 @@ class _ResearchGameScreenState extends State<ResearchGameScreen>
                   Navigator.pop(context, result);
                 },
                 icon: Icons.arrow_forward_rounded,
-                label: 'CONTINUE',
+                label: 'Continue',
               ),
             ],
           ),
@@ -412,7 +412,7 @@ class _ResearchGameScreenState extends State<ResearchGameScreen>
       },
       child: Scaffold(
         appBar: AppBar(
-          title: Text(widget.type.title.toUpperCase()),
+          title: Text(widget.type.title),
           actions: [
             if (lifecycle == GameLifecycle.running)
               IconButton(

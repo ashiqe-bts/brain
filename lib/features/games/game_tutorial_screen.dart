@@ -89,7 +89,7 @@ class _GameTutorialScreenState extends State<GameTutorialScreen> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: Text('${widget.type.title.toUpperCase()} TUTORIAL')),
+    appBar: AppBar(title: Text('${widget.type.title} tutorial')),
     body: SafeArea(
       child: Center(
         child: ConstrainedBox(

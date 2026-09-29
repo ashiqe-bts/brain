@@ -29,7 +29,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
     final review = weeklyReview(daily: data.daily, history: data.history);
     final domains = activeGames.map((game) => game.skill).toSet().toList();
     return Scaffold(
-      appBar: AppBar(toolbarHeight: 70, title: const Text('INSIGHTS')),
+      appBar: AppBar(toolbarHeight: 70, title: const Text('Insights')),
       body: SafeArea(
         bottom: false,
         child: ListView(
@@ -170,7 +170,6 @@ class _ProgressScreenState extends State<ProgressScreen> {
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: AppCard(
-        color: Color.lerp(context.gameAccent(game), context.brain.surface, .78),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -401,7 +400,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
             ),
             title: Text(entry.key),
             subtitle: Text(entry.value),
-            trailing: earned ? const Text('DONE') : null,
+            trailing: earned ? const Text('Complete') : null,
           );
         }).toList(),
       ),

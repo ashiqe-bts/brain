@@ -84,7 +84,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
     final complete = draft?.results.length ?? 0;
     final total = draft?.order.length ?? 5;
     return Scaffold(
-      appBar: AppBar(title: const Text('DAILY TRAINING')),
+      appBar: AppBar(title: const Text('Daily practice')),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(20),
@@ -117,7 +117,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                 PrimaryAction(
                   onPressed: _run,
                   icon: Icons.play_arrow,
-                  label: 'RESUME WORKOUT',
+                  label: 'Resume practice',
                 ),
             ],
           ),
@@ -138,7 +138,7 @@ class WorkoutResultScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         automaticallyImplyLeading: false,
-        title: const Text('SESSION REVIEW'),
+        title: const Text('Session review'),
       ),
       body: SafeArea(
         child: ListView(
@@ -211,7 +211,7 @@ class WorkoutResultScreen extends StatelessWidget {
               color: context.brain.success,
               onPressed: () => Navigator.pop(context),
               icon: Icons.done_rounded,
-              label: 'DONE',
+              label: 'Done for today',
             ),
           ],
         ),

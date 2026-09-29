@@ -31,7 +31,7 @@ class HomeScreen extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('HEY, ${data.displayName}'),
+            Text('Hey, ${data.displayName}'),
             Text(
               DateFormat('EEEE, MMM d').format(DateTime.now()),
               style: Theme.of(context).textTheme.labelMedium,
@@ -80,9 +80,9 @@ class HomeScreen extends StatelessWidget {
                           ),
                           const SizedBox(width: 10),
                           MetricTile(
-                            icon: Icons.bolt_rounded,
-                            label: 'training XP',
-                            value: '${data.xp}',
+                            icon: Icons.tune_rounded,
+                            label: 'baselines',
+                            value: '${baseline.readyGames}/15',
                           ),
                         ],
                       ),
@@ -117,7 +117,7 @@ class HomeScreen extends StatelessWidget {
                           ),
                         ),
                       ],
-                      const SectionHeader('Daily goals'),
+                      const SectionHeader("Today's goals"),
                       ...data.missions.map(
                         (mission) => _mission(context, mission),
                       ),
@@ -136,17 +136,16 @@ class HomeScreen extends StatelessWidget {
 
   Widget _workoutCard(BuildContext context, BrainState data, bool done) =>
       AppCard(
-        color: done ? context.brain.surfaceHigh : context.brain.success,
+        tonal: true,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             PageEyebrow(
               done
-                  ? 'DAILY TRAINING COMPLETE'
+                  ? 'Practice complete'
                   : data.draft != null
-                  ? 'TRAINING IN PROGRESS'
-                  : 'DAILY TRAINING',
-              color: context.brain.reward,
+                  ? 'Continue where you left off'
+                  : "Today's practice",
             ),
             const SizedBox(height: 12),
             Text(
@@ -160,6 +159,19 @@ class HomeScreen extends StatelessWidget {
             const SizedBox(height: 8),
             const Text('A balanced three-workout cycle covers every game.'),
             const SizedBox(height: 18),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (final game
+                    in data.draft?.order ?? dailyOrderForWorkout(data.workouts))
+                  Tooltip(
+                    message: game.title,
+                    child: GameIcon(game: game, decorated: true),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 18),
             PrimaryAction(
               expanded: true,
               color: done ? context.brain.frame : context.brain.success,
@@ -172,7 +184,9 @@ class HomeScreen extends StatelessWidget {
               icon: data.draft == null
                   ? Icons.play_arrow_rounded
                   : Icons.replay_rounded,
-              label: data.draft == null ? 'START WORKOUT' : 'CONTINUE WORKOUT',
+              label: data.draft == null
+                  ? 'Start practice'
+                  : 'Continue practice',
             ),
           ],
         ),
@@ -240,9 +254,7 @@ class HomeScreen extends StatelessWidget {
                   mission.title,
                   style: const TextStyle(fontWeight: FontWeight.w700),
                 ),
-                Text(
-                  '${mission.progress}/${mission.target} · +${mission.reward} XP',
-                ),
+                Text('${mission.progress} of ${mission.target} complete'),
               ],
             ),
           ),
@@ -250,7 +262,7 @@ class HomeScreen extends StatelessWidget {
             TextButton(
               onPressed: () =>
                   context.read<BrainCubit>().claimMission(mission.id),
-              child: const Text('CLAIM'),
+              child: const Text('Collect'),
             ),
         ],
       ),
