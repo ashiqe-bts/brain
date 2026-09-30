@@ -70,11 +70,12 @@ void main() {
   });
 
   test(
-    'daily workout uses five-game rotation and stores dynamic ratings',
+    'daily workout stores a validated chosen order and dynamic ratings',
     () async {
-      await cubit.startWorkout();
+      final chosen = activeGames.skip(3).take(5).toList();
+      await cubit.startWorkout(order: chosen);
       final order = cubit.data.draft!.order;
-      expect(order, dailyOrderForWorkout(0));
+      expect(order, chosen);
       expect(order, hasLength(5));
 
       for (final game in order) {
@@ -102,6 +103,31 @@ void main() {
       expect(cubit.data.workouts, 1);
     },
   );
+
+  test('daily workout rejects duplicate or inactive choices', () async {
+    expect(
+      () => cubit.startWorkout(
+        order: List.filled(5, GameType.colorClash),
+      ),
+      throwsArgumentError,
+    );
+    expect(
+      () => cubit.startWorkout(
+        order: [GameType.reflexTap, ...activeGames.take(4)],
+      ),
+      throwsArgumentError,
+    );
+  });
+
+  test('daily workout keeps an existing draft selection', () async {
+    final first = activeGames.take(5).toList();
+    final replacement = activeGames.skip(5).take(5).toList();
+
+    await cubit.startWorkout(order: first);
+    await cubit.startWorkout(order: replacement);
+
+    expect(cubit.data.draft!.order, first);
+  });
 
   test('stores a normalized local name and tutorial completion', () async {
     await cubit.setDisplayName('  Asha  ');

@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:brainflex/core/models/brain_models.dart';
 import 'package:brainflex/core/training/game_catalog.dart';
@@ -172,6 +174,53 @@ void main() {
 
       expect(status.forGame(game).completed, 0);
       expect(status.isComplete, isFalse);
+    });
+
+    test('coverage-aware random five favors least-trained games', () {
+      final trained = activeGames.take(10).toSet();
+      final history = [
+        for (final game in trained)
+          _result(day: 1, normalized: 80, type: game),
+      ];
+
+      final selection = coverageAwareDailySelection(
+        history,
+        random: Random(7),
+      );
+
+      expect(selection, hasLength(5));
+      expect(selection.toSet(), hasLength(5));
+      expect(selection, everyElement(isNot(isIn(trained))));
+    });
+
+    test('coverage-aware random five ignores incompatible history', () {
+      final game = activeGames.first;
+      final history = [
+        _result(
+          day: 1,
+          normalized: 80,
+          type: game,
+          mode: GameMode.relaxed,
+        ),
+        _result(
+          day: 2,
+          normalized: 80,
+          type: game,
+          rulesVersion: game.rulesVersion - 1,
+        ),
+      ];
+
+      final first = coverageAwareDailySelection(
+        history,
+        random: Random(11),
+      );
+      final second = coverageAwareDailySelection(
+        history,
+        random: Random(11),
+      );
+
+      expect(first, second);
+      expect(first.toSet(), hasLength(5));
     });
   });
 
@@ -352,6 +401,33 @@ void main() {
         selfComparisonMessage(comparison, currentAt: current.completedAt!),
         'Better than yesterday by 0.2 levels.',
       );
+    });
+
+    test('session comparison finds a game baseline across irregular days', () {
+      final baseline = [
+        _result(day: 2, normalized: 50),
+        _result(day: 5, normalized: 60),
+        _result(day: 8, normalized: 70),
+      ];
+      final otherGame = _result(
+        day: 1,
+        normalized: 100,
+        type: GameType.mathBlitz,
+      );
+      final current = _result(day: 9, normalized: 90);
+
+      final comparison = sessionComparison(
+        result: current,
+        history: [otherGame, ...baseline, current],
+        daily: [
+          _summary('2026-01-01', results: [otherGame]),
+          _summary('2026-01-02', results: [baseline[0]]),
+          _summary('2026-01-05', results: [baseline[1]]),
+          _summary('2026-01-08', results: [baseline[2]]),
+        ],
+      );
+
+      expect(comparison.baselineDelta, closeTo(.3, .001));
     });
 
     test('session comparison explains insufficient compatible data', () {

@@ -133,6 +133,28 @@ BaselineStatus baselineStatus(Iterable<Object> source) {
   );
 }
 
+/// Picks five distinct active games while favoring games with the least
+/// current-rules daily practice. Supplying [random] makes the result
+/// deterministic in tests.
+List<GameType> coverageAwareDailySelection(
+  Iterable<GameResult> history, {
+  Random? random,
+}) {
+  final generator = random ?? Random();
+  final counts = {
+    for (final game in activeGames)
+      game: history.where((result) {
+        return result.type == game &&
+            result.mode == GameMode.official &&
+            result.rulesVersion == game.rulesVersion &&
+            !result.isLegacy;
+      }).length,
+  };
+  final shuffled = [...activeGames]..shuffle(generator);
+  shuffled.sort((a, b) => counts[a]!.compareTo(counts[b]!));
+  return List.unmodifiable(shuffled.take(5));
+}
+
 double trainingLevel({required int difficulty, required double score}) {
   final safeDifficulty = difficulty.clamp(1, 10);
   final safeScore = score.clamp(0, 100);
@@ -163,17 +185,18 @@ SessionComparison sessionComparison({
   double level(GameResult item) =>
       trainingLevel(difficulty: item.difficulty, score: item.normalized);
 
-  final orderedDaily = daily.toList()..sort((a, b) => a.date.compareTo(b.date));
-  final compatibleBaseline = orderedDaily
-      .take(3)
+  final compatibleBaseline = daily
       .expand((summary) => summary.results)
       .where(
         (item) =>
             item.type == result.type &&
             item.rulesVersion == result.rulesVersion &&
-            item.contributesToTrends,
+            item.mode == GameMode.official &&
+            !item.isLegacy &&
+            item.completedAt != null,
       )
-      .toList();
+      .toList()
+    ..sort((a, b) => a.completedAt!.compareTo(b.completedAt!));
   final previous =
       history
           .where(
@@ -192,7 +215,7 @@ SessionComparison sessionComparison({
   return SessionComparison(
     baselineDelta: compatibleBaseline.length < 3
         ? null
-        : current - _medianDouble(compatibleBaseline.map(level)),
+        : current - _medianDouble(compatibleBaseline.take(3).map(level)),
     previousDelta: previous.isEmpty ? null : current - level(previous.first),
     previousCompletedAt: previous.isEmpty ? null : previous.first.completedAt,
   );

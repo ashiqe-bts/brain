@@ -137,13 +137,16 @@ class BrainCubit extends Cubit<BrainViewState> {
     warning ? HapticFeedback.mediumImpact() : HapticFeedback.lightImpact();
   }
 
-  Future<void> startWorkout() async {
+  Future<void> startWorkout({required List<GameType> order}) async {
     final today = localDate();
     if (data.daily.any((e) => e.date == today)) return;
-    data.draft ??= WorkoutDraft(
-      date: today,
-      order: dailyOrderForWorkout(data.workouts),
-    );
+    if (order.length != 5 || order.toSet().length != 5) {
+      throw ArgumentError.value(order, 'order', 'Choose five unique games');
+    }
+    if (order.any((game) => !game.isActive)) {
+      throw ArgumentError.value(order, 'order', 'Choose active games only');
+    }
+    data.draft ??= WorkoutDraft(date: today, order: List.unmodifiable(order));
     await _commit();
   }
 
