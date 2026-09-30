@@ -29,13 +29,10 @@ class GameMetricDefinition {
 
   double? value(GameResult result) {
     final raw = switch (key) {
-      trainingLevelKey =>
-        (((result.difficulty.clamp(1, 10) - 1) +
-                        result.normalized.clamp(0, 100) / 100) *
-                    10)
-                .clamp(0, 100)
-                .round() /
-            10,
+      trainingLevelKey => trainingLevel(
+        difficulty: result.difficulty,
+        score: result.normalized,
+      ),
       accuracyKey => result.accuracy * 100,
       _ => result.metrics[key],
     };

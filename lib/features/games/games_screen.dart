@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../core/models/brain_models.dart';
 import '../../core/state/brain_cubit.dart';
-import '../../core/training/training_analytics.dart';
 import '../../core/widgets/common.dart';
 import '../../app/theme/brain_theme.dart';
 import '../../app/theme/game_visuals.dart';

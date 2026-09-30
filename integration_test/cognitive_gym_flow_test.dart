@@ -27,7 +27,11 @@ void main() {
     );
     await tester.pumpAndSettle();
 
+    expect(find.text('A calmer way to challenge your focus.'), findsOneWidget);
+    await tester.tap(find.text('Get started'));
+    await tester.pumpAndSettle();
     expect(find.text('What should we call you?'), findsOneWidget);
+    expect(find.text('Tap the ink color'), findsNothing);
     expect(find.textContaining('Demo Ad'), findsNothing);
 
     await repository.save(
@@ -72,6 +76,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('All game baselines complete'), findsOneWidget);
+    expect(find.text('COMBINED PROGRESS'), findsOneWidget);
     expect(find.text('FIFTEEN-GAME PROFILE'), findsOneWidget);
   });
 }

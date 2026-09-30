@@ -655,3 +655,10 @@ int stableSeed(String input) {
   }
   return hash;
 }
+
+double trainingLevel({required int difficulty, required double score}) {
+  final safeDifficulty = difficulty.clamp(1, 10);
+  final safeScore = score.clamp(0, 100);
+  return (((safeDifficulty - 1) + safeScore / 100) * 10).clamp(0, 100).round() /
+      10;
+}

@@ -169,7 +169,11 @@ class _SessionResultScreenState extends State<SessionResultScreen> {
                           at: point.result.completedAt ?? DateTime.now(),
                           value: point.value,
                           label: selectedMetric.formatValue(point.result),
-                          hollow: !point.includedInTrend,
+                          note: !point.includedInTrend
+                              ? widget.result.mode == GameMode.relaxed
+                                    ? 'Relaxed, excluded from trend'
+                                    : 'Challenge, excluded from trend'
+                              : null,
                         ),
                     ],
                   ),

@@ -11,13 +11,14 @@ class ProgressChartPoint {
     required this.at,
     required this.value,
     required this.label,
-    this.hollow = false,
+    this.note,
   });
 
   final DateTime at;
   final double value;
   final String label;
-  final bool hollow;
+  final String? note;
+  bool get hollow => note != null;
 }
 
 class ProgressChartSeries {
@@ -218,7 +219,8 @@ class _ProgressLineChartState extends State<ProgressLineChart> {
             GestureDetector(
               behavior: HitTestBehavior.opaque,
               onTapDown: (details) {
-                final fraction = (details.localPosition.dx / 600).clamp(0, 1);
+                final width = context.size?.width ?? 1;
+                final fraction = (details.localPosition.dx / width).clamp(0, 1);
                 setState(
                   () => selected = ((points.length - 1) * fraction).round(),
                 );
@@ -242,7 +244,7 @@ class _ProgressLineChartState extends State<ProgressLineChart> {
             Semantics(
               liveRegion: true,
               child: Text(
-                '${active.$1.label} · ${DateFormat.MMMd().add_jm().format(active.$2.at.toLocal())} · ${active.$2.label}${active.$2.hollow ? ' · Relaxed, excluded from trend' : ''}',
+                '${active.$1.label} · ${DateFormat.MMMd().add_jm().format(active.$2.at.toLocal())} · ${active.$2.label}${active.$2.note == null ? '' : ' · ${active.$2.note}'}',
                 style: const TextStyle(fontWeight: FontWeight.w700),
               ),
             ),
