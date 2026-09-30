@@ -9,6 +9,7 @@ import '../../core/state/brain_cubit.dart';
 import '../../core/training/training_analytics.dart';
 import '../../core/widgets/common.dart';
 import '../daily_workout/workout_screen.dart';
+import '../daily_workout/workout_selection_screen.dart';
 import '../settings/settings_screen.dart';
 
 class HomeScreen extends StatelessWidget {
@@ -151,20 +152,25 @@ class HomeScreen extends StatelessWidget {
             Text(
               done
                   ? 'Five research-informed tasks trained today'
-                  : '5 of 15 rotating tasks · about 5 minutes',
+                  : data.draft != null
+                  ? 'Your chosen five · about 5 minutes'
+                  : 'Choose 5 of 15 games · about 5 minutes',
               style: Theme.of(
                 context,
               ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w900),
             ),
             const SizedBox(height: 8),
-            const Text('A balanced three-workout cycle covers every game.'),
+            Text(
+              data.draft != null
+                  ? 'Your selection is saved until the workout is complete.'
+                  : 'Choose your games or create a balanced random mix.',
+            ),
             const SizedBox(height: 18),
             Wrap(
               spacing: 8,
               runSpacing: 8,
               children: [
-                for (final game
-                    in data.draft?.order ?? dailyOrderForWorkout(data.workouts))
+                for (final game in data.draft?.order ?? const <GameType>[])
                   Tooltip(
                     message: game.title,
                     child: GameIcon(game: game, decorated: true),
@@ -179,7 +185,11 @@ class HomeScreen extends StatelessWidget {
                   ? null
                   : () => Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (_) => const WorkoutScreen()),
+                      MaterialPageRoute(
+                        builder: (_) => data.draft == null
+                            ? const WorkoutSelectionScreen()
+                            : const WorkoutScreen(),
+                      ),
                     ),
               icon: data.draft == null
                   ? Icons.play_arrow_rounded

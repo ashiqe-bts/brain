@@ -8,6 +8,7 @@ import '../../core/state/brain_cubit.dart';
 import '../../core/training/training_analytics.dart';
 import '../../core/widgets/common.dart';
 import '../games/game_launcher.dart';
+import '../progress/session_result_screen.dart';
 
 class WorkoutScreen extends StatefulWidget {
   const WorkoutScreen({super.key});
@@ -30,7 +31,6 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
     if (running) return;
     setState(() => running = true);
     final cubit = context.read<BrainCubit>();
-    await cubit.startWorkout();
     if (cubit.data.draft == null) {
       if (mounted) Navigator.pop(context);
       return;
@@ -64,6 +64,19 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
       }
       await cubit.recordResult(result);
       draft = cubit.data.draft!;
+      if (!mounted) return;
+      await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => SessionResultScreen(
+            result: result,
+            actionLabel: index == draft.order.length - 1
+                ? 'Finish workout'
+                : 'Continue to game ${index + 2}',
+          ),
+        ),
+      );
+      if (!mounted) return;
     }
     final summary = await cubit.completeWorkout();
     if (summary != null && mounted) {

@@ -47,4 +47,36 @@ void main() {
     expect(find.text('Private by design'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets('name continues directly to routine without a color test', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: buildBrainTheme(BrainTheme.calmLight),
+        home: const OnboardingScreen(),
+      ),
+    );
+
+    await tester.tap(find.text('Get started'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextFormField), 'Asha');
+    await tester.pump();
+    final continueButton = tester.widget<FilledButton>(
+      find
+          .ancestor(
+            of: find.text('Continue'),
+            matching: find.byWidgetPredicate(
+              (widget) => widget is FilledButton,
+            ),
+          )
+          .first,
+    );
+    continueButton.onPressed!();
+    await tester.pumpAndSettle();
+
+    expect(find.text('Practice on your schedule'), findsOneWidget);
+    expect(find.text('Tap the ink color'), findsNothing);
+    expect(find.text('2 of 2'), findsOneWidget);
+  });
 }

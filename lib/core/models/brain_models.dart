@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:math';
 
 enum BrainTheme { calmLight, calmDark, highContrast }
 
@@ -656,16 +655,3 @@ int stableSeed(String input) {
   }
   return hash;
 }
-
-List<GameType> dailyOrderForWorkout(int completedWorkouts) {
-  final safeIndex = max(0, completedWorkouts);
-  final cycle = safeIndex ~/ 3;
-  final slot = safeIndex % 3;
-  final cycleGames = [...activeGames]
-    ..shuffle(Random(stableSeed('cycle|$cycle|brainflex-training-v3')));
-  return List.unmodifiable(cycleGames.skip(slot * 5).take(5));
-}
-
-@Deprecated('Use dailyOrderForWorkout so skipped dates do not lose coverage.')
-List<GameType> dailyOrder(String date) =>
-    dailyOrderForWorkout(stableSeed(date) % 3);

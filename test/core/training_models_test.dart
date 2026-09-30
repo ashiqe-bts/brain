@@ -40,22 +40,6 @@ void main() {
       expect(activeGames, isNot(contains(GameType.visualSearch)));
     });
 
-    test('three consecutive workouts cover every active game once', () {
-      final rounds = [
-        dailyOrderForWorkout(0),
-        dailyOrderForWorkout(1),
-        dailyOrderForWorkout(2),
-      ];
-
-      expect(rounds.every((round) => round.length == 5), isTrue);
-      expect(rounds.expand((round) => round).toSet(), activeGames.toSet());
-      expect(rounds.expand((round) => round), hasLength(15));
-    });
-
-    test('rotation is stable for the same workout number', () {
-      expect(dailyOrderForWorkout(7), dailyOrderForWorkout(7));
-    });
-
     test('every active game has a transparent research note', () {
       for (final game in activeGames) {
         final definition = gameDefinition(game);
@@ -125,6 +109,82 @@ void main() {
       expect(result.rawMetrics, isA<FocusMetrics>());
       expect(result.comparableSeries().accepts(result), isTrue);
     });
+
+    test('curates user-facing metrics with direction and formatting', () {
+      final result = GameResult(
+        type: GameType.signalStop,
+        mode: GameMode.standard,
+        score: 82,
+        normalized: 82,
+        accuracy: .9,
+        durationMs: 30000,
+        difficulty: 4,
+        completedAt: DateTime.utc(2026, 1, 1),
+        rulesVersion: GameType.signalStop.rulesVersion,
+        metrics: const {
+          'medianResponseMs': 420,
+          'stopSuccessRate': .75,
+          'commissionErrors': 2,
+        },
+      );
+      final metrics = gameMetricDefinitions(GameType.signalStop);
+
+      expect(
+        metrics.map((metric) => metric.key),
+        containsAll([
+          GameMetricDefinition.trainingLevelKey,
+          GameMetricDefinition.accuracyKey,
+          'stopSuccessRate',
+          'commissionErrors',
+        ]),
+      );
+      expect(
+        metrics
+            .firstWhere((metric) => metric.key == 'stopSuccessRate')
+            .formatValue(result),
+        '75%',
+      );
+      expect(
+        metrics
+            .firstWhere((metric) => metric.key == 'commissionErrors')
+            .direction,
+        MetricDirection.lowerIsBetter,
+      );
+    });
+
+    test('progress points include only compatible trend sessions', () {
+      final game = GameType.colorClash;
+      final standard = _result(
+        day: 1,
+        normalized: 60,
+        type: game,
+        mode: GameMode.standard,
+      );
+      final official = _result(day: 2, normalized: 70, type: game);
+      final challenge = _result(
+        day: 3,
+        normalized: 90,
+        type: game,
+        mode: GameMode.personalBest,
+      );
+      final relaxed = _result(
+        day: 4,
+        normalized: 100,
+        type: game,
+        mode: GameMode.relaxed,
+      );
+
+      final points = progressPoints(
+        game: game,
+        metric: gameMetricDefinitions(game).first,
+        history: [standard, official, challenge, relaxed],
+        currentOverlay: relaxed,
+      );
+
+      expect(points.where((point) => point.includedInTrend), hasLength(2));
+      expect(points.last.includedInTrend, isFalse);
+      expect(points.last.result, relaxed);
+    });
   });
 
   group('per-game baseline', () {
@@ -179,14 +239,10 @@ void main() {
     test('coverage-aware random five favors least-trained games', () {
       final trained = activeGames.take(10).toSet();
       final history = [
-        for (final game in trained)
-          _result(day: 1, normalized: 80, type: game),
+        for (final game in trained) _result(day: 1, normalized: 80, type: game),
       ];
 
-      final selection = coverageAwareDailySelection(
-        history,
-        random: Random(7),
-      );
+      final selection = coverageAwareDailySelection(history, random: Random(7));
 
       expect(selection, hasLength(5));
       expect(selection.toSet(), hasLength(5));
@@ -196,12 +252,7 @@ void main() {
     test('coverage-aware random five ignores incompatible history', () {
       final game = activeGames.first;
       final history = [
-        _result(
-          day: 1,
-          normalized: 80,
-          type: game,
-          mode: GameMode.relaxed,
-        ),
+        _result(day: 1, normalized: 80, type: game, mode: GameMode.relaxed),
         _result(
           day: 2,
           normalized: 80,
@@ -210,14 +261,8 @@ void main() {
         ),
       ];
 
-      final first = coverageAwareDailySelection(
-        history,
-        random: Random(11),
-      );
-      final second = coverageAwareDailySelection(
-        history,
-        random: Random(11),
-      );
+      final first = coverageAwareDailySelection(history, random: Random(11));
+      final second = coverageAwareDailySelection(history, random: Random(11));
 
       expect(first, second);
       expect(first.toSet(), hasLength(5));

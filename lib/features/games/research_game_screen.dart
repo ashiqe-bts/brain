@@ -346,61 +346,8 @@ class _ResearchGameScreenState extends State<ResearchGameScreen>
     );
     setState(() {});
     Future<void>.delayed(const Duration(milliseconds: 200), () {
-      if (mounted) _showResult(result);
+      if (mounted) Navigator.pop(context, result);
     });
-  }
-
-  Future<void> _showResult(GameResult result) async {
-    await showModalBottomSheet<void>(
-      context: context,
-      isDismissible: false,
-      enableDrag: false,
-      builder: (sheetContext) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                Icons.check_circle_outline_rounded,
-                size: 54,
-                color: context.gameAccent(widget.type),
-              ),
-              const SizedBox(height: 12),
-              PageEyebrow(
-                '${widget.type.domain} review',
-                color: context.gameAccent(widget.type),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                '${(result.accuracy * 100).round()}% accuracy',
-                style: Theme.of(context).textTheme.headlineSmall,
-              ),
-              const SizedBox(height: 6),
-              Text(
-                result.metrics['medianResponseMs'] == 0
-                    ? '${result.correct} of ${result.attempts} correct'
-                    : '${result.metrics['medianResponseMs']!.round()} ms median · ${result.correct} of ${result.attempts} correct',
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 8),
-              Text(sessionTip(result), textAlign: TextAlign.center),
-              const SizedBox(height: 20),
-              PrimaryAction(
-                expanded: true,
-                color: context.brain.success,
-                onPressed: () {
-                  Navigator.pop(sheetContext);
-                  Navigator.pop(context, result);
-                },
-                icon: Icons.arrow_forward_rounded,
-                label: 'Continue',
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
   }
 
   @override

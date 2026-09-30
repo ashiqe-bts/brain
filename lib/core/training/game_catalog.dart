@@ -5,6 +5,212 @@ import '../models/brain_models.dart';
 typedef GameScorer = GameScore Function(GameScoreInput input);
 typedef RawMetricFormatter = String Function(Map<String, double> metrics);
 
+enum MetricDirection { higherIsBetter, lowerIsBetter, neutral }
+
+class GameMetricDefinition {
+  const GameMetricDefinition({
+    required this.key,
+    required this.label,
+    required this.direction,
+    this.unit = '',
+    this.percent = false,
+    this.decimals = 0,
+  });
+
+  static const trainingLevelKey = 'trainingLevel';
+  static const accuracyKey = 'accuracy';
+
+  final String key;
+  final String label;
+  final MetricDirection direction;
+  final String unit;
+  final bool percent;
+  final int decimals;
+
+  double? value(GameResult result) {
+    final raw = switch (key) {
+      trainingLevelKey =>
+        (((result.difficulty.clamp(1, 10) - 1) +
+                        result.normalized.clamp(0, 100) / 100) *
+                    10)
+                .clamp(0, 100)
+                .round() /
+            10,
+      accuracyKey => result.accuracy * 100,
+      _ => result.metrics[key],
+    };
+    if (raw == null) return null;
+    return percent && key != accuracyKey ? raw * 100 : raw;
+  }
+
+  String formatValue(GameResult result) {
+    final number = value(result);
+    if (number == null) return 'Not recorded';
+    final text = number.toStringAsFixed(decimals);
+    return percent
+        ? '$text%'
+        : unit.isEmpty
+        ? text
+        : '$text $unit';
+  }
+}
+
+const _levelMetric = GameMetricDefinition(
+  key: GameMetricDefinition.trainingLevelKey,
+  label: 'Training level',
+  direction: MetricDirection.higherIsBetter,
+  decimals: 1,
+);
+const _accuracyMetric = GameMetricDefinition(
+  key: GameMetricDefinition.accuracyKey,
+  label: 'Accuracy',
+  direction: MetricDirection.higherIsBetter,
+  percent: true,
+);
+const _responseMetric = GameMetricDefinition(
+  key: 'medianResponseMs',
+  label: 'Median response',
+  direction: MetricDirection.lowerIsBetter,
+  unit: 'ms',
+);
+
+List<GameMetricDefinition> gameMetricDefinitions(GameType type) {
+  const interference = GameMetricDefinition(
+    key: 'interferenceCostMs',
+    label: 'Interference cost',
+    direction: MetricDirection.lowerIsBetter,
+    unit: 'ms',
+  );
+  const span = GameMetricDefinition(
+    key: 'span',
+    label: 'Span',
+    direction: MetricDirection.higherIsBetter,
+  );
+  final specific = switch (type) {
+    GameType.colorClash => const [_responseMetric, interference],
+    GameType.mathBlitz => const [_responseMetric],
+    GameType.memoryTiles => const [
+      span,
+      GameMetricDefinition(
+        key: 'capacity',
+        label: 'Capacity',
+        direction: MetricDirection.higherIsBetter,
+      ),
+      GameMetricDefinition(
+        key: 'exposureDurationMs',
+        label: 'Exposure duration',
+        direction: MetricDirection.lowerIsBetter,
+        unit: 'ms',
+      ),
+    ],
+    GameType.signalStop => const [
+      GameMetricDefinition(
+        key: 'stopSuccessRate',
+        label: 'Stop success',
+        direction: MetricDirection.higherIsBetter,
+        percent: true,
+      ),
+      GameMetricDefinition(
+        key: 'estimatedStoppingMs',
+        label: 'Estimated stopping time',
+        direction: MetricDirection.lowerIsBetter,
+        unit: 'ms',
+      ),
+      GameMetricDefinition(
+        key: 'commissionErrors',
+        label: 'Commission errors',
+        direction: MetricDirection.lowerIsBetter,
+      ),
+    ],
+    GameType.peripheralFocus => const [
+      _responseMetric,
+      GameMetricDefinition(
+        key: 'exposureThresholdMs',
+        label: 'Exposure threshold',
+        direction: MetricDirection.lowerIsBetter,
+        unit: 'ms',
+      ),
+    ],
+    GameType.nBackNavigator => const [
+      span,
+      GameMetricDefinition(
+        key: 'discrimination',
+        label: 'Discrimination',
+        direction: MetricDirection.higherIsBetter,
+        percent: true,
+      ),
+    ],
+    GameType.ruleSwitch => const [
+      _responseMetric,
+      GameMetricDefinition(
+        key: 'switchCostMs',
+        label: 'Switch cost',
+        direction: MetricDirection.lowerIsBetter,
+        unit: 'ms',
+      ),
+    ],
+    GameType.arrowGuard => const [_responseMetric, interference],
+    GameType.pairLink => const [span],
+    GameType.symbolSprint => const [
+      _responseMetric,
+      GameMetricDefinition(
+        key: 'correctSubstitutions',
+        label: 'Correct substitutions',
+        direction: MetricDirection.higherIsBetter,
+      ),
+    ],
+    GameType.objectTracker => const [
+      GameMetricDefinition(
+        key: 'objectCount',
+        label: 'Objects tracked',
+        direction: MetricDirection.higherIsBetter,
+      ),
+      GameMetricDefinition(
+        key: 'trackingAccuracy',
+        label: 'Tracking accuracy',
+        direction: MetricDirection.higherIsBetter,
+        percent: true,
+      ),
+    ],
+    GameType.towerPlanner => const [
+      GameMetricDefinition(
+        key: 'solvedTrials',
+        label: 'Solved trials',
+        direction: MetricDirection.higherIsBetter,
+      ),
+      GameMetricDefinition(
+        key: 'excessMoves',
+        label: 'Excess moves',
+        direction: MetricDirection.lowerIsBetter,
+      ),
+      GameMetricDefinition(
+        key: 'planningMedianMs',
+        label: 'Planning time',
+        direction: MetricDirection.lowerIsBetter,
+        unit: 'ms',
+      ),
+    ],
+    GameType.dualTaskDash => const [
+      GameMetricDefinition(
+        key: 'classificationAccuracy',
+        label: 'Classification accuracy',
+        direction: MetricDirection.higherIsBetter,
+        percent: true,
+      ),
+      GameMetricDefinition(
+        key: 'countAccuracy',
+        label: 'Counting accuracy',
+        direction: MetricDirection.higherIsBetter,
+        percent: true,
+      ),
+      _responseMetric,
+    ],
+    GameType.logicSeries || GameType.spatialRotation => const [_responseMetric],
+    GameType.reflexTap || GameType.visualSearch => const [_responseMetric],
+  };
+  return [_levelMetric, _accuracyMetric, ...specific];
+}
+
 class GameScoreInput {
   const GameScoreInput({
     required this.difficulty,

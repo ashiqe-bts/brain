@@ -85,6 +85,62 @@ class SessionComparison {
   final DateTime? previousCompletedAt;
 }
 
+class ProgressPoint {
+  const ProgressPoint({
+    required this.result,
+    required this.value,
+    required this.includedInTrend,
+  });
+
+  final GameResult result;
+  final double value;
+  final bool includedInTrend;
+}
+
+List<ProgressPoint> progressPoints({
+  required GameType game,
+  required GameMetricDefinition metric,
+  required Iterable<GameResult> history,
+  GameResult? currentOverlay,
+  int limit = 30,
+}) {
+  final comparable =
+      history
+          .where(
+            (result) =>
+                result.type == game &&
+                result.rulesVersion == game.rulesVersion &&
+                result.contributesToTrends &&
+                result.completedAt != null &&
+                metric.value(result) != null,
+          )
+          .toList()
+        ..sort((a, b) => a.completedAt!.compareTo(b.completedAt!));
+  final visible = comparable.length > limit
+      ? comparable.sublist(comparable.length - limit)
+      : comparable;
+  final points = [
+    for (final result in visible)
+      ProgressPoint(
+        result: result,
+        value: metric.value(result)!,
+        includedInTrend: true,
+      ),
+  ];
+  if (currentOverlay != null &&
+      currentOverlay.type == game &&
+      metric.value(currentOverlay) != null) {
+    points.add(
+      ProgressPoint(
+        result: currentOverlay,
+        value: metric.value(currentOverlay)!,
+        includedInTrend: false,
+      ),
+    );
+  }
+  return points;
+}
+
 String selfComparisonMessage(
   SessionComparison comparison, {
   required DateTime currentAt,
@@ -185,18 +241,18 @@ SessionComparison sessionComparison({
   double level(GameResult item) =>
       trainingLevel(difficulty: item.difficulty, score: item.normalized);
 
-  final compatibleBaseline = daily
-      .expand((summary) => summary.results)
-      .where(
-        (item) =>
-            item.type == result.type &&
-            item.rulesVersion == result.rulesVersion &&
-            item.mode == GameMode.official &&
-            !item.isLegacy &&
-            item.completedAt != null,
-      )
-      .toList()
-    ..sort((a, b) => a.completedAt!.compareTo(b.completedAt!));
+  final compatibleBaseline =
+      history
+          .where(
+            (item) =>
+                item.type == result.type &&
+                item.rulesVersion == result.rulesVersion &&
+                item.mode == GameMode.official &&
+                !item.isLegacy &&
+                item.completedAt != null,
+          )
+          .toList()
+        ..sort((a, b) => a.completedAt!.compareTo(b.completedAt!));
   final previous =
       history
           .where(

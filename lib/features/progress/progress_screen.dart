@@ -10,6 +10,8 @@ import '../../core/training/training_analytics.dart';
 import '../../core/training/game_catalog.dart';
 import '../../core/widgets/common.dart';
 import '../games/research_basis_sheet.dart';
+import 'game_insight_screen.dart';
+import 'progress_chart.dart';
 
 class ProgressScreen extends StatefulWidget {
   const ProgressScreen({super.key});
@@ -21,6 +23,8 @@ class ProgressScreen extends StatefulWidget {
 class _ProgressScreenState extends State<ProgressScreen> {
   int monthOffset = 0;
   SkillDomain? selectedDomain;
+  final selectedGames = <GameType>{};
+  bool overviewInitialized = false;
 
   @override
   Widget build(BuildContext context) {
@@ -28,6 +32,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
     final baseline = baselineStatus(data.history);
     final review = weeklyReview(daily: data.daily, history: data.history);
     final domains = activeGames.map((game) => game.skill).toSet().toList();
+    _initializeOverview(data.history);
     return Scaffold(
       appBar: AppBar(toolbarHeight: 70, title: const Text('Insights')),
       body: SafeArea(
@@ -41,6 +46,8 @@ class _ProgressScreenState extends State<ProgressScreen> {
                 child: Column(
                   children: [
                     _baseline(context, baseline),
+                    const SectionHeader('Combined progress'),
+                    _overviewChart(context, data),
                     const SectionHeader('Fifteen-game profile'),
                     Semantics(
                       label: 'Filter insights by cognitive domain',
@@ -99,6 +106,97 @@ class _ProgressScreenState extends State<ProgressScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  void _initializeOverview(List<GameResult> history) {
+    if (overviewInitialized) return;
+    final recent =
+        history
+            .where(
+              (result) => result.contributesToTrends && result.type.isActive,
+            )
+            .toList()
+          ..sort((a, b) => b.completedAt!.compareTo(a.completedAt!));
+    for (final result in recent) {
+      selectedGames.add(result.type);
+      if (selectedGames.length == 5) break;
+    }
+    if (selectedGames.isEmpty) selectedGames.addAll(activeGames.take(5));
+    overviewInitialized = true;
+  }
+
+  Widget _overviewChart(BuildContext context, BrainState data) {
+    final level = gameMetricDefinitions(GameType.colorClash).firstWhere(
+      (metric) => metric.key == GameMetricDefinition.trainingLevelKey,
+    );
+    return AppCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Compare games on the shared training-level scale',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Select up to five games. Lines are separate—BrainFlex does not average them into an overall score.',
+            style: TextStyle(color: context.brain.textMuted),
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            height: 46,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: activeGames.length,
+              separatorBuilder: (_, _) => const SizedBox(width: 8),
+              itemBuilder: (context, index) {
+                final game = activeGames[index];
+                final chosen = selectedGames.contains(game);
+                return FilterChip(
+                  avatar: Icon(gameVisualFor(game).icon, size: 18),
+                  label: Text(game.title),
+                  selected: chosen,
+                  onSelected: chosen || selectedGames.length < 5
+                      ? (_) => setState(() {
+                          if (chosen && selectedGames.length > 1) {
+                            selectedGames.remove(game);
+                          } else if (!chosen) {
+                            selectedGames.add(game);
+                          }
+                        })
+                      : null,
+                );
+              },
+            ),
+          ),
+          const SizedBox(height: 14),
+          ProgressLineChart(
+            valueLabel: 'Training level',
+            minimum: 1,
+            maximum: 10,
+            series: [
+              for (final game in selectedGames)
+                ProgressChartSeries(
+                  label: game.title,
+                  color: context.gameAccent(game),
+                  points: [
+                    for (final point in progressPoints(
+                      game: game,
+                      metric: level,
+                      history: data.history,
+                    ))
+                      ProgressChartPoint(
+                        at: point.result.completedAt!,
+                        value: point.value,
+                        label: level.formatValue(point.result),
+                      ),
+                  ],
+                ),
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -224,6 +322,40 @@ class _ProgressScreenState extends State<ProgressScreen> {
               Text(
                 '${trend.delta >= 0 ? '+' : ''}${trend.delta.toStringAsFixed(1)} levels from your baseline median',
               ),
+            if (eligible.isNotEmpty) ...[
+              const SizedBox(height: 10),
+              ProgressSparkline(
+                color: context.gameAccent(game),
+                semanticLabel:
+                    '${game.title} training level history with ${eligible.length} comparable sessions',
+                points: [
+                  for (final result
+                      in eligible.reversed.take(30).toList().reversed)
+                    ProgressChartPoint(
+                      at: result.completedAt!,
+                      value: trainingLevel(
+                        difficulty: result.difficulty,
+                        score: result.normalized,
+                      ),
+                      label:
+                          'Level ${trainingLevel(difficulty: result.difficulty, score: result.normalized).toStringAsFixed(1)}',
+                    ),
+                ],
+              ),
+            ],
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton.icon(
+                onPressed: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => GameInsightScreen(game: game),
+                  ),
+                ),
+                icon: const Icon(Icons.show_chart_rounded),
+                label: const Text('View details'),
+              ),
+            ),
           ],
         ),
       ),

@@ -8,6 +8,7 @@ import '../../app/theme/brain_theme.dart';
 import '../../app/theme/game_visuals.dart';
 import 'game_launcher.dart';
 import 'research_basis_sheet.dart';
+import '../progress/session_result_screen.dart';
 
 class GamesScreen extends StatefulWidget {
   const GamesScreen({super.key});
@@ -286,26 +287,11 @@ class _GamesScreenState extends State<GamesScreen> {
       personalBest: pb,
     );
     if (result == null || !context.mounted) return;
-    final comparison = mode == GameMode.relaxed
-        ? null
-        : sessionComparison(
-            result: result,
-            history: cubit.data.history,
-            daily: cubit.data.daily,
-          );
     await cubit.recordResult(result);
     if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          mode == GameMode.relaxed
-              ? 'Relaxed practice complete · not added to trends'
-              : selfComparisonMessage(
-                  comparison!,
-                  currentAt: result.completedAt ?? DateTime.now(),
-                ),
-        ),
-      ),
+    await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => SessionResultScreen(result: result)),
     );
   }
 }

@@ -20,7 +20,7 @@ The product promise is deliberately narrow: BrainFlex helps users practise and m
 
 - Android and Flutter web in Chrome are the supported release targets. Other browsers are not intentionally blocked.
 - Local scheduled reminders are Android-only. Chrome explicitly describes reminders as unavailable.
-- First launch begins with a value-first welcome, then requires a trimmed 1–30-character Unicode display name without line breaks or control characters.
+- First launch begins with a value-first welcome, then requires a trimmed 1–30-character Unicode display name without line breaks or control characters. It does not require a sample game interaction.
 - Existing onboarded users without a valid name see the name prompt once without losing progress.
 - The name remains local, is editable in Settings, and Home greets the user with `Hey, {name}` above the date.
 
@@ -30,8 +30,9 @@ Compact layouts use bottom navigation; expanded Chrome layouts use a navigation 
 
 ### Today
 
-- Shows the daily standardized workout, its five-game rotation, baseline status, current streak, and workout count. Participation XP is not a primary Home metric.
-- A daily workout contains five official rounds from a deterministic three-workout rotation that covers every active game once per cycle.
+- Shows the daily standardized workout, its five selected games, baseline status, current streak, and workout count. Participation XP is not a primary Home metric.
+- Before a new daily workout, the user chooses exactly five different active games or generates a coverage-aware random set. Random selection favors games with fewer current-version official results and never duplicates a game.
+- The selected order is locked once play begins and is persisted for safe resume.
 - Each completed round is saved so an interrupted workout can resume safely.
 - After baseline completion, recommends optional practice for the two least-trained or weakest-trending skills.
 
@@ -44,7 +45,7 @@ Compact layouts use bottom navigation; expanded Chrome layouts use a navigation 
 
 ### Insights
 
-- Shows per-game baseline progress, 15 separate game profiles, recent sessions, weekly review, workout calendar, and achievements.
+- Shows a combined, selectable multi-game training-level graph, per-game baseline progress, 15 separate charted game profiles, recent sessions, weekly review, workout calendar, and achievements.
 - Never combines the games into a composite cognitive score.
 - Always displays a skill level together with raw measures such as accuracy, span, or median response time.
 
@@ -106,7 +107,7 @@ Skill training levels range from 1.0 to 10.0. They combine the played difficulty
 
 ## 7. Baseline and adaptation
 
-Each game forms its own progressive baseline from three official results under its current rules version. A balanced rotation can complete all 15 baselines after nine workouts. Insights shows partial per-game progress and does not label a trend until that game also has three compatible post-baseline observations.
+Each game forms its own progressive baseline from three official results under its current rules version. Insights shows partial per-game progress and does not label a trend until that game also has three compatible post-baseline observations. Coverage-aware Random 5 helps distribute official practice, while manual selection leaves baseline coverage under the user’s control.
 
 After each comparable session, difficulty reviews the latest three sessions at the same game, rules version, and difficulty:
 
@@ -122,6 +123,7 @@ Thresholds belong to versioned game configuration and require boundary tests.
 ### Session review
 
 - Show the raw result for each trained skill.
+- Show a metric-selectable graph using up to 30 current-rules Standard and official results. Challenge and Relaxed results may appear as a separate hollow current marker but do not join the trend line.
 - Compare only with the latest scored result for the same game and rules version. Say “yesterday” only when it was the previous local calendar day; otherwise say “your last run.”
 - Describe a match neutrally, and describe lower results as normal session variation rather than decline.
 - Provide one deterministic, task-specific actionable tip.

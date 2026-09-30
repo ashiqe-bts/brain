@@ -19,7 +19,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   final notifications = NotificationService();
   final nameController = TextEditingController();
   int page = 0;
-  int sampleScore = 0;
   TimeOfDay reminder = const TimeOfDay(hour: 19, minute: 0);
   bool reminders = false;
 
@@ -42,7 +41,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               switchOutCurve: Curves.easeInCubic,
               child: KeyedSubtree(
                 key: ValueKey(page),
-                child: [_welcome(), _name(), _sample(), _routine()][page],
+                child: [_welcome(), _name(), _routine()][page],
               ),
             ),
           ),
@@ -58,9 +57,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       children: [
         Text('Set up BrainFlex', style: Theme.of(context).textTheme.labelLarge),
         const Spacer(),
-        Text('$page of 3', style: TextStyle(color: context.brain.textMuted)),
+        Text('$page of 2', style: TextStyle(color: context.brain.textMuted)),
         const SizedBox(width: 12),
-        SizedBox(width: 88, child: LinearProgressIndicator(value: page / 3)),
+        SizedBox(width: 88, child: LinearProgressIndicator(value: page / 2)),
       ],
     ),
   );
@@ -233,53 +232,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     ),
   );
 
-  Widget _sample() => _setupFrame(
-    eyebrow: 'Try one interaction',
-    title: 'Tap the ink color',
-    body: 'The word says RED, but the ink is blue.',
-    child: Column(
-      children: [
-        Text(
-          'RED',
-          style: TextStyle(
-            color: context.clashColor(1),
-            fontWeight: FontWeight.w900,
-            fontSize: 52,
-          ),
-        ),
-        const SizedBox(height: 20),
-        Wrap(
-          spacing: 10,
-          runSpacing: 10,
-          alignment: WrapAlignment.center,
-          children: ['Red', 'Blue', 'Green', 'Yellow']
-              .map(
-                (label) => PrimaryAction(
-                  color: context.clashColor(
-                    const ['Red', 'Blue', 'Green', 'Yellow'].indexOf(label),
-                  ),
-                  onPressed: () =>
-                      setState(() => sampleScore = label == 'Blue' ? 1 : -1),
-                  label: label,
-                ),
-              )
-              .toList(),
-        ),
-        const SizedBox(height: 16),
-        Semantics(
-          liveRegion: true,
-          child: Text(
-            sampleScore == 1
-                ? 'Correct—the ink is blue.'
-                : sampleScore == -1
-                ? 'Look at the ink rather than the word.'
-                : 'Choose the ink color.',
-          ),
-        ),
-      ],
-    ),
-  );
-
   Widget _routine() => _setupFrame(
     eyebrow: 'Your routine',
     title: 'Practice on your schedule',
@@ -339,15 +291,15 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 page == 1 && displayNameError(nameController.text) != null
                 ? null
                 : _next,
-            icon: page == 3 ? Icons.check_rounded : Icons.arrow_forward_rounded,
-            label: page == 3 ? 'Start training' : 'Continue',
+            icon: page == 2 ? Icons.check_rounded : Icons.arrow_forward_rounded,
+            label: page == 2 ? 'Start training' : 'Continue',
           ),
         ],
       ),
     ),
   );
 
-  void _back() => setState(() => page = (page - 1).clamp(0, 3));
+  void _back() => setState(() => page = (page - 1).clamp(0, 2));
 
   Duration get _motionDuration => MediaQuery.disableAnimationsOf(context)
       ? Duration.zero
@@ -358,7 +310,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       setState(() {});
       return;
     }
-    if (page < 3) {
+    if (page < 2) {
       setState(() => page++);
       return;
     }

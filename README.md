@@ -2,7 +2,7 @@
 
 BrainFlex is an Android-and-Chrome offline personal cognitive gym built with Flutter. It contains 15 research-informed tasks spanning interference control, calculation, visual and working memory, response inhibition, processing speed, cognitive flexibility, attention, associative memory, planning, dual-task control, and spatial reasoning.
 
-Each daily workout contains five games. A deterministic three-workout cycle covers all 15 games once before reshuffling the next cycle. Every game builds its own baseline from three official results under the current rules version, so a complete baseline requires at least nine workouts.
+Each daily workout contains five different games chosen by the user or generated as a coverage-aware random mix. Every game builds its own baseline from three official results under the current rules version.
 
 BrainFlex does not claim to measure IQ, diagnose a condition, prevent cognitive decline, or prove improvement outside its trained tasks.
 
@@ -10,11 +10,12 @@ Every Train card includes a research-basis sheet naming the studied paradigm, po
 
 ## Product behaviour
 
-- First launch opens with a value-first welcome, then asks for a local display name; Home opens with a personal greeting.
-- Today provides five games from the current balanced rotation, baseline status, streaks, and practice recommendations.
+- First launch opens with a value-first welcome, then asks for a local display name and optional reminder; Home opens with a personal greeting.
+- Today lets users select five different games or generate a balanced Random 5, then shows baseline status, streaks, and practice recommendations.
 - Every game has a required interactive tutorial on first play for its current rules version; tutorials can be replayed without affecting progress.
 - Train offers Standard, Relaxed, and Challenge My Best sessions.
-- Insights provides 15 separate game profiles, history, rolling trends, weekly reviews, and achievements.
+- Every scored session ends with a metric-selectable progress graph, current/previous/baseline comparisons, and game-specific measures.
+- Insights provides a multi-game training-level chart, 15 separate charted game profiles, history, rolling trends, weekly reviews, and achievements.
 - Standard and official sessions contribute to trends. Relaxed sessions are untimed and excluded.
 - Challenge My Best requires the same game rules version and difficulty. Result feedback compares only with the latest compatible personal attempt.
 - Participation XP remains compatible with existing data but is de-emphasized in the interface. Skill levels are shown separately with raw metrics.
