@@ -265,38 +265,22 @@ class TutorialDefinition {
   final List<TutorialStep> steps;
 }
 
+enum TutorialScenarioKind { primary, exception, continuation }
+
 class TutorialStep {
   const TutorialStep({
     required this.title,
     required this.instruction,
-    required this.stimulus,
-    required this.options,
-    required this.correctIndex,
     required this.successMessage,
     required this.retryMessage,
-    this.waitMilliseconds = 0,
+    this.scenario = TutorialScenarioKind.primary,
   });
-
-  const TutorialStep.wait({
-    required this.title,
-    required this.instruction,
-    required this.stimulus,
-    required this.successMessage,
-    required this.retryMessage,
-    this.waitMilliseconds = 1400,
-  }) : options = const ['TAP'],
-       correctIndex = -1;
 
   final String title;
   final String instruction;
-  final String stimulus;
-  final List<String> options;
-  final int correctIndex;
   final String successMessage;
   final String retryMessage;
-  final int waitMilliseconds;
-
-  bool get isWaitStep => waitMilliseconds > 0;
+  final TutorialScenarioKind scenario;
 }
 
 class GameDefinition {
@@ -597,18 +581,13 @@ TutorialDefinition tutorialDefinition(GameType type) => switch (type) {
       TutorialStep(
         title: 'Same word and ink',
         instruction: 'The ink is red. Choose RED.',
-        stimulus: 'RED (red ink)',
-        options: ['RED', 'BLUE', 'GREEN', 'YELLOW'],
-        correctIndex: 0,
         successMessage: 'Correct. The word and ink matched.',
         retryMessage: 'Look at the ink color: it is red.',
       ),
       TutorialStep(
         title: 'Ignore the word',
         instruction: 'The word says RED, but the ink is blue.',
-        stimulus: 'RED (blue ink)',
-        options: ['RED', 'BLUE', 'GREEN', 'YELLOW'],
-        correctIndex: 1,
+        scenario: TutorialScenarioKind.exception,
         successMessage: 'Correct. You chose the blue ink.',
         retryMessage: 'Ignore the letters and choose BLUE.',
       ),
@@ -620,18 +599,13 @@ TutorialDefinition tutorialDefinition(GameType type) => switch (type) {
       TutorialStep(
         title: 'Check a true equation',
         instruction: 'Calculate before choosing.',
-        stimulus: '4 + 3 = 7',
-        options: ['TRUE', 'FALSE'],
-        correctIndex: 0,
         successMessage: 'Correct. Four plus three is seven.',
         retryMessage: 'Add 4 and 3, then compare with 7.',
       ),
       TutorialStep(
         title: 'Catch a close alternative',
         instruction: 'The shown answer may be plausible but wrong.',
-        stimulus: '9 − 4 = 6',
-        options: ['TRUE', 'FALSE'],
-        correctIndex: 1,
+        scenario: TutorialScenarioKind.exception,
         successMessage: 'Correct. Nine minus four is five.',
         retryMessage: 'Work it out: 9 − 4 equals 5, not 6.',
       ),
@@ -642,12 +616,16 @@ TutorialDefinition tutorialDefinition(GameType type) => switch (type) {
     steps: [
       TutorialStep(
         title: 'Find the changed tile',
-        instruction: 'Tiles 1 and 5 were marked. Now 1 and 6 are marked.',
-        stimulus: 'Before: 1, 5   →   After: 1, 6',
-        options: ['Tile 1', 'Tile 5', 'Tile 3', 'Tile 8'],
-        correctIndex: 1,
-        successMessage: 'Correct. Tile 5 changed.',
-        retryMessage: 'Compare the two sets: tile 5 disappeared.',
+        instruction: 'Study the marked tiles, then find the tile that changed.',
+        successMessage: 'Correct. You found the changed tile.',
+        retryMessage: 'Compare the first pattern with the pattern shown now.',
+      ),
+      TutorialStep(
+        title: 'Try another pattern',
+        instruction: 'Study the marked tiles, then compare the new pattern.',
+        successMessage: 'Correct. You found the changed tile.',
+        retryMessage: 'Compare the first pattern with the pattern shown now.',
+        scenario: TutorialScenarioKind.exception,
       ),
     ],
   ),
@@ -657,16 +635,13 @@ TutorialDefinition tutorialDefinition(GameType type) => switch (type) {
       TutorialStep(
         title: 'Respond to GO',
         instruction: 'Tap when GO appears.',
-        stimulus: 'GO',
-        options: ['TAP', 'WAIT'],
-        correctIndex: 0,
         successMessage: 'Good. Respond quickly on GO.',
         retryMessage: 'GO means tap.',
       ),
-      TutorialStep.wait(
+      TutorialStep(
         title: 'Withhold on STOP',
         instruction: 'Do not press TAP. Wait for the timer to finish.',
-        stimulus: 'STOP',
+        scenario: TutorialScenarioKind.exception,
         successMessage: 'Good stop. You withheld the response.',
         retryMessage: 'STOP means do not tap. Try waiting again.',
       ),
@@ -677,12 +652,16 @@ TutorialDefinition tutorialDefinition(GameType type) => switch (type) {
     steps: [
       TutorialStep(
         title: 'Combine center and edge',
-        instruction: 'The center is a triangle and the marker is on the right.',
-        stimulus: '▲   • right edge',
-        options: ['▲ · RIGHT', '● · RIGHT', '▲ · LEFT', '■ · TOP'],
-        correctIndex: 0,
+        instruction: 'Remember the center symbol and the edge marker together.',
         successMessage: 'Correct. You combined both details.',
         retryMessage: 'Use the center shape and the edge position together.',
+      ),
+      TutorialStep(
+        title: 'Keep your eyes centered',
+        instruction: 'Remember both the center symbol and peripheral marker.',
+        successMessage: 'Correct. You noticed both details.',
+        retryMessage: 'Match the center symbol and edge direction together.',
+        scenario: TutorialScenarioKind.exception,
       ),
     ],
   ),
@@ -690,22 +669,28 @@ TutorialDefinition tutorialDefinition(GameType type) => switch (type) {
     intro: 'Compare the current position with the position one step earlier.',
     steps: [
       TutorialStep(
-        title: 'A 1-back match',
-        instruction: 'Previous position: 4. Current position: 4.',
-        stimulus: '4 → 4',
-        options: ['MATCH', 'NEW'],
-        correctIndex: 0,
-        successMessage: 'Correct. The position repeated.',
-        retryMessage: 'Both positions are 4, so this is a match.',
+        title: 'Learn the previous position',
+        instruction:
+            'Choose NEW when the position differs from the one before it.',
+        successMessage: 'Correct. You stored the new position.',
+        retryMessage:
+            'Compare this position with the immediately previous one.',
       ),
       TutorialStep(
-        title: 'A 1-back non-match',
-        instruction: 'Previous position: 4. Current position: 7.',
-        stimulus: '4 → 7',
-        options: ['MATCH', 'NEW'],
-        correctIndex: 1,
-        successMessage: 'Correct. The position is new.',
-        retryMessage: 'Seven differs from the previous position four.',
+        title: 'Update your memory',
+        instruction:
+            'This is another new position. Remember it for the next trial.',
+        scenario: TutorialScenarioKind.exception,
+        successMessage: 'Correct. This position was new.',
+        retryMessage: 'Compare it with the position you just saw.',
+      ),
+      TutorialStep(
+        title: 'Spot a 1-back match',
+        instruction:
+            'Choose MATCH when the current position repeats the previous one.',
+        scenario: TutorialScenarioKind.continuation,
+        successMessage: 'Correct. The position repeated.',
+        retryMessage: 'Recall the position shown immediately before this one.',
       ),
     ],
   ),
@@ -714,19 +699,15 @@ TutorialDefinition tutorialDefinition(GameType type) => switch (type) {
     steps: [
       TutorialStep(
         title: 'Follow the shape rule',
-        instruction: 'RULE: SHAPE',
-        stimulus: 'COOL TRIANGLE',
-        options: ['CIRCLE', 'TRIANGLE'],
-        correctIndex: 1,
-        successMessage: 'Correct. The shape is a triangle.',
+        instruction: 'Read RULE: SHAPE, then answer with the displayed shape.',
+        successMessage: 'Correct. You followed the shape rule.',
         retryMessage: 'The rule asks for shape, not color.',
       ),
       TutorialStep(
         title: 'Switch to the color rule',
-        instruction: 'RULE: COLOR',
-        stimulus: 'WARM TRIANGLE',
-        options: ['WARM', 'COOL'],
-        correctIndex: 0,
+        instruction:
+            'When the cue changes to RULE: COLOR, answer with the color.',
+        scenario: TutorialScenarioKind.exception,
         successMessage: 'Correct. You followed the new rule.',
         retryMessage: 'The rule changed. Answer with the color.',
       ),
@@ -736,13 +717,18 @@ TutorialDefinition tutorialDefinition(GameType type) => switch (type) {
     intro: 'Answer for the center arrow and ignore the surrounding arrows.',
     steps: [
       TutorialStep(
-        title: 'Ignore conflicting flankers',
+        title: 'Read the center arrow',
         instruction: 'Only the middle arrow counts.',
-        stimulus: '→ → ← → →',
-        options: ['LEFT', 'RIGHT'],
-        correctIndex: 0,
-        successMessage: 'Correct. The center arrow points left.',
+        successMessage: 'Correct. You followed the center arrow.',
         retryMessage: 'Focus only on the arrow in the center.',
+      ),
+      TutorialStep(
+        title: 'Handle an opposing crowd',
+        instruction:
+            'Answer for the center arrow even when its neighbors disagree.',
+        successMessage: 'Correct. You ignored the surrounding arrows.',
+        retryMessage: 'Read only the direction of the center arrow.',
+        scenario: TutorialScenarioKind.exception,
       ),
     ],
   ),
@@ -751,21 +737,26 @@ TutorialDefinition tutorialDefinition(GameType type) => switch (type) {
     steps: [
       TutorialStep(
         title: 'Immediate recall',
-        instruction: 'Study: ★ was paired with ♦.',
-        stimulus: '★ + ♦',
-        options: ['♥', '♦', '☂', '☼'],
-        correctIndex: 1,
-        successMessage: 'Correct. The partner was ♦.',
-        retryMessage: 'Recall the pair shown above: ★ + ♦.',
+        instruction: 'Study the pair, then select the symbol shown with it.',
+        successMessage: 'Correct. You recalled the partner.',
+        retryMessage:
+            'Recall the two symbols shown together during the study phase.',
+      ),
+      TutorialStep(
+        title: 'Learn another pair',
+        instruction:
+            'Study and recall a second pair before returning to the first.',
+        scenario: TutorialScenarioKind.exception,
+        successMessage: 'Correct. Keep both pairs in mind.',
+        retryMessage: 'Recall the newest pair shown during the study phase.',
       ),
       TutorialStep(
         title: 'Delayed recall',
-        instruction: 'Which partner went with ★?',
-        stimulus: '★ + ?',
-        options: ['♥', '♦', '☂', '☼'],
-        correctIndex: 1,
+        instruction:
+            'Retrieve the earlier partner after another pair intervenes.',
+        scenario: TutorialScenarioKind.continuation,
         successMessage: 'Correct. You retained the association.',
-        retryMessage: '★ was paired with ♦.',
+        retryMessage: 'Think back to the earlier study pair.',
       ),
     ],
   ),
@@ -774,21 +765,17 @@ TutorialDefinition tutorialDefinition(GameType type) => switch (type) {
     steps: [
       TutorialStep(
         title: 'Read the key',
-        instruction: '★=3  ●=1  ▲=4  ■=2',
-        stimulus: '★',
-        options: ['1', '2', '3', '4'],
-        correctIndex: 2,
-        successMessage: 'Correct. The key maps ★ to 3.',
-        retryMessage: 'Check the key: ★ equals 3.',
+        instruction: 'Use the displayed key to translate the target symbol.',
+        successMessage: 'Correct. You used the current key.',
+        retryMessage: 'Find the target symbol in the key and read its number.',
       ),
       TutorialStep(
         title: 'The key can change',
-        instruction: '★=2  ●=4  ▲=1  ■=3',
-        stimulus: '●',
-        options: ['1', '2', '3', '4'],
-        correctIndex: 3,
-        successMessage: 'Correct. This key maps ● to 4.',
-        retryMessage: 'Use the new key: ● equals 4.',
+        instruction:
+            'Read the new key instead of relying on the previous mapping.',
+        scenario: TutorialScenarioKind.exception,
+        successMessage: 'Correct. You followed the updated key.',
+        retryMessage: 'Check this trial’s key again before answering.',
       ),
     ],
   ),
@@ -797,12 +784,19 @@ TutorialDefinition tutorialDefinition(GameType type) => switch (type) {
     steps: [
       TutorialStep(
         title: 'Track one object',
-        instruction: 'Object 1 moves from the upper left to position D.',
-        stimulus: '1  ↝  D',
-        options: ['A', 'B', 'D', 'F'],
-        correctIndex: 2,
-        successMessage: 'Correct. The target finished at D.',
-        retryMessage: 'Follow object 1 through the movement to D.',
+        instruction:
+            'Watch the highlighted object move to a lettered position.',
+        successMessage: 'Correct. You found the target’s final position.',
+        retryMessage: 'Follow the highlighted object to its final letter.',
+      ),
+      TutorialStep(
+        title: 'Track a new movement',
+        instruction:
+            'Follow the highlighted object without following distractors.',
+        successMessage: 'Correct. You kept track of the target.',
+        retryMessage:
+            'Replay the movement in your mind and choose its final letter.',
+        scenario: TutorialScenarioKind.exception,
       ),
     ],
   ),
@@ -812,30 +806,24 @@ TutorialDefinition tutorialDefinition(GameType type) => switch (type) {
     steps: [
       TutorialStep(
         title: 'Move 1 of 3',
-        instruction: 'Move two disks from peg 1 to peg 3.',
-        stimulus: 'Peg 1: [2,1]   Peg 2: []   Peg 3: []',
-        options: ['Disk 1: 1 → 2', 'Disk 2: 1 → 3'],
-        correctIndex: 0,
+        instruction: 'Choose the legal move that starts the shortest plan.',
         successMessage: 'Legal move. The small disk moves first.',
-        retryMessage: 'Disk 2 is under disk 1 and cannot move yet.',
+        retryMessage:
+            'Only a top disk can move. Choose the shortest legal move.',
       ),
       TutorialStep(
         title: 'Move 2 of 3',
-        instruction: 'Continue the shortest plan.',
-        stimulus: 'Peg 1: [2]   Peg 2: [1]   Peg 3: []',
-        options: ['Disk 2: 1 → 3', 'Disk 1: 2 → 3'],
-        correctIndex: 0,
-        successMessage: 'Correct. The large disk reaches the goal peg.',
-        retryMessage: 'Keep the goal clear for disk 2 first.',
+        instruction: 'Continue toward the marked goal peg using legal moves.',
+        scenario: TutorialScenarioKind.continuation,
+        successMessage: 'Correct. The tower is closer to the goal peg.',
+        retryMessage: 'Keep the goal clear and choose the shortest legal move.',
       ),
       TutorialStep(
         title: 'Move 3 of 3',
-        instruction: 'Finish the tower.',
-        stimulus: 'Peg 1: []   Peg 2: [1]   Peg 3: [2]',
-        options: ['Disk 1: 2 → 3', 'Disk 2: 3 → 2'],
-        correctIndex: 0,
+        instruction: 'Choose the move that completes the shortest plan.',
+        scenario: TutorialScenarioKind.continuation,
         successMessage: 'Solved in the minimum three moves.',
-        retryMessage: 'Place disk 1 on top of disk 2 at peg 3.',
+        retryMessage: 'Finish by placing the remaining disk on the goal tower.',
       ),
     ],
   ),
@@ -844,12 +832,17 @@ TutorialDefinition tutorialDefinition(GameType type) => switch (type) {
     steps: [
       TutorialStep(
         title: 'Protect both tasks',
-        instruction: 'Classify 8 and count the stars.',
-        stimulus: '8   ★ ★ ★',
-        options: ['EVEN · 3', 'ODD · 3', 'EVEN · 2', 'ODD · 2'],
-        correctIndex: 0,
+        instruction:
+            'Classify the number and count the stars at the same time.',
         successMessage: 'Correct on both streams.',
-        retryMessage: 'Eight is even and there are three stars.',
+        retryMessage: 'Check the number rule and star count separately.',
+      ),
+      TutorialStep(
+        title: 'Balance both answers',
+        instruction: 'Classify the new number and count every star.',
+        successMessage: 'Correct. Both parts of your answer match.',
+        retryMessage: 'Check the number rule and star count separately.',
+        scenario: TutorialScenarioKind.exception,
       ),
     ],
   ),
@@ -858,12 +851,17 @@ TutorialDefinition tutorialDefinition(GameType type) => switch (type) {
     steps: [
       TutorialStep(
         title: 'Continue the series',
-        instruction: 'Each number increases by two.',
-        stimulus: '2 → 4 → 6 → ?',
-        options: ['7', '8', '9', '10'],
-        correctIndex: 1,
-        successMessage: 'Correct. Adding two gives eight.',
-        retryMessage: 'Apply the +2 rule once more.',
+        instruction:
+            'Find the repeated change, then continue the number series.',
+        successMessage: 'Correct. You continued the rule.',
+        retryMessage: 'Compare neighboring values to find the repeated step.',
+      ),
+      TutorialStep(
+        title: 'Find a new step',
+        instruction: 'Work out how much each value changes before answering.',
+        successMessage: 'Correct. You continued the pattern.',
+        retryMessage: 'Compare neighboring values to find the repeated step.',
+        scenario: TutorialScenarioKind.exception,
       ),
     ],
   ),
@@ -872,19 +870,14 @@ TutorialDefinition tutorialDefinition(GameType type) => switch (type) {
     steps: [
       TutorialStep(
         title: 'A rotated match',
-        instruction: 'The second shape is the first turned 90 degrees.',
-        stimulus: '.■■/■■.     ■./■■/.■',
-        options: ['SAME', 'DIFFERENT'],
-        correctIndex: 0,
+        instruction: 'Decide whether rotation alone can align the two shapes.',
         successMessage: 'Correct. Rotation makes them match.',
-        retryMessage: 'Mentally turn the first shape 90 degrees.',
+        retryMessage: 'Mentally rotate the first shape without reflecting it.',
       ),
       TutorialStep(
         title: 'A mirrored mismatch',
-        instruction: 'A mirror image cannot be made by rotation alone.',
-        stimulus: '.■■/■■.     ■■./.■■',
-        options: ['SAME', 'DIFFERENT'],
-        correctIndex: 1,
+        instruction: 'A mirrored shape cannot be aligned using rotation alone.',
+        scenario: TutorialScenarioKind.exception,
         successMessage: 'Correct. This pair is mirrored.',
         retryMessage: 'Rotation preserves handedness; this shape is mirrored.',
       ),

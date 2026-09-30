@@ -6,6 +6,7 @@ import '../../app/theme/brain_theme.dart';
 import '../../core/models/brain_models.dart';
 import '../../core/widgets/common.dart';
 import 'research_game_engine.dart';
+import 'tutorial_guide.dart';
 
 class ResearchGameBoard extends StatelessWidget {
   const ResearchGameBoard({
@@ -16,6 +17,7 @@ class ResearchGameBoard extends StatelessWidget {
     required this.showingStimulus,
     required this.trialNumber,
     required this.onAnswer,
+    this.guide,
   });
 
   final GameType type;
@@ -24,6 +26,7 @@ class ResearchGameBoard extends StatelessWidget {
   final bool showingStimulus;
   final int trialNumber;
   final ValueChanged<int> onAnswer;
+  final TutorialGuide? guide;
 
   @override
   Widget build(BuildContext context) {
@@ -33,8 +36,7 @@ class ResearchGameBoard extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         Semantics(
-          label:
-              'Research game stimulus: ${showingStimulus ? trial.prompt : trial.cue}',
+          label: 'Game stimulus: ${showingStimulus ? trial.prompt : trial.cue}',
           child: AppCard(
             child: ConstrainedBox(
               constraints: const BoxConstraints(minHeight: 150),
@@ -44,15 +46,25 @@ class ResearchGameBoard extends StatelessWidget {
         ),
         const SizedBox(height: 20),
         if (isStop && !showingStimulus)
-          const Text(
-            'Keep waiting…',
-            style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
+          TutorialGuidedControl(
+            showGuide: guide?.kind == TutorialGuideKind.passive,
+            passive: true,
+            child: const Text(
+              'Keep waiting…',
+              style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
+            ),
           )
         else if (isStop)
-          PrimaryAction(
-            color: context.brain.danger,
-            onPressed: () => onAnswer(0),
-            label: 'TAP',
+          TutorialGuidedControl(
+            showGuide:
+                guide?.kind == TutorialGuideKind.passive ||
+                (guide?.pointsTo(0) ?? false),
+            passive: guide?.kind == TutorialGuideKind.passive,
+            child: PrimaryAction(
+              color: context.brain.danger,
+              onPressed: () => onAnswer(0),
+              label: 'TAP',
+            ),
           )
         else if (revealOptions || trial.exposureMs == 0)
           Wrap(
@@ -64,13 +76,16 @@ class ResearchGameBoard extends StatelessWidget {
               (index) => Semantics(
                 label: 'Answer option ${index + 1}',
                 button: true,
-                child: SizedBox(
-                  width: 145,
-                  child: PrimaryAction(
-                    expanded: true,
-                    color: context.gameAccent(type),
-                    onPressed: () => onAnswer(index),
-                    label: trial.options[index],
+                child: TutorialGuidedControl(
+                  showGuide: guide?.pointsTo(index) ?? false,
+                  child: SizedBox(
+                    width: 145,
+                    child: PrimaryAction(
+                      expanded: true,
+                      color: context.gameAccent(type),
+                      onPressed: () => onAnswer(index),
+                      label: trial.options[index],
+                    ),
                   ),
                 ),
               ),

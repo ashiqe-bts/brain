@@ -12,7 +12,7 @@ Every Train card includes a research-basis sheet naming the studied paradigm, po
 
 - First launch opens with a value-first welcome, then asks for a local display name and optional reminder; Home opens with a personal greeting.
 - Today lets users select five different games or generate a balanced Random 5, then shows baseline status, streaks, and practice recommendations.
-- Every game has a required interactive tutorial on first play for its current rules version; tutorials can be replayed without affecting progress.
+- Every game has a required production-equivalent tutorial on first play for its current rules version. Tutorials reuse the real board, controls, stimuli, timing, and animations, add a delayed helper hand, and can be replayed without affecting progress.
 - Train offers Standard, Relaxed, and Challenge My Best sessions.
 - Every scored session ends with a metric-selectable progress graph, current/previous/baseline comparisons, and game-specific measures.
 - Insights provides a multi-game training-level chart, 15 separate charted game profiles, history, rolling trends, weekly reviews, and achievements.

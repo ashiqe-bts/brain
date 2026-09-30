@@ -87,12 +87,12 @@ Reflex Tap and the earlier Visual Search task are archived. Their stored results
 
 ### Interactive tutorials
 
-- Every active game supplies versioned tutorial metadata and deterministic easy practice steps.
+- Every active game supplies versioned coaching metadata and two or three deterministic easy practice trials using its production board, controls, typed stimuli, timing, and animations.
 - The first launch of any Standard, Relaxed, Challenge My Best, or official session must complete that game’s current-version tutorial before play begins.
 - Exiting a required tutorial starts no game and records nothing. An interrupted daily workout remains on the same round.
 - Tutorial completion persists immediately. A rules-version change requires the revised tutorial once.
 - Replay is always available from Train and never changes tutorial state, history, scores, XP, missions, baselines, trends, best results, or difficulty.
-- Tutorial timers and scoring are frozen. Incorrect answers explain the rule and retry until successful; touch, keyboard, screen readers, high contrast, reduced motion, and 200% text are supported.
+- Competitive timers and scoring are absent. Incorrect answers explain the rule and retry the same trial. A tutorial-only helper hand points to the correct production control after 2.5 seconds of actionable inactivity or immediately after an error; passive phases explicitly coach the user to watch, remember, or withhold. Touch, keyboard, screen readers, high contrast, reduced motion, and 200% text are supported.
 
 ## 6. Scoring and comparability
 

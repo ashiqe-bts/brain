@@ -8,6 +8,7 @@ import '../../core/state/brain_cubit.dart';
 import '../../core/training/training_analytics.dart';
 import '../../core/widgets/common.dart';
 import '../../app/theme/brain_theme.dart';
+import 'classic_game_board.dart';
 import 'game_engine.dart';
 import 'research_game_screen.dart';
 
@@ -68,7 +69,6 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
   final colorConditionCorrect = <String, int>{};
   final colorConditionTimes = <String, List<int>>{};
   bool? lastAnswerCorrect;
-  static const names = ['RED', 'BLUE', 'GREEN', 'YELLOW'];
   @override
   void initState() {
     super.initState();
@@ -499,8 +499,14 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
           const SizedBox(height: 16),
           Expanded(
             child: switch (widget.type) {
-              GameType.colorClash => _color(),
-              GameType.mathBlitz => _math(),
+              GameType.colorClash => ColorClashBoard(
+                trial: colorTrial,
+                onAnswer: _answerColor,
+              ),
+              GameType.mathBlitz => MathBlitzBoard(
+                trial: mathTrial,
+                onAnswer: _answerMath,
+              ),
               GameType.memoryTiles => const SizedBox.shrink(),
               GameType.reflexTap => _reflex(),
               GameType.visualSearch => _visualSearch(),
@@ -528,71 +534,6 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
       ],
     ),
     child: Text(t, style: const TextStyle(fontWeight: FontWeight.w800)),
-  );
-  Widget _color() => Column(
-    mainAxisAlignment: MainAxisAlignment.center,
-    children: [
-      const Text('Tap the INK color, not the word'),
-      const SizedBox(height: 20),
-      Text(
-        names[colorTrial.wordIndex],
-        style: TextStyle(
-          fontSize: 54,
-          fontWeight: FontWeight.w900,
-          color: context.clashColor(colorTrial.colorIndex),
-        ),
-      ),
-      const SizedBox(height: 38),
-      GridView.count(
-        shrinkWrap: true,
-        crossAxisCount: 2,
-        mainAxisSpacing: 12,
-        crossAxisSpacing: 12,
-        childAspectRatio: 2.2,
-        children: List.generate(4, (i) {
-          return PrimaryAction(
-            color: context.clashColor(i),
-            onPressed: () => _answerColor(i),
-            label: '${['●', '◆', '■', '▲'][i]} ${names[i]}',
-          );
-        }),
-      ),
-    ],
-  );
-  Widget _math() => Column(
-    mainAxisAlignment: MainAxisAlignment.center,
-    children: [
-      const Text('Is this equation correct?'),
-      const SizedBox(height: 28),
-      Text(
-        mathTrial.expression,
-        style: const TextStyle(fontSize: 42, fontWeight: FontWeight.w900),
-      ),
-      const SizedBox(height: 42),
-      Row(
-        children: [
-          Expanded(
-            child: PrimaryAction(
-              expanded: true,
-              color: context.brain.success,
-              onPressed: () => _answerMath(true),
-              icon: Icons.check_rounded,
-              label: 'TRUE',
-            ),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: PrimaryAction(
-              expanded: true,
-              color: context.brain.danger,
-              onPressed: () => _answerMath(false),
-              icon: Icons.close_rounded,
-              label: 'FALSE',
-            ),
-          ),
-        ],
-      ),
-    ],
   );
   Widget _reflex() => GestureDetector(
     behavior: HitTestBehavior.opaque,

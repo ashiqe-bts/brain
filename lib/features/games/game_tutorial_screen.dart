@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 
 import 'package:flutter/material.dart';
 
@@ -6,6 +7,13 @@ import '../../app/theme/brain_theme.dart';
 import '../../core/models/brain_models.dart';
 import '../../core/training/game_catalog.dart';
 import '../../core/widgets/common.dart';
+import 'classic_game_board.dart';
+import 'game_engine.dart';
+import 'research_game_board.dart';
+import 'research_game_engine.dart';
+import 'tutorial_guide.dart';
+
+const tutorialSessionSeed = 240519;
 
 class GameTutorialScreen extends StatefulWidget {
   const GameTutorialScreen({
@@ -23,68 +31,233 @@ class GameTutorialScreen extends StatefulWidget {
 
 class _GameTutorialScreenState extends State<GameTutorialScreen> {
   late final TutorialDefinition tutorial;
-  Timer? timer;
+  late final ResearchGameEngine? researchEngine;
+  Timer? phaseTimer;
+  Timer? guideTimer;
+  Timer? advanceTimer;
   int stepIndex = 0;
   String? feedback;
   bool advancing = false;
+  bool showingStimulus = false;
+  bool guideVisible = false;
+  ResearchTrial? researchTrial;
+  ColorTrial colorTrial = const ColorTrial(wordIndex: 0, colorIndex: 0);
+  MathTrial mathTrial = const MathTrial(
+    left: 4,
+    right: 3,
+    operator: '+',
+    actual: 7,
+    shown: 7,
+  );
 
-  bool get complete => stepIndex >= tutorial.steps.length;
-  TutorialStep get step => tutorial.steps[stepIndex];
+  int get stepCount => tutorial.steps.length;
+  bool get complete => stepIndex >= stepCount;
+  TutorialStep get step =>
+      tutorial.steps[min(stepIndex, tutorial.steps.length - 1)];
+  bool get isClassic =>
+      widget.type == GameType.colorClash || widget.type == GameType.mathBlitz;
 
   @override
   void initState() {
     super.initState();
     tutorial = gameDefinition(widget.type).tutorial;
-    WidgetsBinding.instance.addPostFrameCallback((_) => _scheduleWait());
+    researchEngine = isClassic
+        ? null
+        : ResearchGameEngine(
+            seed: tutorialSessionSeed,
+            type: widget.type,
+            difficulty: 1,
+          );
+    _prepareStep();
   }
 
   @override
   void dispose() {
-    timer?.cancel();
+    phaseTimer?.cancel();
+    guideTimer?.cancel();
+    advanceTimer?.cancel();
     super.dispose();
   }
 
-  void _scheduleWait() {
-    timer?.cancel();
-    if (!mounted || complete || !step.isWaitStep) return;
-    timer = Timer(Duration(milliseconds: step.waitMilliseconds), () {
-      if (!mounted) return;
-      setState(() => feedback = step.successMessage);
-      _advanceAfterFeedback();
+  void _prepareStep() {
+    phaseTimer?.cancel();
+    guideTimer?.cancel();
+    feedback = null;
+    guideVisible = false;
+    if (complete) return;
+
+    if (widget.type == GameType.colorClash) {
+      colorTrial = stepIndex == 0
+          ? const ColorTrial(wordIndex: 0, colorIndex: 0)
+          : const ColorTrial(wordIndex: 0, colorIndex: 1);
+      showingStimulus = false;
+      _scheduleGuide();
+      return;
+    }
+    if (widget.type == GameType.mathBlitz) {
+      mathTrial = stepIndex == 0
+          ? const MathTrial(
+              left: 4,
+              right: 3,
+              operator: '+',
+              actual: 7,
+              shown: 7,
+            )
+          : const MathTrial(
+              left: 9,
+              right: 4,
+              operator: '−',
+              actual: 5,
+              shown: 6,
+            );
+      showingStimulus = false;
+      _scheduleGuide();
+      return;
+    }
+
+    researchTrial = _nextMatchingResearchTrial();
+    showingStimulus = researchTrial!.exposureMs > 0;
+    if (showingStimulus) {
+      phaseTimer = Timer(
+        Duration(milliseconds: researchTrial!.exposureMs),
+        _finishExposure,
+      );
+    } else {
+      _scheduleGuide();
+    }
+  }
+
+  ResearchTrial _nextMatchingResearchTrial() {
+    final wanted = switch (widget.type) {
+      GameType.signalStop => stepIndex == 0 ? 'go' : 'stop',
+      GameType.nBackNavigator => stepIndex < 2 ? 'non-match' : 'match',
+      GameType.ruleSwitch => stepIndex == 0 ? 'repeat' : 'switch',
+      GameType.arrowGuard => stepIndex == 0 ? 'congruent' : 'incongruent',
+      GameType.pairLink => stepIndex < 2 ? 'immediate' : 'delayed',
+      GameType.spatialRotation => stepIndex == 0 ? 'same' : 'mirror',
+      _ => null,
+    };
+    for (var attempt = 0; attempt < 16; attempt++) {
+      final candidate = researchEngine!.nextTrial();
+      if (wanted == null || candidate.condition.startsWith(wanted)) {
+        return candidate;
+      }
+    }
+    throw StateError(
+      'Could not create the ${widget.type.name} tutorial trial.',
+    );
+  }
+
+  void _finishExposure() {
+    if (!mounted || complete || advancing) return;
+    setState(() {
+      showingStimulus = false;
+      guideVisible = researchTrial!.condition == 'stop';
+    });
+    if (researchTrial!.condition == 'stop') {
+      phaseTimer = Timer(const Duration(milliseconds: 650), () {
+        if (mounted && !advancing) _answerResearch(researchTrial!.correctIndex);
+      });
+    } else {
+      _scheduleGuide();
+    }
+  }
+
+  void _scheduleGuide() {
+    guideTimer?.cancel();
+    guideTimer = Timer(const Duration(milliseconds: 2500), () {
+      if (mounted && !complete && !advancing) {
+        setState(() => guideVisible = true);
+      }
     });
   }
 
-  void _answer(int selected) {
-    if (complete || advancing) return;
-    if (step.isWaitStep) {
-      timer?.cancel();
-      setState(() => feedback = step.retryMessage);
-      timer = Timer(const Duration(milliseconds: 700), () {
-        if (!mounted) return;
-        setState(() => feedback = null);
-        _scheduleWait();
-      });
-      return;
-    }
-    if (selected != step.correctIndex) {
-      setState(() => feedback = step.retryMessage);
-      return;
-    }
-    setState(() => feedback = step.successMessage);
-    _advanceAfterFeedback();
+  void _answerColor(int selected) {
+    _handleAnswer(selected == colorTrial.colorIndex);
   }
 
-  void _advanceAfterFeedback() {
-    advancing = true;
-    timer = Timer(const Duration(milliseconds: 650), () {
+  void _answerMath(bool selected) {
+    _handleAnswer(selected == mathTrial.isCorrect);
+  }
+
+  void _answerResearch(int selected) {
+    if (researchTrial == null || complete || advancing) return;
+    if (showingStimulus && researchTrial!.condition != 'stop') return;
+    phaseTimer?.cancel();
+    final correct = selected == researchTrial!.correctIndex;
+    if (correct) researchEngine!.acceptAnswer(researchTrial!, selected);
+    _handleAnswer(
+      correct,
+      restartPassiveTrial: researchTrial!.condition == 'stop',
+    );
+  }
+
+  void _handleAnswer(bool correct, {bool restartPassiveTrial = false}) {
+    if (complete || advancing) return;
+    guideTimer?.cancel();
+    if (!correct) {
+      setState(() {
+        feedback = step.retryMessage;
+        guideVisible = true;
+      });
+      if (restartPassiveTrial) {
+        phaseTimer = Timer(const Duration(milliseconds: 700), () {
+          if (!mounted || advancing) return;
+          setState(() {
+            feedback = null;
+            guideVisible = false;
+            showingStimulus = true;
+          });
+          phaseTimer = Timer(
+            Duration(milliseconds: researchTrial!.exposureMs),
+            _finishExposure,
+          );
+        });
+      }
+      return;
+    }
+
+    setState(() {
+      feedback = step.successMessage;
+      guideVisible = false;
+      advancing = true;
+    });
+    advanceTimer = Timer(const Duration(milliseconds: 650), () {
       if (!mounted) return;
       setState(() {
         stepIndex++;
-        feedback = null;
         advancing = false;
+        feedback = null;
       });
-      _scheduleWait();
+      _prepareStep();
+      if (mounted) setState(() {});
     });
+  }
+
+  TutorialGuide? get _guide {
+    if (!guideVisible || complete) return null;
+    if (researchTrial?.condition == 'stop') {
+      return const TutorialGuide.passive();
+    }
+    final answerIndex = switch (widget.type) {
+      GameType.colorClash => colorTrial.colorIndex,
+      GameType.mathBlitz => mathTrial.isCorrect ? 0 : 1,
+      _ => researchTrial!.correctIndex,
+    };
+    return TutorialGuide.answer(answerIndex);
+  }
+
+  String get _coachText {
+    if (feedback != null) return feedback!;
+    if (researchTrial?.condition == 'stop' && !showingStimulus) {
+      return 'STOP: do not tap. Keep waiting until the trial completes.';
+    }
+    if (showingStimulus) {
+      return widget.type == GameType.objectTracker
+          ? 'Watch the highlighted objects and follow their movement.'
+          : 'Watch carefully and remember what you see.';
+    }
+    return step.instruction;
   }
 
   @override
@@ -95,7 +268,7 @@ class _GameTutorialScreenState extends State<GameTutorialScreen> {
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 680),
           child: Padding(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.all(16),
             child: complete ? _completeView(context) : _stepView(context),
           ),
         ),
@@ -110,14 +283,14 @@ class _GameTutorialScreenState extends State<GameTutorialScreen> {
         textAlign: TextAlign.center,
         style: Theme.of(context).textTheme.titleMedium,
       ),
-      const SizedBox(height: 16),
+      const SizedBox(height: 12),
       ProgressMeter(
         label: 'Tutorial progress',
-        value: stepIndex / tutorial.steps.length,
-        trailing: '${stepIndex + 1} / ${tutorial.steps.length}',
+        value: stepIndex / stepCount,
+        trailing: '${stepIndex + 1} / $stepCount',
         color: context.gameAccent(widget.type),
       ),
-      const SizedBox(height: 18),
+      const SizedBox(height: 12),
       Expanded(
         child: SingleChildScrollView(
           child: AppCard(
@@ -129,53 +302,22 @@ class _GameTutorialScreenState extends State<GameTutorialScreen> {
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 8),
-                Text(step.instruction, textAlign: TextAlign.center),
-                const SizedBox(height: 22),
                 Semantics(
-                  label: 'Tutorial stimulus: ${step.stimulus}',
+                  liveRegion: true,
+                  label: _coachText,
                   child: Text(
-                    step.stimulus,
+                    _coachText,
                     textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      fontSize: 28,
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 24),
-                Wrap(
-                  alignment: WrapAlignment.center,
-                  spacing: 10,
-                  runSpacing: 10,
-                  children: List.generate(
-                    step.options.length,
-                    (index) => Semantics(
-                      label: step.isWaitStep
-                          ? 'Do not press this button'
-                          : 'Tutorial answer ${index + 1}',
-                      button: true,
-                      child: PrimaryAction(
-                        color: step.isWaitStep
-                            ? context.brain.danger
-                            : context.gameAccent(widget.type),
-                        onPressed: advancing ? null : () => _answer(index),
-                        label: step.options[index],
-                      ),
+                    style: TextStyle(
+                      fontWeight: FontWeight.w800,
+                      color: feedback == step.retryMessage
+                          ? context.brain.danger
+                          : null,
                     ),
                   ),
                 ),
                 const SizedBox(height: 18),
-                Semantics(
-                  liveRegion: true,
-                  child: Text(
-                    feedback ??
-                        (step.isWaitStep
-                            ? 'Keep waiting…'
-                            : 'Choose an answer to continue.'),
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(fontWeight: FontWeight.w800),
-                  ),
-                ),
+                IgnorePointer(ignoring: advancing, child: _gameBoard()),
               ],
             ),
           ),
@@ -183,6 +325,28 @@ class _GameTutorialScreenState extends State<GameTutorialScreen> {
       ),
     ],
   );
+
+  Widget _gameBoard() => switch (widget.type) {
+    GameType.colorClash => ColorClashBoard(
+      trial: colorTrial,
+      onAnswer: _answerColor,
+      guide: _guide,
+    ),
+    GameType.mathBlitz => MathBlitzBoard(
+      trial: mathTrial,
+      onAnswer: _answerMath,
+      guide: _guide,
+    ),
+    _ => ResearchGameBoard(
+      type: widget.type,
+      difficulty: 1,
+      trial: researchTrial!,
+      showingStimulus: showingStimulus,
+      trialNumber: stepIndex,
+      onAnswer: _answerResearch,
+      guide: _guide,
+    ),
+  };
 
   Widget _completeView(BuildContext context) => Column(
     mainAxisAlignment: MainAxisAlignment.center,

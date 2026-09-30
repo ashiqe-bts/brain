@@ -83,9 +83,7 @@ void main() {
       find.byWidgetPredicate(
         (widget) =>
             widget is Semantics &&
-            (widget.properties.label ?? '').startsWith(
-              'Research game stimulus:',
-            ),
+            (widget.properties.label ?? '').startsWith('Game stimulus:'),
       ),
       findsOneWidget,
     );

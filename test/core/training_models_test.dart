@@ -54,12 +54,17 @@ void main() {
         expect(definition.rawMetricFormatter(const {}), isA<String>());
         expect(definition.tutorial.steps, isNotEmpty, reason: game.name);
         expect(
+          definition.tutorial.steps.length,
+          inInclusiveRange(2, 3),
+          reason: game.name,
+        );
+        expect(
           definition.tutorial.steps.every(
             (step) =>
-                step.isWaitStep ||
-                (step.options.length >= 2 &&
-                    step.correctIndex >= 0 &&
-                    step.correctIndex < step.options.length),
+                step.title.isNotEmpty &&
+                step.instruction.isNotEmpty &&
+                step.successMessage.isNotEmpty &&
+                step.retryMessage.isNotEmpty,
           ),
           isTrue,
           reason: game.name,
