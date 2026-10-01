@@ -96,6 +96,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
     final draft = context.watch<BrainCubit>().state.data.draft;
     final complete = draft?.results.length ?? 0;
     final total = draft?.order.length ?? 5;
+    final displayRound = total == 0 ? 0 : (complete + 1).clamp(1, total);
     final nextGame = draft != null && complete < draft.order.length
         ? draft.order[complete]
         : null;
@@ -139,7 +140,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                 ),
               ),
               const SizedBox(height: 24),
-              PageEyebrow('ROUND ${complete + 1} OF $total'),
+              PageEyebrow('ROUND $displayRound OF $total'),
               const SizedBox(height: 8),
               Text(
                 nextGame?.title ?? 'Daily workout',

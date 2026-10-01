@@ -100,4 +100,35 @@ void main() {
     semantics.dispose();
     await tester.pumpWidget(const SizedBox.shrink());
   });
+
+  testWidgets('session HUD fits a narrow viewport at 200 percent text', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(320, 720);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      MediaQuery(
+        data: const MediaQueryData(textScaler: TextScaler.linear(2)),
+        child: BlocProvider.value(
+          value: cubit,
+          child: MaterialApp(
+            theme: buildBrainTheme(BrainTheme.highContrast),
+            home: const GameScreen(
+              type: GameType.colorClash,
+              mode: GameMode.relaxed,
+              difficulty: 1,
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pump(const Duration(milliseconds: 3100));
+
+    expect(find.byType(SessionHud), findsOneWidget);
+    expect(tester.takeException(), isNull);
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
 }
