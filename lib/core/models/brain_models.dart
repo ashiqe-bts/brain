@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import '../config/app_config.dart';
+
 enum BrainTheme { calmLight, calmDark, highContrast }
 
 BrainTheme brainThemeFromName(String? name) => switch (name) {
@@ -64,12 +66,7 @@ const archivedGames = <GameType>{GameType.reflexTap, GameType.visualSearch};
 enum GameMode { standard, relaxed, personalBest, official }
 
 extension GameModePresentation on GameMode {
-  String get displayTitle => switch (this) {
-    GameMode.standard => 'Standard',
-    GameMode.relaxed => 'Relaxed',
-    GameMode.personalBest => 'Challenge My Best',
-    GameMode.official => 'Daily',
-  };
+  String get displayTitle => AppText.gameModeLabels[name]!;
 }
 
 typedef SessionKind = GameMode;
@@ -78,25 +75,7 @@ typedef GameRulesVersion = int;
 enum GameLifecycle { initial, countdown, running, paused, feedback, completed }
 
 extension GameTypeX on GameType {
-  String get title => switch (this) {
-    GameType.colorClash => 'Color Clash',
-    GameType.mathBlitz => 'Math Blitz',
-    GameType.memoryTiles => 'Memory Tiles',
-    GameType.reflexTap => 'Reflex Tap',
-    GameType.visualSearch => 'Visual Search',
-    GameType.signalStop => 'Signal Stop',
-    GameType.peripheralFocus => 'Peripheral Focus',
-    GameType.nBackNavigator => 'N-Back Navigator',
-    GameType.ruleSwitch => 'Rule Switch',
-    GameType.arrowGuard => 'Arrow Guard',
-    GameType.pairLink => 'Pair Link',
-    GameType.symbolSprint => 'Symbol Sprint',
-    GameType.objectTracker => 'Object Tracker',
-    GameType.towerPlanner => 'Tower Planner',
-    GameType.dualTaskDash => 'Dual Task Dash',
-    GameType.logicSeries => 'Logic Series',
-    GameType.spatialRotation => 'Spatial Rotation',
-  };
+  String get title => gameContent[name]!.title;
   SkillDomain get skill => switch (this) {
     GameType.colorClash => SkillDomain.focus,
     GameType.mathBlitz => SkillDomain.calculation,
@@ -116,25 +95,7 @@ extension GameTypeX on GameType {
     GameType.logicSeries => SkillDomain.reasoning,
     GameType.spatialRotation => SkillDomain.spatial,
   };
-  String get domain => switch (this) {
-    GameType.colorClash => 'Focus',
-    GameType.mathBlitz => 'Calculation',
-    GameType.memoryTiles => 'Memory',
-    GameType.reflexTap => 'Reaction',
-    GameType.visualSearch => 'Visual search',
-    GameType.signalStop => 'Response inhibition',
-    GameType.peripheralFocus => 'Visual processing speed',
-    GameType.nBackNavigator => 'Working memory',
-    GameType.ruleSwitch => 'Cognitive flexibility',
-    GameType.arrowGuard => 'Selective attention',
-    GameType.pairLink => 'Associative memory',
-    GameType.symbolSprint => 'Processing speed',
-    GameType.objectTracker => 'Divided attention',
-    GameType.towerPlanner => 'Planning',
-    GameType.dualTaskDash => 'Dual-task control',
-    GameType.logicSeries => 'Inductive reasoning',
-    GameType.spatialRotation => 'Spatial reasoning',
-  };
+  String get domain => gameContent[name]!.domain;
   int get rulesVersion => switch (this) {
     GameType.colorClash || GameType.mathBlitz || GameType.memoryTiles => 3,
     GameType.reflexTap || GameType.visualSearch => 2,
@@ -150,11 +111,13 @@ String normalizeDisplayName(String value) => value.trim();
 
 String? displayNameError(String value) {
   final normalized = normalizeDisplayName(value);
-  if (normalized.isEmpty) return 'Enter your name';
+  if (normalized.isEmpty) return AppText.enterYourName;
   if (RegExp(r'[\x00-\x1F\x7F]').hasMatch(normalized)) {
-    return 'Use a single line without control characters';
+    return AppText.invalidDisplayName;
   }
-  if (normalized.runes.length > 30) return 'Use 30 characters or fewer';
+  if (normalized.runes.length > AppSettings.maximumDisplayNameCharacters) {
+    return AppText.displayNameTooLong;
+  }
   return null;
 }
 

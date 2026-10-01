@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../core/config/app_config.dart';
 import '../games/games_screen.dart';
 import '../home/home_screen.dart';
 import '../progress/progress_screen.dart';
@@ -24,7 +25,8 @@ class _AppShellState extends State<AppShell> {
   @override
   Widget build(BuildContext context) => LayoutBuilder(
     builder: (context, constraints) {
-      final expanded = constraints.maxWidth >= 900;
+      final expanded =
+          constraints.maxWidth >= AppSettings.compactNavigationBreakpoint;
       final content = IndexedStack(index: index, children: pages);
       if (expanded) {
         return Scaffold(
@@ -35,7 +37,9 @@ class _AppShellState extends State<AppShell> {
                   selectedIndex: index,
                   onDestinationSelected: (value) =>
                       setState(() => index = value),
-                  extended: constraints.maxWidth >= 1180,
+                  extended:
+                      constraints.maxWidth >=
+                      AppSettings.extendedNavigationBreakpoint,
                   groupAlignment: -.72,
                   leading: const Padding(
                     padding: EdgeInsets.symmetric(vertical: 24),

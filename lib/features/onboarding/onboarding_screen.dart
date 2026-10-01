@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../app/theme/brain_theme.dart';
+import '../../core/config/app_config.dart';
 import '../../core/models/brain_models.dart';
 import '../../core/services/notification_service.dart';
 import '../../core/state/brain_cubit.dart';
@@ -19,7 +20,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   final notifications = NotificationService();
   final nameController = TextEditingController();
   int page = 0;
-  TimeOfDay reminder = const TimeOfDay(hour: 19, minute: 0);
+  TimeOfDay reminder = const TimeOfDay(
+    hour: AppSettings.defaultReminderHour,
+    minute: AppSettings.defaultReminderMinute,
+  );
   bool reminders = false;
 
   @override
@@ -66,7 +70,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   Widget _welcome() => LayoutBuilder(
     builder: (context, constraints) {
-      final wide = constraints.maxWidth >= 820;
+      final wide = constraints.maxWidth >= AppSettings.onboardingWideBreakpoint;
       final message = Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: wide
@@ -183,7 +187,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     required Widget child,
   }) => LayoutBuilder(
     builder: (context, constraints) {
-      final wide = constraints.maxWidth >= 700;
+      final wide = constraints.maxWidth >= AppSettings.setupCardBreakpoint;
       final content = Column(
         crossAxisAlignment: wide
             ? CrossAxisAlignment.center
@@ -214,7 +218,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       return SingleChildScrollView(
         padding: EdgeInsets.fromLTRB(24, wide ? 32 : 40, 24, 24),
         child: ResponsiveContent(
-          maxWidth: 620,
+          maxWidth: AppSettings.narrowContentWidth,
           child: wide
               ? AppCard(padding: const EdgeInsets.all(32), child: content)
               : content,

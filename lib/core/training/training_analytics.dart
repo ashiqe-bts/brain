@@ -1,5 +1,6 @@
 import 'dart:math';
 
+import '../config/app_config.dart';
 import '../models/brain_models.dart';
 import 'game_catalog.dart';
 
@@ -208,7 +209,7 @@ List<GameType> coverageAwareDailySelection(
   };
   final shuffled = [...activeGames]..shuffle(generator);
   shuffled.sort((a, b) => counts[a]!.compareTo(counts[b]!));
-  return List.unmodifiable(shuffled.take(5));
+  return List.unmodifiable(shuffled.take(AppSettings.workoutGameCount));
 }
 
 int adaptDifficulty(
@@ -217,13 +218,21 @@ int adaptDifficulty(
   double masteryScore = 85,
   double struggleScore = 60,
 }) {
-  final scores = recentScores.take(3).toList();
-  if (scores.length < 3) return current.clamp(1, 10);
+  final scores = recentScores.take(AppSettings.trendWindowSize).toList();
+  if (scores.length < AppSettings.trendWindowSize) {
+    return current.clamp(
+      AppSettings.minimumDifficulty,
+      AppSettings.maximumDifficulty,
+    );
+  }
   final mastered = scores.where((score) => score >= masteryScore).length;
   final struggling = scores.where((score) => score < struggleScore).length;
-  if (mastered >= 2) return min(10, current + 1);
-  if (struggling >= 2) return max(1, current - 1);
-  return current.clamp(1, 10);
+  if (mastered >= 2) return min(AppSettings.maximumDifficulty, current + 1);
+  if (struggling >= 2) return max(AppSettings.minimumDifficulty, current - 1);
+  return current.clamp(
+    AppSettings.minimumDifficulty,
+    AppSettings.maximumDifficulty,
+  );
 }
 
 SessionComparison sessionComparison({
@@ -262,9 +271,14 @@ SessionComparison sessionComparison({
         ..sort((a, b) => b.completedAt!.compareTo(a.completedAt!));
   final current = level(result);
   return SessionComparison(
-    baselineDelta: compatibleBaseline.length < 3
+    baselineDelta: compatibleBaseline.length < AppSettings.baselineSessionCount
         ? null
-        : current - _medianDouble(compatibleBaseline.take(3).map(level)),
+        : current -
+              _medianDouble(
+                compatibleBaseline
+                    .take(AppSettings.baselineSessionCount)
+                    .map(level),
+              ),
     previousDelta: previous.isEmpty ? null : current - level(previous.first),
     previousCompletedAt: previous.isEmpty ? null : previous.first.completedAt,
   );
@@ -296,10 +310,12 @@ SkillTrend skillTrend(GameType type, Iterable<GameResult> history) {
         ),
       )
       .toList();
-  final baseline = _medianDouble(levels.take(3));
-  final current = _medianDouble(levels.reversed.take(3));
+  final baseline = _medianDouble(levels.take(AppSettings.trendWindowSize));
+  final current = _medianDouble(
+    levels.reversed.take(AppSettings.trendWindowSize),
+  );
   final delta = current - baseline;
-  final direction = sessions.length < 6
+  final direction = sessions.length < AppSettings.minimumTrendSessions
       ? TrendDirection.insufficient
       : delta >= .2
       ? TrendDirection.improving

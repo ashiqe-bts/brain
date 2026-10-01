@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 
 import '../../app/theme/brain_theme.dart';
 import '../../app/theme/game_visuals.dart';
+import '../../core/config/app_config.dart';
 import '../../core/models/brain_models.dart';
 import '../../core/state/brain_cubit.dart';
 import '../../core/training/training_analytics.dart';
@@ -121,9 +122,11 @@ class _ProgressScreenState extends State<ProgressScreen> {
           ..sort((a, b) => b.completedAt!.compareTo(a.completedAt!));
     for (final result in recent) {
       selectedGames.add(result.type);
-      if (selectedGames.length == 5) break;
+      if (selectedGames.length == AppSettings.maximumOverviewGames) break;
     }
-    if (selectedGames.isEmpty) selectedGames.addAll(activeGames.take(5));
+    if (selectedGames.isEmpty) {
+      selectedGames.addAll(activeGames.take(AppSettings.maximumOverviewGames));
+    }
     overviewInitialized = true;
   }
 
@@ -158,7 +161,10 @@ class _ProgressScreenState extends State<ProgressScreen> {
                   avatar: Icon(gameVisualFor(game).icon, size: 18),
                   label: Text(game.title),
                   selected: chosen,
-                  onSelected: chosen || selectedGames.length < 5
+                  onSelected:
+                      chosen ||
+                          selectedGames.length <
+                              AppSettings.maximumOverviewGames
                       ? (_) => setState(() {
                           if (chosen && selectedGames.length > 1) {
                             selectedGames.remove(game);
@@ -330,7 +336,10 @@ class _ProgressScreenState extends State<ProgressScreen> {
                     '${game.title} training level history with ${eligible.length} comparable sessions',
                 points: [
                   for (final result
-                      in eligible.reversed.take(30).toList().reversed)
+                      in eligible.reversed
+                          .take(AppSettings.maximumChartResults)
+                          .toList()
+                          .reversed)
                     ProgressChartPoint(
                       at: result.completedAt!,
                       value: trainingLevel(
@@ -423,7 +432,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
     }
     return AppCard(
       child: Column(
-        children: recent.take(20).map((result) {
+        children: recent.take(AppSettings.maximumRecentSessions).map((result) {
           final time = result.completedAt?.toLocal();
           return ListTile(
             contentPadding: EdgeInsets.zero,

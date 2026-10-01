@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../app/theme/brain_theme.dart';
 import '../../app/theme/game_visuals.dart';
+import '../../core/config/app_config.dart';
 import '../../core/models/brain_models.dart';
 import '../../core/state/brain_cubit.dart';
 import '../../core/training/training_analytics.dart';
@@ -60,13 +61,15 @@ class _WorkoutSelectionScreenState extends State<WorkoutSelectionScreen> {
                             child: ClipRRect(
                               borderRadius: BorderRadius.circular(8),
                               child: LinearProgressIndicator(
-                                value: selected.length / 5,
+                                value:
+                                    selected.length /
+                                    AppSettings.workoutGameCount,
                               ),
                             ),
                           ),
                           const SizedBox(width: 12),
                           Text(
-                            '${selected.length} / 5',
+                            '${selected.length} / ${AppSettings.workoutGameCount}',
                             style: const TextStyle(fontWeight: FontWeight.w900),
                           ),
                         ],
@@ -112,7 +115,9 @@ class _WorkoutSelectionScreenState extends State<WorkoutSelectionScreen> {
                           borderRadius: BorderRadius.circular(16),
                         ),
                         value: chosen,
-                        onChanged: chosen || selected.length < 5
+                        onChanged:
+                            chosen ||
+                                selected.length < AppSettings.workoutGameCount
                             ? (_) => setState(() {
                                 chosen
                                     ? selected.remove(game)
@@ -154,7 +159,9 @@ class _WorkoutSelectionScreenState extends State<WorkoutSelectionScreen> {
                 child: PrimaryAction(
                   expanded: true,
                   color: context.brain.success,
-                  onPressed: selected.length == 5 ? _start : null,
+                  onPressed: selected.length == AppSettings.workoutGameCount
+                      ? _start
+                      : null,
                   icon: Icons.play_arrow_rounded,
                   label: 'Start workout',
                 ),
