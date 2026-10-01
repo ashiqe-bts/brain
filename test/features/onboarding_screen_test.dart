@@ -55,6 +55,41 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets(
+    'mobile welcome aligns feature details below the primary action',
+    (tester) async {
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: buildBrainTheme(BrainTheme.calmLight),
+          home: const OnboardingScreen(),
+        ),
+      );
+
+      final featureIcons = [
+        find.byIcon(Icons.timer_outlined),
+        find.byIcon(Icons.person_outline_rounded),
+        find.byIcon(Icons.lock_outline_rounded),
+      ];
+      final iconLefts = featureIcons
+          .map((finder) => tester.getTopLeft(finder).dx)
+          .toList();
+      expect(iconLefts.toSet(), hasLength(1));
+
+      final getStarted = find.byWidgetPredicate(
+        (widget) => widget is FilledButton && widget.enabled,
+      );
+      expect(
+        tester.getBottomLeft(getStarted).dy,
+        lessThan(tester.getTopLeft(featureIcons.first).dy),
+      );
+    },
+  );
+
   testWidgets('name continues directly to routine without a color test', (
     tester,
   ) async {

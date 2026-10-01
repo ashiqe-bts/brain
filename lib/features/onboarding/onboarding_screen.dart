@@ -110,17 +110,30 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             onPressed: _next,
           ),
           const SizedBox(height: 28),
-          _Promise(
-            icon: Icons.timer_outlined,
-            title: AppText.onboarding.routinePromise,
-          ),
-          _Promise(
-            icon: Icons.person_outline_rounded,
-            title: AppText.onboarding.progressPromise,
-          ),
-          _Promise(
-            icon: Icons.lock_outline_rounded,
-            title: AppText.onboarding.privacyPromise,
+          Align(
+            alignment: wide ? Alignment.centerLeft : Alignment.center,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 360),
+              child: SizedBox(
+                width: double.infinity,
+                child: Column(
+                  children: [
+                    _Promise(
+                      icon: Icons.timer_outlined,
+                      title: AppText.onboarding.routinePromise,
+                    ),
+                    _Promise(
+                      icon: Icons.person_outline_rounded,
+                      title: AppText.onboarding.progressPromise,
+                    ),
+                    _Promise(
+                      icon: Icons.lock_outline_rounded,
+                      title: AppText.onboarding.privacyPromise,
+                    ),
+                  ],
+                ),
+              ),
+            ),
           ),
           const SizedBox(height: 16),
           Text(
@@ -367,7 +380,7 @@ class _Promise extends StatelessWidget {
   Widget build(BuildContext context) => Padding(
     padding: const EdgeInsets.only(bottom: 12),
     child: Row(
-      mainAxisSize: MainAxisSize.min,
+      mainAxisSize: MainAxisSize.max,
       children: [
         Container(
           width: 40,
