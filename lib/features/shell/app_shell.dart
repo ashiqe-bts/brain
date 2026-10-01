@@ -59,17 +59,27 @@ class _AppShellState extends State<AppShell> {
       }
       return Scaffold(
         body: content,
-        bottomNavigationBar: NavigationBar(
-          selectedIndex: index,
-          onDestinationSelected: (value) => setState(() => index = value),
-          destinations: [
-            for (final destination in destinations)
-              NavigationDestination(
-                icon: Icon(destination.$1),
-                selectedIcon: Icon(destination.$2),
-                label: destination.$3,
+        bottomNavigationBar: DecoratedBox(
+          decoration: BoxDecoration(
+            border: Border(
+              top: BorderSide(
+                color: Theme.of(context).dividerColor,
+                width: .75,
               ),
-          ],
+            ),
+          ),
+          child: NavigationBar(
+            selectedIndex: index,
+            onDestinationSelected: (value) => setState(() => index = value),
+            destinations: [
+              for (final destination in destinations)
+                NavigationDestination(
+                  icon: Icon(destination.$1),
+                  selectedIcon: Icon(destination.$2),
+                  label: destination.$3,
+                ),
+            ],
+          ),
         ),
       );
     },

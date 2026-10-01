@@ -37,14 +37,15 @@ void main() {
         ),
       ),
     );
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Random 5'));
     await tester.pump();
 
-    expect(find.text('5 of 5 selected'), findsOneWidget);
+    expect(find.text('5 / 5'), findsOneWidget);
     final start = tester.widget<FilledButton>(
       find
           .ancestor(
-            of: find.text('Start selected workout'),
+            of: find.text('Start workout'),
             matching: find.byWidgetPredicate(
               (widget) => widget is FilledButton,
             ),
@@ -54,4 +55,40 @@ void main() {
     expect(start.enabled, isTrue);
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets(
+    'selection uses a persistent mobile action and compact progress',
+    (tester) async {
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final database = AppDatabase.forTesting(NativeDatabase.memory());
+      final repository = BrainRepository(database);
+      final cubit = BrainCubit(
+        repository,
+        BrainState(onboarded: true, displayName: 'Asha'),
+      );
+      addTearDown(() async {
+        await cubit.close();
+        await repository.close();
+      });
+
+      await tester.pumpWidget(
+        BlocProvider.value(
+          value: cubit,
+          child: MaterialApp(
+            theme: buildBrainTheme(BrainTheme.calmLight),
+            home: const WorkoutSelectionScreen(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('Build your daily mix'), findsOneWidget);
+      expect(find.text('Choose 5 games'), findsOneWidget);
+      expect(find.text('Start workout'), findsOneWidget);
+      expect(find.text('0 / 5'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
 }

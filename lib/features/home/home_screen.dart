@@ -138,46 +138,75 @@ class HomeScreen extends StatelessWidget {
   Widget _workoutCard(BuildContext context, BrainState data, bool done) =>
       AppCard(
         tonal: true,
+        padding: const EdgeInsets.fromLTRB(22, 22, 22, 20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            PageEyebrow(
-              done
-                  ? 'Practice complete'
-                  : data.draft != null
-                  ? 'Continue where you left off'
-                  : "Today's practice",
+            Row(
+              children: [
+                Container(
+                  width: 44,
+                  height: 44,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: context.brain.primary.withValues(alpha: .12),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    done ? Icons.check_rounded : Icons.bolt_rounded,
+                    color: context.brain.primary,
+                  ),
+                ),
+                const Spacer(),
+                Text(
+                  done ? 'COMPLETE' : 'TODAY',
+                  style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                    color: context.brain.primary,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 1.1,
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 20),
             Text(
               done
-                  ? 'Five research-informed tasks trained today'
+                  ? 'Daily reset complete'
                   : data.draft != null
-                  ? 'Your chosen five · about 5 minutes'
-                  : 'Choose 5 of 15 games · about 5 minutes',
-              style: Theme.of(
-                context,
-              ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w900),
+                  ? 'Pick up where you left off'
+                  : 'Ready for your daily reset?',
+              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                fontFamily: 'Fredoka',
+                fontWeight: FontWeight.w700,
+                height: 1.05,
+              ),
             ),
             const SizedBox(height: 8),
             Text(
-              data.draft != null
+              done
+                  ? 'Nice work. Come back tomorrow for a fresh mix.'
+                  : data.draft != null
                   ? 'Your selection is saved until the workout is complete.'
-                  : 'Choose your games or create a balanced random mix.',
+                  : '5 games • about 5 minutes',
+              style: Theme.of(
+                context,
+              ).textTheme.bodyLarge?.copyWith(color: context.brain.textMuted),
             ),
-            const SizedBox(height: 18),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                for (final game in data.draft?.order ?? const <GameType>[])
-                  Tooltip(
-                    message: game.title,
-                    child: GameIcon(game: game, decorated: true),
-                  ),
-              ],
-            ),
-            const SizedBox(height: 18),
+            if (data.draft != null) ...[
+              const SizedBox(height: 18),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  for (final game in data.draft!.order)
+                    Tooltip(
+                      message: game.title,
+                      child: GameIcon(game: game, decorated: true),
+                    ),
+                ],
+              ),
+            ],
+            const SizedBox(height: 22),
             PrimaryAction(
               expanded: true,
               color: done ? context.brain.frame : context.brain.success,
@@ -195,8 +224,8 @@ class HomeScreen extends StatelessWidget {
                   ? Icons.play_arrow_rounded
                   : Icons.replay_rounded,
               label: data.draft == null
-                  ? 'Start practice'
-                  : 'Continue practice',
+                  ? "Start today's workout"
+                  : 'Continue workout',
             ),
           ],
         ),

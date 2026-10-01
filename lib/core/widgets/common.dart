@@ -55,28 +55,19 @@ class _AppCardState extends State<AppCard> {
           duration: still ? Duration.zero : const Duration(milliseconds: 180),
           decoration: BoxDecoration(
             color: Color.lerp(base, palette.primary, hovered ? .035 : 0),
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(20),
             border: Border.all(
               color: focused
                   ? palette.focus
-                  : palette.outline.withValues(alpha: .72),
+                  : widget.tonal
+                  ? Colors.transparent
+                  : palette.outline.withValues(alpha: .38),
               width: focused ? 2 : 1,
             ),
-            boxShadow: [
-              BoxShadow(
-                color: palette.shadow.withValues(
-                  alpha: Theme.of(context).brightness == Brightness.light
-                      ? .07
-                      : .22,
-                ),
-                blurRadius: hovered ? 18 : 12,
-                offset: Offset(0, hovered ? 5 : 3),
-              ),
-            ],
           ),
           child: Material(
             color: Colors.transparent,
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(20),
             clipBehavior: Clip.antiAlias,
             child: InkWell(
               canRequestFocus: false,

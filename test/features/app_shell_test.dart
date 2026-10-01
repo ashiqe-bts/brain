@@ -45,6 +45,9 @@ void main() {
 
     expect(find.text('Today'), findsOneWidget);
     expect(find.text('Hey, Asha'), findsOneWidget);
+    expect(find.text('Ready for your daily reset?'), findsOneWidget);
+    expect(find.text('5 games • about 5 minutes'), findsOneWidget);
+    expect(find.text("Start today's workout"), findsOneWidget);
     expect(find.text('Train'), findsOneWidget);
     expect(find.text('Insights'), findsOneWidget);
     expect(find.text('Lab'), findsNothing);
@@ -152,6 +155,7 @@ void main() {
     );
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
+    expect(find.byType(IndexedStack), findsOneWidget);
 
     await tester.tap(find.text('Train'));
     await tester.pumpAndSettle();

@@ -24,111 +24,143 @@ class _WorkoutSelectionScreenState extends State<WorkoutSelectionScreen> {
     final data = context.watch<BrainCubit>().state.data;
     final baseline = baselineStatus(data.history);
     return Scaffold(
-      appBar: AppBar(title: const Text('Choose today’s five')),
+      appBar: AppBar(title: const Text('Daily workout')),
       body: SafeArea(
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
-              child: ResponsiveContent(
+        bottom: false,
+        child: ListView.builder(
+          padding: const EdgeInsets.fromLTRB(16, 4, 16, 28),
+          itemCount: activeGames.length + 1,
+          itemBuilder: (context, index) {
+            if (index == 0) {
+              return ResponsiveContent(
                 maxWidth: 820,
-                child: Column(
-                  children: [
-                    Text(
-                      '${selected.length} of 5 selected',
-                      style: Theme.of(context).textTheme.titleLarge,
-                    ),
-                    const SizedBox(height: 4),
-                    const Text(
-                      'Pick any five different games, or let BrainFlex create a balanced mix.',
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 10),
-                    OutlinedButton.icon(
-                      onPressed: () => setState(() {
-                        selected
-                          ..clear()
-                          ..addAll(coverageAwareDailySelection(data.history));
-                      }),
-                      icon: const Icon(Icons.shuffle_rounded),
-                      label: Text(
-                        selected.isEmpty ? 'Random 5' : 'Reshuffle 5',
+                child: Padding(
+                  padding: const EdgeInsets.only(bottom: 18),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Build your daily mix',
+                        style: Theme.of(context).textTheme.headlineMedium
+                            ?.copyWith(
+                              fontFamily: 'Fredoka',
+                              fontWeight: FontWeight.w700,
+                            ),
                       ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            Expanded(
-              child: ListView.builder(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                itemCount: activeGames.length,
-                itemBuilder: (context, index) {
-                  final game = activeGames[index];
-                  final chosen = selected.contains(game);
-                  final progress = baseline.forGame(game);
-                  return Center(
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 820),
-                      child: Padding(
-                        padding: const EdgeInsets.only(bottom: 8),
-                        child: AppCard(
-                          padding: EdgeInsets.zero,
-                          color: chosen ? context.brain.surfaceHigh : null,
-                          onTap: chosen || selected.length < 5
-                              ? () => setState(() {
-                                  chosen
-                                      ? selected.remove(game)
-                                      : selected.add(game);
-                                })
-                              : null,
-                          child: Semantics(
-                            selected: chosen,
-                            button: true,
-                            label:
-                                '${game.title}, ${game.domain}, level ${data.difficulties[game.name] ?? 1}, baseline ${progress.completed} of 3',
-                            child: CheckboxListTile(
-                              value: chosen,
-                              onChanged: chosen || selected.length < 5
-                                  ? (_) => setState(() {
-                                      chosen
-                                          ? selected.remove(game)
-                                          : selected.add(game);
-                                    })
-                                  : null,
-                              secondary: GameIcon(game: game, decorated: true),
-                              title: Text(
-                                game.title,
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.w800,
-                                ),
-                              ),
-                              subtitle: Text(
-                                '${game.domain} · Level ${data.difficulties[game.name] ?? 1} · Baseline ${progress.completed}/3',
+                      const SizedBox(height: 6),
+                      Text(
+                        'Choose 5 games',
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(color: context.brain.textMuted),
+                      ),
+                      const SizedBox(height: 16),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(8),
+                              child: LinearProgressIndicator(
+                                value: selected.length / 5,
                               ),
                             ),
                           ),
+                          const SizedBox(width: 12),
+                          Text(
+                            '${selected.length} / 5',
+                            style: const TextStyle(fontWeight: FontWeight.w900),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      OutlinedButton.icon(
+                        onPressed: () => setState(() {
+                          selected
+                            ..clear()
+                            ..addAll(coverageAwareDailySelection(data.history));
+                        }),
+                        icon: const Icon(Icons.auto_awesome_rounded),
+                        label: Text(
+                          selected.isEmpty ? 'Random 5' : 'Reshuffle 5',
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }
+            final gameIndex = index - 1;
+            final game = activeGames[gameIndex];
+            final chosen = selected.contains(game);
+            final progress = baseline.forGame(game);
+            return Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 820),
+                child: Padding(
+                  padding: const EdgeInsets.only(bottom: 6),
+                  child: Material(
+                    color: chosen
+                        ? context.brain.surfaceHigh
+                        : Colors.transparent,
+                    borderRadius: BorderRadius.circular(16),
+                    child: Semantics(
+                      selected: chosen,
+                      button: true,
+                      label:
+                          '${game.title}, ${game.domain}, level ${data.difficulties[game.name] ?? 1}, baseline ${progress.completed} of 3',
+                      child: CheckboxListTile(
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        value: chosen,
+                        onChanged: chosen || selected.length < 5
+                            ? (_) => setState(() {
+                                chosen
+                                    ? selected.remove(game)
+                                    : selected.add(game);
+                              })
+                            : null,
+                        secondary: GameIcon(game: game, decorated: true),
+                        title: Text(
+                          game.title,
+                          style: const TextStyle(fontWeight: FontWeight.w800),
+                        ),
+                        subtitle: Text(
+                          '${game.domain} · Level ${data.difficulties[game.name] ?? 1} · Baseline ${progress.completed}/3',
                         ),
                       ),
                     ),
-                  );
-                },
+                  ),
+                ),
               ),
+            );
+          },
+        ),
+      ),
+      bottomNavigationBar: SafeArea(
+        top: false,
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: context.brain.background,
+            border: Border(
+              top: BorderSide(color: Theme.of(context).dividerColor),
             ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-              child: ResponsiveContent(
-                maxWidth: 820,
+          ),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+            child: Align(
+              heightFactor: 1,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 820),
                 child: PrimaryAction(
                   expanded: true,
                   color: context.brain.success,
                   onPressed: selected.length == 5 ? _start : null,
                   icon: Icons.play_arrow_rounded,
-                  label: 'Start selected workout',
+                  label: 'Start workout',
                 ),
               ),
             ),
-          ],
+          ),
         ),
       ),
     );
