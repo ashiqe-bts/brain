@@ -59,11 +59,17 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     padding: const EdgeInsets.fromLTRB(24, 18, 24, 4),
     child: Row(
       children: [
-        Text('Set up BrainFlex', style: Theme.of(context).textTheme.labelLarge),
+        Text(
+          AppText.onboarding.setup,
+          style: Theme.of(context).textTheme.labelLarge,
+        ),
         const SizedBox(width: 16),
         Expanded(child: LinearProgressIndicator(value: page / 2)),
         const SizedBox(width: 12),
-        Text('$page of 2', style: TextStyle(color: context.brain.textMuted)),
+        Text(
+          AppText.onboardingStep(page),
+          style: TextStyle(color: context.brain.textMuted),
+        ),
       ],
     ),
   );
@@ -77,10 +83,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             ? CrossAxisAlignment.start
             : CrossAxisAlignment.center,
         children: [
-          const PageEyebrow('Research-informed daily practice'),
+          PageEyebrow(AppText.onboarding.eyebrow),
           const SizedBox(height: 16),
           Text(
-            'A calmer way to challenge your focus.',
+            AppText.onboarding.welcomeTitle,
             textAlign: wide ? TextAlign.left : TextAlign.center,
             style: Theme.of(context).textTheme.displaySmall?.copyWith(
               fontWeight: FontWeight.w800,
@@ -89,7 +95,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           ),
           const SizedBox(height: 16),
           Text(
-            'Five short games a day. Clear progress against your own previous practice. No rankings and no pressure.',
+            AppText.onboarding.welcomeBody,
             textAlign: wide ? TextAlign.left : TextAlign.center,
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
               color: context.brain.textMuted,
@@ -98,27 +104,27 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           ),
           const SizedBox(height: 28),
           PrimaryAction(
-            label: 'Get started',
+            label: AppText.onboarding.getStarted,
             icon: Icons.arrow_forward_rounded,
             expanded: !wide,
             onPressed: _next,
           ),
           const SizedBox(height: 28),
-          const _Promise(
+          _Promise(
             icon: Icons.timer_outlined,
-            title: 'A focused five-minute routine',
+            title: AppText.onboarding.routinePromise,
           ),
-          const _Promise(
+          _Promise(
             icon: Icons.person_outline_rounded,
-            title: 'Progress measured only against you',
+            title: AppText.onboarding.progressPromise,
           ),
-          const _Promise(
+          _Promise(
             icon: Icons.lock_outline_rounded,
-            title: 'Private by design',
+            title: AppText.onboarding.privacyPromise,
           ),
           const SizedBox(height: 16),
           Text(
-            'BrainFlex trains performance on its activities. It does not measure IQ or provide medical assessment.',
+            AppText.onboarding.disclaimer,
             textAlign: wide ? TextAlign.left : TextAlign.center,
             style: Theme.of(
               context,
@@ -135,7 +141,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             const BrandMark(size: 132),
             const SizedBox(height: 24),
             Text(
-              'BrainFlex',
+              AppText.appName,
               style: Theme.of(context).textTheme.headlineLarge?.copyWith(
                 fontFamily: 'Fredoka',
                 fontWeight: FontWeight.w700,
@@ -144,7 +150,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             ),
             const SizedBox(height: 8),
             Text(
-              'You versus yesterday',
+              AppText.onboarding.tagline,
               style: TextStyle(color: context.brain.textMuted),
             ),
           ],
@@ -228,9 +234,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   );
 
   Widget _name() => _setupFrame(
-    eyebrow: 'Your profile',
-    title: 'What should we call you?',
-    body: 'Your display name stays on this device and can be changed later.',
+    eyebrow: AppText.onboarding.profileEyebrow,
+    title: AppText.onboarding.profileTitle,
+    body: AppText.onboarding.profileBody,
     child: TextFormField(
       controller: nameController,
       autofocus: true,
@@ -248,30 +254,29 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   );
 
   Widget _routine() => _setupFrame(
-    eyebrow: 'Your routine',
-    title: 'Practice on your schedule',
-    body:
-        'A single optional reminder can help you return. Your results remain on this device.',
+    eyebrow: AppText.onboarding.routineEyebrow,
+    title: AppText.onboarding.routineTitle,
+    body: AppText.onboarding.routineBody,
     child: Column(
       children: [
         if (kIsWeb)
-          const ListTile(
+          ListTile(
             leading: Icon(Icons.notifications_off_outlined),
-            title: Text('Reminders unavailable in Chrome'),
-            subtitle: Text('Daily reminders are supported on Android only.'),
+            title: Text(AppText.onboarding.remindersUnavailable),
+            subtitle: Text(AppText.onboarding.remindersAndroidOnly),
           )
         else ...[
           SwitchListTile(
             value: reminders,
             onChanged: (value) => setState(() => reminders = value),
             secondary: const Icon(Icons.notifications_none_rounded),
-            title: const Text('Daily reminder'),
-            subtitle: const Text('Scheduled only on this Android device'),
+            title: Text(AppText.onboarding.dailyReminder),
+            subtitle: Text(AppText.onboarding.reminderStoredLocally),
           ),
           ListTile(
             enabled: reminders,
             leading: const Icon(Icons.schedule_rounded),
-            title: const Text('Reminder time'),
+            title: Text(AppText.onboarding.reminderTime),
             subtitle: Text(reminder.format(context)),
             trailing: const Icon(Icons.chevron_right_rounded),
             onTap: reminders
@@ -298,7 +303,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           TextButton.icon(
             onPressed: _back,
             icon: const Icon(Icons.arrow_back_rounded),
-            label: const Text('Back'),
+            label: Text(AppText.onboarding.back),
           ),
           const Spacer(),
           PrimaryAction(
@@ -307,7 +312,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 ? null
                 : _next,
             icon: page == 2 ? Icons.check_rounded : Icons.arrow_forward_rounded,
-            label: page == 2 ? 'Start training' : 'Continue',
+            label: page == 2
+                ? AppText.onboarding.startTraining
+                : AppText.onboarding.continueLabel,
           ),
         ],
       ),

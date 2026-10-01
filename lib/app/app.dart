@@ -2,6 +2,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../core/models/brain_models.dart';
+import '../core/config/app_config.dart';
 import '../core/state/brain_cubit.dart';
 import '../features/onboarding/name_capture_screen.dart';
 import '../features/onboarding/onboarding_screen.dart';
@@ -25,7 +26,7 @@ class BrainFlexApp extends StatelessWidget {
   Widget build(BuildContext context) => BlocBuilder<BrainCubit, BrainViewState>(
     builder: (context, state) => MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'BrainFlex',
+      title: AppText.appTitle,
       theme: buildBrainTheme(state.data.theme),
       scrollBehavior: const BrainScrollBehavior(),
       builder: (context, child) => MediaQuery(

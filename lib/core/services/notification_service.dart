@@ -1,4 +1,6 @@
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+
+import '../config/app_config.dart';
 import 'package:flutter/foundation.dart';
 import 'package:timezone/data/latest.dart' as tz_data;
 import 'package:timezone/timezone.dart' as tz;
@@ -44,16 +46,16 @@ class NotificationService {
     if (!when.isAfter(now)) when = when.add(const Duration(days: 1));
     await plugin.zonedSchedule(
       id: 0,
-      title: 'Ready for today’s you-vs-you practice?',
+      title: AppText.notifications.title,
       body: streakWarning
-          ? 'Keep your routine going and see how today feels.'
-          : 'Five games are ready to compare with your own practice.',
+          ? AppText.notifications.streakBody
+          : AppText.notifications.body,
       scheduledDate: when,
-      notificationDetails: const NotificationDetails(
+      notificationDetails: NotificationDetails(
         android: AndroidNotificationDetails(
           'daily_brainflex',
-          'Daily BrainFlex',
-          channelDescription: 'One gentle daily workout reminder',
+          AppText.notifications.channelName,
+          channelDescription: AppText.notifications.channelDescription,
         ),
       ),
       androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,

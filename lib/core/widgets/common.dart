@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../../app/theme/brain_theme.dart';
+import '../config/app_config.dart';
 
 class AppCard extends StatefulWidget {
   const AppCard({
@@ -206,7 +207,9 @@ class SessionHud extends StatelessWidget {
             if (answerCorrect != null) ...[
               Semantics(
                 liveRegion: true,
-                label: answerCorrect! ? 'Correct' : 'Try the next one',
+                label: answerCorrect!
+                    ? AppText.gameplay.correct
+                    : AppText.gameplay.tryNext,
                 child: Icon(
                   answerCorrect!
                       ? Icons.check_circle_rounded
@@ -357,7 +360,7 @@ class BrandMark extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Semantics(
     image: true,
-    label: 'BrainFlex focus mark',
+    label: '${AppText.appName} focus mark',
     child: SizedBox.square(
       dimension: size,
       child: CustomPaint(

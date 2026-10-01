@@ -16,10 +16,18 @@ class _AppShellState extends State<AppShell> {
   int index = 0;
 
   static const pages = [HomeScreen(), GamesScreen(), ProgressScreen()];
-  static const destinations = [
-    (Icons.today_outlined, Icons.today_rounded, 'Today'),
-    (Icons.fitness_center_outlined, Icons.fitness_center_rounded, 'Train'),
-    (Icons.insights_outlined, Icons.insights_rounded, 'Insights'),
+  static final destinations = [
+    (Icons.today_outlined, Icons.today_rounded, AppText.navigation.today),
+    (
+      Icons.fitness_center_outlined,
+      Icons.fitness_center_rounded,
+      AppText.navigation.train,
+    ),
+    (
+      Icons.insights_outlined,
+      Icons.insights_rounded,
+      AppText.navigation.insights,
+    ),
   ];
 
   @override
@@ -95,7 +103,7 @@ class _RailBrand extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Tooltip(
-    message: 'BrainFlex',
+    message: AppText.appName,
     child: Container(
       width: 42,
       height: 42,
