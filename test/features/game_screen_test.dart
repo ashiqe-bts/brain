@@ -5,6 +5,7 @@ import 'package:brainflex/core/storage/app_database.dart';
 import 'package:brainflex/core/storage/brain_repository.dart';
 import 'package:brainflex/core/training/game_catalog.dart';
 import 'package:brainflex/features/games/game_screen.dart';
+import 'package:brainflex/core/widgets/common.dart';
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -52,6 +53,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 3100));
 
       expect(find.text(entry.value), findsOneWidget);
+      expect(find.byType(SessionHud), findsOneWidget);
       expect(tester.takeException(), isNull);
 
       await tester.pumpWidget(const SizedBox.shrink());

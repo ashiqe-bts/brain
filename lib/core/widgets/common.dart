@@ -177,6 +177,87 @@ class ProgressMeter extends StatelessWidget {
   );
 }
 
+class SessionHud extends StatelessWidget {
+  const SessionHud({
+    super.key,
+    required this.label,
+    required this.progress,
+    required this.primaryStat,
+    required this.secondaryStat,
+    required this.color,
+    this.answerCorrect,
+  });
+
+  final String label;
+  final double progress;
+  final String primaryStat;
+  final String secondaryStat;
+  final Color color;
+  final bool? answerCorrect;
+
+  @override
+  Widget build(BuildContext context) => Semantics(
+    label:
+        '$label, ${(progress.clamp(0, 1) * 100).round()} percent, $primaryStat, $secondaryStat',
+    child: Column(
+      children: [
+        Row(
+          children: [
+            if (answerCorrect != null) ...[
+              Semantics(
+                liveRegion: true,
+                label: answerCorrect! ? 'Correct' : 'Try the next one',
+                child: Icon(
+                  answerCorrect!
+                      ? Icons.check_circle_rounded
+                      : Icons.cancel_outlined,
+                  color: answerCorrect!
+                      ? context.brain.success
+                      : context.brain.danger,
+                  size: 22,
+                ),
+              ),
+              const SizedBox(width: 8),
+            ],
+            Expanded(
+              child: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: context.brain.textMuted,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+            Text(
+              primaryStat,
+              style: const TextStyle(fontWeight: FontWeight.w900),
+            ),
+            const SizedBox(width: 12),
+            Text(
+              secondaryStat,
+              style: TextStyle(
+                color: context.brain.textMuted,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(4),
+          child: LinearProgressIndicator(
+            minHeight: 5,
+            value: progress.clamp(0, 1),
+            color: color,
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
 class SectionHeader extends StatelessWidget {
   const SectionHeader(this.title, {super.key, this.trailing});
 

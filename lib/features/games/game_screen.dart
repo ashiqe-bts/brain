@@ -459,44 +459,15 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
       padding: const EdgeInsets.all(20),
       child: Column(
         children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              if (lastAnswerCorrect != null)
-                Semantics(
-                  liveRegion: true,
-                  label: lastAnswerCorrect! ? 'Correct' : 'Try the next one',
-                  child: Icon(
-                    lastAnswerCorrect!
-                        ? Icons.check_circle_rounded
-                        : Icons.cancel_outlined,
-                    color: lastAnswerCorrect!
-                        ? context.brain.success
-                        : context.brain.danger,
-                  ),
-                ),
-              Expanded(
-                child: Wrap(
-                  alignment: WrapAlignment.end,
-                  spacing: 8,
-                  runSpacing: 6,
-                  children: [
-                    _pill('Score $score'),
-                    _pill('Combo $combo'),
-                    if (widget.personalBest != null)
-                      _pill('Best ${widget.personalBest!.score}'),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          ProgressMeter(
+          SessionHud(
             label: widget.mode.displayTitle,
-            value: timed ? timeLeft / 30 : min(1, correct / 10),
+            progress: timed ? timeLeft / 30 : min(1, correct / 10),
             color: context.gameAccent(widget.type),
+            primaryStat: 'Score $score',
+            secondaryStat: 'Combo $combo',
+            answerCorrect: lastAnswerCorrect,
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 20),
           Expanded(
             child: switch (widget.type) {
               GameType.colorClash => ColorClashBoard(
@@ -523,18 +494,6 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
     );
   }
 
-  Widget _pill(String t) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-    decoration: BoxDecoration(
-      color: context.brain.hud,
-      borderRadius: BorderRadius.circular(12),
-      border: Border.all(color: context.brain.outline, width: 3),
-      boxShadow: [
-        BoxShadow(color: context.brain.shadow, offset: const Offset(0, 3)),
-      ],
-    ),
-    child: Text(t, style: const TextStyle(fontWeight: FontWeight.w800)),
-  );
   Widget _reflex() => GestureDetector(
     behavior: HitTestBehavior.opaque,
     onTap: _tapReflex,

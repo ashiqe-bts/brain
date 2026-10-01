@@ -407,34 +407,17 @@ class _ResearchGameScreenState extends State<ResearchGameScreen>
     padding: const EdgeInsets.all(20),
     child: Column(
       children: [
-        Row(
-          children: [
-            if (lastAnswerCorrect != null)
-              Semantics(
-                liveRegion: true,
-                label: lastAnswerCorrect! ? 'Correct' : 'Try the next one',
-                child: Icon(
-                  lastAnswerCorrect!
-                      ? Icons.check_circle_rounded
-                      : Icons.cancel_outlined,
-                  color: lastAnswerCorrect!
-                      ? context.brain.success
-                      : context.brain.danger,
-                ),
-              ),
-            const Spacer(),
-            Text('Score $score · $correct/$attempts'),
-          ],
-        ),
-        const SizedBox(height: 12),
-        ProgressMeter(
+        SessionHud(
           label: widget.mode.displayTitle,
-          value: timed
+          progress: timed
               ? timeLeft / max(1, definition.standardSeconds)
               : min(1, attempts / targetTrials),
           color: context.gameAccent(widget.type),
+          primaryStat: 'Score $score',
+          secondaryStat: '$correct/$attempts',
+          answerCorrect: lastAnswerCorrect,
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 18),
         Text(
           definition.instructions,
           textAlign: TextAlign.center,

@@ -58,9 +58,12 @@ class _SessionResultScreenState extends State<SessionResultScreen> {
         title: const Text('Session review'),
       ),
       body: SafeArea(
+        bottom: false,
         child: ListView(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
           children: [
+            const PageEyebrow('Round complete'),
+            const SizedBox(height: 14),
             Center(
               child: GameIcon(
                 game: widget.result.type,
@@ -204,15 +207,34 @@ class _SessionResultScreenState extends State<SessionResultScreen> {
                 ],
               ),
             ),
-            const SizedBox(height: 20),
-            PrimaryAction(
-              expanded: true,
-              color: context.brain.success,
-              onPressed: () => Navigator.pop(context),
-              icon: Icons.arrow_forward_rounded,
-              label: widget.actionLabel,
-            ),
           ],
+        ),
+      ),
+      bottomNavigationBar: SafeArea(
+        top: false,
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: context.brain.background,
+            border: Border(
+              top: BorderSide(color: Theme.of(context).dividerColor),
+            ),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+            child: Align(
+              heightFactor: 1,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 760),
+                child: PrimaryAction(
+                  expanded: true,
+                  color: context.brain.success,
+                  onPressed: () => Navigator.pop(context),
+                  icon: Icons.arrow_forward_rounded,
+                  label: widget.actionLabel,
+                ),
+              ),
+            ),
+          ),
         ),
       ),
     );

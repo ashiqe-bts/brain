@@ -56,10 +56,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     child: Row(
       children: [
         Text('Set up BrainFlex', style: Theme.of(context).textTheme.labelLarge),
-        const Spacer(),
-        Text('$page of 2', style: TextStyle(color: context.brain.textMuted)),
+        const SizedBox(width: 16),
+        Expanded(child: LinearProgressIndicator(value: page / 2)),
         const SizedBox(width: 12),
-        SizedBox(width: 88, child: LinearProgressIndicator(value: page / 2)),
+        Text('$page of 2', style: TextStyle(color: context.brain.textMuted)),
       ],
     ),
   );
@@ -181,35 +181,46 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     required String title,
     required String body,
     required Widget child,
-  }) => SingleChildScrollView(
-    padding: const EdgeInsets.all(24),
-    child: ResponsiveContent(
-      maxWidth: 620,
-      child: AppCard(
-        padding: const EdgeInsets.all(28),
-        child: Column(
-          children: [
-            PageEyebrow(eyebrow),
-            const SizedBox(height: 12),
-            Text(
-              title,
-              textAlign: TextAlign.center,
-              style: Theme.of(
-                context,
-              ).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.w800),
+  }) => LayoutBuilder(
+    builder: (context, constraints) {
+      final wide = constraints.maxWidth >= 700;
+      final content = Column(
+        crossAxisAlignment: wide
+            ? CrossAxisAlignment.center
+            : CrossAxisAlignment.start,
+        children: [
+          PageEyebrow(eyebrow),
+          const SizedBox(height: 12),
+          Text(
+            title,
+            textAlign: wide ? TextAlign.center : TextAlign.left,
+            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+              fontFamily: 'Fredoka',
+              fontWeight: FontWeight.w700,
             ),
-            const SizedBox(height: 10),
-            Text(
-              body,
-              textAlign: TextAlign.center,
-              style: TextStyle(color: context.brain.textMuted),
-            ),
-            const SizedBox(height: 28),
-            child,
-          ],
+          ),
+          const SizedBox(height: 10),
+          Text(
+            body,
+            textAlign: wide ? TextAlign.center : TextAlign.left,
+            style: Theme.of(
+              context,
+            ).textTheme.bodyLarge?.copyWith(color: context.brain.textMuted),
+          ),
+          const SizedBox(height: 32),
+          child,
+        ],
+      );
+      return SingleChildScrollView(
+        padding: EdgeInsets.fromLTRB(24, wide ? 32 : 40, 24, 24),
+        child: ResponsiveContent(
+          maxWidth: 620,
+          child: wide
+              ? AppCard(padding: const EdgeInsets.all(32), child: content)
+              : content,
         ),
-      ),
-    ),
+      );
+    },
   );
 
   Widget _name() => _setupFrame(

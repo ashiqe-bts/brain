@@ -96,6 +96,9 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
     final draft = context.watch<BrainCubit>().state.data.draft;
     final complete = draft?.results.length ?? 0;
     final total = draft?.order.length ?? 5;
+    final nextGame = draft != null && complete < draft.order.length
+        ? draft.order[complete]
+        : null;
     return Scaffold(
       appBar: AppBar(title: const Text('Daily practice')),
       body: SafeArea(
@@ -104,26 +107,76 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
           child: Column(
             children: [
               const Spacer(),
-              const Icon(Icons.fitness_center_rounded, size: 72),
-              const SizedBox(height: 18),
-              Text(
-                status ?? 'Five games from your balanced rotation',
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.w900,
+              SizedBox.square(
+                dimension: 132,
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    SizedBox.square(
+                      dimension: 132,
+                      child: CircularProgressIndicator(
+                        value: total == 0 ? 0 : complete / total,
+                        strokeWidth: 7,
+                        strokeCap: StrokeCap.round,
+                        color: context.brain.success,
+                        backgroundColor: context.brain.hud,
+                      ),
+                    ),
+                    if (nextGame != null)
+                      GameIcon(
+                        game: nextGame,
+                        size: 42,
+                        decorated: true,
+                        semantic: true,
+                      )
+                    else
+                      Icon(
+                        Icons.check_rounded,
+                        size: 46,
+                        color: context.brain.success,
+                      ),
+                  ],
                 ),
               ),
-              const SizedBox(height: 18),
-              ProgressMeter(
-                label: 'Workout progress',
-                value: total == 0 ? 0 : complete / total,
-                color: context.brain.success,
-                trailing: '$complete / $total',
-              ),
-              const SizedBox(height: 20),
-              const Text(
-                'Each completed round is saved. You can safely leave and continue later.',
+              const SizedBox(height: 24),
+              PageEyebrow('ROUND ${complete + 1} OF $total'),
+              const SizedBox(height: 8),
+              Text(
+                nextGame?.title ?? 'Daily workout',
                 textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                  fontFamily: 'Fredoka',
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                status ?? 'Your five-game daily reset',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: context.brain.textMuted),
+              ),
+              const SizedBox(height: 24),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(
+                  total,
+                  (index) => AnimatedContainer(
+                    duration: MediaQuery.disableAnimationsOf(context)
+                        ? Duration.zero
+                        : const Duration(milliseconds: 180),
+                    width: index == complete ? 24 : 8,
+                    height: 8,
+                    margin: const EdgeInsets.symmetric(horizontal: 4),
+                    decoration: BoxDecoration(
+                      color: index < complete
+                          ? context.brain.success
+                          : index == complete
+                          ? context.brain.primary
+                          : context.brain.frame,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                ),
               ),
               const Spacer(),
               if (!running)
@@ -154,17 +207,34 @@ class WorkoutResultScreen extends StatelessWidget {
         title: const Text('Session review'),
       ),
       body: SafeArea(
+        bottom: false,
         child: ListView(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
           children: [
-            const Icon(Icons.check_circle_rounded, size: 72),
-            const SizedBox(height: 12),
+            Center(
+              child: Container(
+                width: 72,
+                height: 72,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: context.brain.success.withValues(alpha: .14),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.check_rounded,
+                  size: 40,
+                  color: context.brain.success,
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
             Text(
-              'Daily training complete',
+              'Daily reset complete',
               textAlign: TextAlign.center,
-              style: Theme.of(
-                context,
-              ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w900),
+              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                fontFamily: 'Fredoka',
+                fontWeight: FontWeight.w700,
+              ),
             ),
             const SizedBox(height: 8),
             Text(
@@ -173,60 +243,90 @@ class WorkoutResultScreen extends StatelessWidget {
                   : '${baselineStatus(data.history).readyGames} of ${activeGames.length} game baselines ready.',
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 20),
-            for (final result in summary.results)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 10),
-                child: AppCard(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          GameIcon(
-                            game: result.type,
-                            size: 26,
-                            decorated: true,
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Text(
-                              result.type.domain,
+            const SizedBox(height: 24),
+            AppCard(
+              tonal: true,
+              child: Column(
+                children: [
+                  for (final (index, result) in summary.results.indexed) ...[
+                    if (index > 0) const Divider(height: 28),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            GameIcon(
+                              game: result.type,
+                              size: 26,
+                              decorated: true,
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                result.type.domain,
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w900,
+                                ),
+                              ),
+                            ),
+                            Text(
+                              trainingLevel(
+                                difficulty: result.difficulty,
+                                score: result.normalized,
+                              ).toStringAsFixed(1),
                               style: const TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.w900,
                               ),
                             ),
-                          ),
-                          Text(
-                            'Level ${trainingLevel(difficulty: result.difficulty, score: result.normalized).toStringAsFixed(1)}',
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      Text(_rawMetrics(result)),
-                      const SizedBox(height: 6),
-                      Text(_comparison(result, data)),
-                      const SizedBox(height: 6),
-                      Text(sessionTip(result)),
-                    ],
-                  ),
-                ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Text(_rawMetrics(result)),
+                        const SizedBox(height: 6),
+                        Text(_comparison(result, data)),
+                        const SizedBox(height: 6),
+                        Text(sessionTip(result)),
+                      ],
+                    ),
+                  ],
+                ],
               ),
+            ),
             const SizedBox(height: 8),
             const Text(
               'These results describe performance in practiced BrainFlex tasks, not IQ, a medical assessment, or proof of everyday cognitive change.',
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 20),
-            PrimaryAction(
-              expanded: true,
-              color: context.brain.success,
-              onPressed: () => Navigator.pop(context),
-              icon: Icons.done_rounded,
-              label: 'Done for today',
-            ),
           ],
+        ),
+      ),
+      bottomNavigationBar: SafeArea(
+        top: false,
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: context.brain.background,
+            border: Border(
+              top: BorderSide(color: Theme.of(context).dividerColor),
+            ),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+            child: Align(
+              heightFactor: 1,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 760),
+                child: PrimaryAction(
+                  expanded: true,
+                  color: context.brain.success,
+                  onPressed: () => Navigator.pop(context),
+                  icon: Icons.done_rounded,
+                  label: 'Done for today',
+                ),
+              ),
+            ),
+          ),
         ),
       ),
     );

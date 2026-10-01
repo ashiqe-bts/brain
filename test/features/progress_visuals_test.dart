@@ -36,6 +36,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
+    expect(find.text('Round complete'), findsOneWidget);
     expect(find.text('Progress graph'), findsOneWidget);
     expect(
       find.textContaining('excluded from progress trends'),
@@ -49,6 +50,7 @@ void main() {
     expect(find.text('All measured skills'), findsOneWidget);
     expect(find.text('Training level'), findsWidgets);
     expect(find.text('Accuracy'), findsWidgets);
+    expect(find.text('Back to Train'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
