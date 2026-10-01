@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:intl/intl.dart' show DateFormat;
 
 import '../../app/theme/brain_theme.dart';
+import '../../core/config/app_config.dart';
 
 class ProgressChartPoint {
   const ProgressChartPoint({
@@ -158,12 +159,12 @@ class _ProgressLineChartState extends State<ProgressLineChart> {
     final points = _points;
     if (points.isEmpty) {
       return Semantics(
-        label: 'No ${widget.valueLabel.toLowerCase()} history yet',
+        label: AppText.noChartHistory(widget.valueLabel),
         child: SizedBox(
           height: 150,
           child: Center(
             child: Text(
-              'Complete a comparable session to start this chart.',
+              AppText.results.chartEmpty,
               textAlign: TextAlign.center,
               style: TextStyle(color: context.brain.textMuted),
             ),
@@ -178,7 +179,11 @@ class _ProgressLineChartState extends State<ProgressLineChart> {
         .where((series) => series.points.isNotEmpty)
         .map((series) {
           final latest = series.points.last;
-          return '${series.label}, latest ${latest.label} on ${DateFormat.MMMd().format(latest.at)}';
+          return AppText.chartLatest(
+            series.label,
+            latest.label,
+            DateFormat.MMMd().format(latest.at),
+          );
         })
         .join('. ');
     return FocusableActionDetector(
@@ -201,8 +206,7 @@ class _ProgressLineChartState extends State<ProgressLineChart> {
       },
       child: Semantics(
         focusable: true,
-        label:
-            '${widget.valueLabel} progress chart. $summary. Use left and right arrow keys to inspect points.',
+        label: AppText.chartInstructions(widget.valueLabel, summary),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -244,7 +248,12 @@ class _ProgressLineChartState extends State<ProgressLineChart> {
             Semantics(
               liveRegion: true,
               child: Text(
-                '${active.$1.label} · ${DateFormat.MMMd().add_jm().format(active.$2.at.toLocal())} · ${active.$2.label}${active.$2.note == null ? '' : ' · ${active.$2.note}'}',
+                AppText.chartPoint(
+                  active.$1.label,
+                  DateFormat.MMMd().add_jm().format(active.$2.at.toLocal()),
+                  active.$2.label,
+                  active.$2.note,
+                ),
                 style: const TextStyle(fontWeight: FontWeight.w700),
               ),
             ),
@@ -277,7 +286,7 @@ class _LegendItem extends StatelessWidget {
         _markerIcon(index),
         color: series.color,
         size: 18,
-        semanticLabel: 'Series ${index + 1}',
+        semanticLabel: AppText.chartSeries(index + 1),
       ),
       const SizedBox(width: 5),
       Text(series.label),

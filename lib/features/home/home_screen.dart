@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 
 import '../../app/theme/brain_theme.dart';
 import '../../app/theme/game_visuals.dart';
+import '../../core/config/app_config.dart';
 import '../../core/models/brain_models.dart';
 import '../../core/state/brain_cubit.dart';
 import '../../core/training/training_analytics.dart';
@@ -32,7 +33,7 @@ class HomeScreen extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Hey, ${data.displayName}'),
+            Text(AppText.greeting(data.displayName!)),
             Text(
               DateFormat('EEEE, MMM d').format(DateTime.now()),
               style: Theme.of(context).textTheme.labelMedium,
@@ -41,7 +42,7 @@ class HomeScreen extends StatelessWidget {
         ),
         actions: [
           IconButton(
-            tooltip: 'Settings',
+            tooltip: AppText.navigation.settings,
             onPressed: () => Navigator.push(
               context,
               MaterialPageRoute(builder: (_) => const SettingsScreen()),
@@ -59,7 +60,9 @@ class HomeScreen extends StatelessWidget {
             children: [
               Center(
                 child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 760),
+                  constraints: const BoxConstraints(
+                    maxWidth: AppSettings.resultContentWidth,
+                  ),
                   child: Column(
                     children: [
                       _workoutCard(context, data, done),
@@ -70,31 +73,32 @@ class HomeScreen extends StatelessWidget {
                         children: [
                           MetricTile(
                             icon: Icons.local_fire_department_rounded,
-                            label: 'day streak',
+                            label: AppText.home.dayStreak,
                             value: '${data.currentStreak}',
                           ),
                           const SizedBox(width: 10),
                           MetricTile(
                             icon: Icons.fitness_center_rounded,
-                            label: 'workouts',
+                            label: AppText.home.workouts,
                             value: '${data.workouts}',
                           ),
                           const SizedBox(width: 10),
                           MetricTile(
                             icon: Icons.tune_rounded,
-                            label: 'baselines',
-                            value: '${baseline.readyGames}/15',
+                            label: AppText.home.baselines,
+                            value:
+                                '${baseline.readyGames}/${activeGames.length}',
                           ),
                         ],
                       ),
                       if (baseline.isComplete) ...[
-                        const SectionHeader('Recommended practice'),
+                        SectionHeader(AppText.home.recommendedPractice),
                         AppCard(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text(
-                                'Based on your least-trained recent skills',
+                              Text(
+                                AppText.home.recommendationReason,
                                 style: TextStyle(fontWeight: FontWeight.w800),
                               ),
                               const SizedBox(height: 8),
@@ -108,21 +112,22 @@ class HomeScreen extends StatelessWidget {
                                   ),
                                   title: Text(recommendation.game.title),
                                   subtitle: Text(
-                                    '${recommendation.game.domain} · ${recommendation.reason}',
+                                    AppText.recommendationSubtitle(
+                                      recommendation.game.domain,
+                                      recommendation.reason,
+                                    ),
                                   ),
                                 ),
-                              const Text(
-                                'Open Train to start a Standard session.',
-                              ),
+                              Text(AppText.home.openTrain),
                             ],
                           ),
                         ),
                       ],
-                      const SectionHeader("Today's goals"),
+                      SectionHeader(AppText.home.goals),
                       ...data.missions.map(
                         (mission) => _mission(context, mission),
                       ),
-                      const SectionHeader('This week'),
+                      SectionHeader(AppText.home.thisWeek),
                       _weekStrip(context, data),
                     ],
                   ),
@@ -159,7 +164,7 @@ class HomeScreen extends StatelessWidget {
                 ),
                 const Spacer(),
                 Text(
-                  done ? 'COMPLETE' : 'TODAY',
+                  done ? AppText.home.complete : AppText.home.today,
                   style: Theme.of(context).textTheme.labelMedium?.copyWith(
                     color: context.brain.primary,
                     fontWeight: FontWeight.w900,
@@ -171,10 +176,10 @@ class HomeScreen extends StatelessWidget {
             const SizedBox(height: 20),
             Text(
               done
-                  ? 'Daily reset complete'
+                  ? AppText.home.dailyResetComplete
                   : data.draft != null
-                  ? 'Pick up where you left off'
-                  : 'Ready for your daily reset?',
+                  ? AppText.home.resumeTitle
+                  : AppText.home.readyTitle,
               style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                 fontFamily: 'Fredoka',
                 fontWeight: FontWeight.w700,
@@ -184,10 +189,10 @@ class HomeScreen extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               done
-                  ? 'Nice work. Come back tomorrow for a fresh mix.'
+                  ? AppText.home.completeBody
                   : data.draft != null
-                  ? 'Your selection is saved until the workout is complete.'
-                  : '5 games • about 5 minutes',
+                  ? AppText.home.savedSelection
+                  : AppText.home.duration,
               style: Theme.of(
                 context,
               ).textTheme.bodyLarge?.copyWith(color: context.brain.textMuted),
@@ -224,8 +229,8 @@ class HomeScreen extends StatelessWidget {
                   ? Icons.play_arrow_rounded
                   : Icons.replay_rounded,
               label: data.draft == null
-                  ? "Start today's workout"
-                  : 'Continue workout',
+                  ? AppText.home.startWorkout
+                  : AppText.home.continueWorkout,
             ),
           ],
         ),
@@ -247,15 +252,17 @@ class HomeScreen extends StatelessWidget {
             Expanded(
               child: Text(
                 baseline.isComplete
-                    ? 'Personal baseline ready'
-                    : 'Building your personal baseline',
+                    ? AppText.home.personalBaselineReady
+                    : AppText.home.buildingBaseline,
                 style: const TextStyle(
                   fontSize: 17,
                   fontWeight: FontWeight.w900,
                 ),
               ),
             ),
-            Text('${baseline.readyGames}/${activeGames.length} games'),
+            Text(
+              AppText.baselineGames(baseline.readyGames, activeGames.length),
+            ),
           ],
         ),
         const SizedBox(height: 10),
@@ -267,8 +274,8 @@ class HomeScreen extends StatelessWidget {
         const SizedBox(height: 10),
         Text(
           baseline.isComplete
-              ? 'Insights compare you with your own compatible sessions.'
-              : '${baseline.remaining} more compatible game round${baseline.remaining == 1 ? '' : 's'} across the rotation. Each game unlocks its own baseline after three rounds.',
+              ? AppText.home.baselineReadyBody
+              : AppText.baselineBuilding(baseline.remaining),
         ),
       ],
     ),
@@ -293,7 +300,7 @@ class HomeScreen extends StatelessWidget {
                   mission.title,
                   style: const TextStyle(fontWeight: FontWeight.w700),
                 ),
-                Text('${mission.progress} of ${mission.target} complete'),
+                Text(AppText.missionProgress(mission.progress, mission.target)),
               ],
             ),
           ),
@@ -301,7 +308,7 @@ class HomeScreen extends StatelessWidget {
             TextButton(
               onPressed: () =>
                   context.read<BrainCubit>().claimMission(mission.id),
-              child: const Text('Collect'),
+              child: Text(AppText.home.collect),
             ),
         ],
       ),
@@ -319,8 +326,10 @@ class HomeScreen extends StatelessWidget {
           final complete = data.daily.any((summary) => summary.date == date);
           final isToday = date == localDate();
           return Semantics(
-            label:
-                '${DateFormat.EEEE().format(day)}, ${complete ? 'complete' : 'not complete'}',
+            label: AppText.weekDayStatus(
+              DateFormat.EEEE().format(day),
+              complete,
+            ),
             child: Column(
               children: [
                 Text(DateFormat.E().format(day).substring(0, 1)),

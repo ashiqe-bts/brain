@@ -1,6 +1,14 @@
 import 'dart:convert';
 
 import '../config/app_config.dart';
+export '../config/app_config.dart'
+    show
+        GameMode,
+        GameType,
+        activeGames,
+        archivedGames,
+        GameModePresentation,
+        GameContentPresentation;
 
 enum BrainTheme { calmLight, calmDark, highContrast }
 
@@ -23,59 +31,12 @@ enum SkillDomain {
   spatial,
 }
 
-enum GameType {
-  colorClash,
-  mathBlitz,
-  memoryTiles,
-  reflexTap,
-  visualSearch,
-  signalStop,
-  peripheralFocus,
-  nBackNavigator,
-  ruleSwitch,
-  arrowGuard,
-  pairLink,
-  symbolSprint,
-  objectTracker,
-  towerPlanner,
-  dualTaskDash,
-  logicSeries,
-  spatialRotation,
-}
-
-const activeGames = <GameType>[
-  GameType.colorClash,
-  GameType.mathBlitz,
-  GameType.memoryTiles,
-  GameType.signalStop,
-  GameType.peripheralFocus,
-  GameType.nBackNavigator,
-  GameType.ruleSwitch,
-  GameType.arrowGuard,
-  GameType.pairLink,
-  GameType.symbolSprint,
-  GameType.objectTracker,
-  GameType.towerPlanner,
-  GameType.dualTaskDash,
-  GameType.logicSeries,
-  GameType.spatialRotation,
-];
-
-const archivedGames = <GameType>{GameType.reflexTap, GameType.visualSearch};
-
-enum GameMode { standard, relaxed, personalBest, official }
-
-extension GameModePresentation on GameMode {
-  String get displayTitle => AppText.gameModeLabels[name]!;
-}
-
 typedef SessionKind = GameMode;
 typedef GameRulesVersion = int;
 
 enum GameLifecycle { initial, countdown, running, paused, feedback, completed }
 
 extension GameTypeX on GameType {
-  String get title => gameContent[name]!.title;
   SkillDomain get skill => switch (this) {
     GameType.colorClash => SkillDomain.focus,
     GameType.mathBlitz => SkillDomain.calculation,
@@ -95,7 +56,6 @@ extension GameTypeX on GameType {
     GameType.logicSeries => SkillDomain.reasoning,
     GameType.spatialRotation => SkillDomain.spatial,
   };
-  String get domain => gameContent[name]!.domain;
   int get rulesVersion => switch (this) {
     GameType.colorClash || GameType.mathBlitz || GameType.memoryTiles => 3,
     GameType.reflexTap || GameType.visualSearch => 2,
@@ -116,7 +76,7 @@ String? displayNameError(String value) {
     return AppText.invalidDisplayName;
   }
   if (normalized.runes.length > AppSettings.maximumDisplayNameCharacters) {
-    return AppText.displayNameTooLong;
+    return AppText.displayNameTooLong();
   }
   return null;
 }
@@ -482,8 +442,8 @@ class BrainState {
     this.haptics = true,
     this.reducedMotion = false,
     this.streakWarning = true,
-    this.reminderHour = 19,
-    this.reminderMinute = 0,
+    this.reminderHour = AppSettings.defaultReminderHour,
+    this.reminderMinute = AppSettings.defaultReminderMinute,
     this.reminderEnabled = false,
     this.xp = 0,
     this.level = 1,
@@ -572,8 +532,10 @@ class BrainState {
       haptics: j['haptics'] as bool? ?? true,
       reducedMotion: j['reducedMotion'] as bool? ?? false,
       streakWarning: j['streakWarning'] as bool? ?? true,
-      reminderHour: j['reminderHour'] as int? ?? 19,
-      reminderMinute: j['reminderMinute'] as int? ?? 0,
+      reminderHour:
+          j['reminderHour'] as int? ?? AppSettings.defaultReminderHour,
+      reminderMinute:
+          j['reminderMinute'] as int? ?? AppSettings.defaultReminderMinute,
       reminderEnabled: j['reminderEnabled'] as bool? ?? false,
       xp: j['xp'] as int? ?? 0,
       level: j['level'] as int? ?? 1,

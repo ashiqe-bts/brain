@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/config/app_config.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../core/models/brain_models.dart';
@@ -48,7 +49,7 @@ Future<void> replayGameTutorial(BuildContext context, GameType type) async {
     MaterialPageRoute(
       builder: (_) => GameTutorialScreen(
         type: type,
-        completionActionLabel: 'RETURN TO TRAIN',
+        completionActionLabel: AppText.returnToTrain,
       ),
     ),
   );

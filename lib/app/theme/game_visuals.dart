@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../../core/config/app_config.dart';
-import '../../core/models/brain_models.dart';
 import 'brain_theme.dart';
 
 @immutable
@@ -32,7 +31,7 @@ GameVisualSpec gameVisualFor(GameType type) => GameVisualSpec(
     GameType.logicSeries => Icons.functions_rounded,
     GameType.spatialRotation => Icons.threed_rotation_rounded,
   },
-  semanticLabel: gameContent[type.name]!.semanticLabel,
+  semanticLabel: gameContent[type]!.semanticLabel,
 );
 
 class GameIcon extends StatelessWidget {

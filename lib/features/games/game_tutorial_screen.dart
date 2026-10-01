@@ -3,8 +3,9 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 
+import '../../core/config/app_config.dart';
+
 import '../../app/theme/brain_theme.dart';
-import '../../core/models/brain_models.dart';
 import '../../core/training/game_catalog.dart';
 import '../../core/widgets/common.dart';
 import 'classic_game_board.dart';
@@ -19,7 +20,7 @@ class GameTutorialScreen extends StatefulWidget {
   const GameTutorialScreen({
     super.key,
     required this.type,
-    this.completionActionLabel = 'Start playing',
+    this.completionActionLabel = AppText.startPlaying,
   });
 
   final GameType type;
@@ -143,9 +144,7 @@ class _GameTutorialScreenState extends State<GameTutorialScreen> {
         return candidate;
       }
     }
-    throw StateError(
-      'Could not create the ${widget.type.name} tutorial trial.',
-    );
+    throw StateError(AppText.tutorialCreationError(widget.type.name));
   }
 
   void _finishExposure() {
@@ -250,23 +249,25 @@ class _GameTutorialScreenState extends State<GameTutorialScreen> {
   String get _coachText {
     if (feedback != null) return feedback!;
     if (researchTrial?.condition == 'stop' && !showingStimulus) {
-      return 'STOP: do not tap. Keep waiting until the trial completes.';
+      return AppText.gameplay.stopGuide;
     }
     if (showingStimulus) {
       return widget.type == GameType.objectTracker
-          ? 'Watch the highlighted objects and follow their movement.'
-          : 'Watch carefully and remember what you see.';
+          ? AppText.gameplay.trackingGuide
+          : AppText.gameplay.watchGuide;
     }
     return step.instruction;
   }
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: Text('${widget.type.title} tutorial')),
+    appBar: AppBar(title: Text(AppText.tutorialTitle(widget.type.title))),
     body: SafeArea(
       child: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 680),
+          constraints: const BoxConstraints(
+            maxWidth: AppSettings.gameGridBreakpoint,
+          ),
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: complete ? _completeView(context) : _stepView(context),
@@ -285,9 +286,9 @@ class _GameTutorialScreenState extends State<GameTutorialScreen> {
       ),
       const SizedBox(height: 12),
       ProgressMeter(
-        label: 'Tutorial progress',
+        label: AppText.gameplay.tutorialProgress,
         value: stepIndex / stepCount,
-        trailing: '${stepIndex + 1} / $stepCount',
+        trailing: AppText.tutorialStep(stepIndex + 1, stepCount),
         color: context.gameAccent(widget.type),
       ),
       const SizedBox(height: 12),
@@ -358,15 +359,12 @@ class _GameTutorialScreenState extends State<GameTutorialScreen> {
       ),
       const SizedBox(height: 16),
       Text(
-        '${widget.type.title} tutorial complete',
+        AppText.tutorialComplete(widget.type.title),
         textAlign: TextAlign.center,
         style: Theme.of(context).textTheme.headlineSmall,
       ),
       const SizedBox(height: 10),
-      const Text(
-        'Tutorial practice is unscored and never changes your progress.',
-        textAlign: TextAlign.center,
-      ),
+      Text(AppText.gameplay.tutorialUnscored, textAlign: TextAlign.center),
       const SizedBox(height: 24),
       PrimaryAction(
         expanded: true,

@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../../app/theme/brain_theme.dart';
-import '../../core/models/brain_models.dart';
+import '../../core/config/app_config.dart';
 import '../../core/widgets/common.dart';
 import 'research_game_engine.dart';
 import 'tutorial_guide.dart';
@@ -36,7 +36,9 @@ class ResearchGameBoard extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         Semantics(
-          label: 'Game stimulus: ${showingStimulus ? trial.prompt : trial.cue}',
+          label: AppText.gameStimulus(
+            showingStimulus ? trial.prompt : trial.cue,
+          ),
           child: AppCard(
             child: ConstrainedBox(
               constraints: const BoxConstraints(minHeight: 150),
@@ -49,9 +51,9 @@ class ResearchGameBoard extends StatelessWidget {
           TutorialGuidedControl(
             showGuide: guide?.kind == TutorialGuideKind.passive,
             passive: true,
-            child: const Text(
-              'Keep waiting…',
-              style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
+            child: Text(
+              AppText.gameplay.keepWaiting,
+              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
             ),
           )
         else if (isStop)
@@ -63,7 +65,7 @@ class ResearchGameBoard extends StatelessWidget {
             child: PrimaryAction(
               color: context.brain.danger,
               onPressed: () => onAnswer(0),
-              label: 'TAP',
+              label: AppText.gameplay.tap,
             ),
           )
         else if (revealOptions || trial.exposureMs == 0)
@@ -74,7 +76,7 @@ class ResearchGameBoard extends StatelessWidget {
             children: List.generate(
               trial.options.length,
               (index) => Semantics(
-                label: 'Answer option ${index + 1}',
+                label: AppText.answerOption(index + 1),
                 button: true,
                 child: TutorialGuidedControl(
                   showGuide: guide?.pointsTo(index) ?? false,
@@ -92,7 +94,7 @@ class ResearchGameBoard extends StatelessWidget {
             ),
           )
         else
-          const Text('Study…'),
+          Text(AppText.gameplay.study),
       ],
     );
   }
@@ -134,7 +136,7 @@ class ResearchGameBoard extends StatelessWidget {
           itemBuilder: (context, index) {
             final active = values.contains(index + 1);
             return Semantics(
-              label: 'Tile ${index + 1}${active ? ', marked' : ''}',
+              label: AppText.tileSemantics(index + 1, active),
               child: Container(
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
@@ -189,7 +191,7 @@ class ResearchGameBoard extends StatelessWidget {
                         color: context.brain.outline,
                       ),
                       Text(
-                        'Peg ${peg + 1}${peg == trial.towerTarget ? ' · goal' : ''}',
+                        AppText.pegSemantics(peg + 1, peg == trial.towerTarget),
                         textAlign: TextAlign.center,
                       ),
                     ],

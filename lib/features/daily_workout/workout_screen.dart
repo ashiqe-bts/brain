@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../app/theme/brain_theme.dart';
 import '../../app/theme/game_visuals.dart';
+import '../../core/config/app_config.dart';
 import '../../core/models/brain_models.dart';
 import '../../core/state/brain_cubit.dart';
 import '../../core/training/training_analytics.dart';
@@ -44,8 +45,11 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
       final type = draft.order[index];
       if (mounted) {
         setState(
-          () => status =
-              '${type.domain} · round ${index + 1} of ${draft.order.length}',
+          () => status = AppText.workoutStatus(
+            type.domain,
+            index + 1,
+            draft.order.length,
+          ),
         );
       }
       if (!mounted) return;
@@ -71,8 +75,8 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
           builder: (_) => SessionResultScreen(
             result: result,
             actionLabel: index == draft.order.length - 1
-                ? 'Finish workout'
-                : 'Continue to game ${index + 2}',
+                ? AppText.workout.finish
+                : AppText.continueToGame(index + 2),
           ),
         ),
       );
@@ -95,13 +99,13 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
   Widget build(BuildContext context) {
     final draft = context.watch<BrainCubit>().state.data.draft;
     final complete = draft?.results.length ?? 0;
-    final total = draft?.order.length ?? 5;
+    final total = draft?.order.length ?? AppSettings.workoutGameCount;
     final displayRound = total == 0 ? 0 : (complete + 1).clamp(1, total);
     final nextGame = draft != null && complete < draft.order.length
         ? draft.order[complete]
         : null;
     return Scaffold(
-      appBar: AppBar(title: const Text('Daily practice')),
+      appBar: AppBar(title: Text(AppText.workout.dailyPractice)),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(20),
@@ -140,10 +144,10 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                 ),
               ),
               const SizedBox(height: 24),
-              PageEyebrow('ROUND $displayRound OF $total'),
+              PageEyebrow(AppText.roundProgress(displayRound, total)),
               const SizedBox(height: 8),
               Text(
-                nextGame?.title ?? 'Daily workout',
+                nextGame?.title ?? AppText.workout.dailyWorkout,
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                   fontFamily: 'Fredoka',
@@ -152,7 +156,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
               ),
               const SizedBox(height: 8),
               Text(
-                status ?? 'Your five-game daily reset',
+                status ?? AppText.workout.dailyReset,
                 textAlign: TextAlign.center,
                 style: TextStyle(color: context.brain.textMuted),
               ),
@@ -184,7 +188,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                 PrimaryAction(
                   onPressed: _run,
                   icon: Icons.play_arrow,
-                  label: 'Resume practice',
+                  label: AppText.workout.resume,
                 ),
             ],
           ),
@@ -205,7 +209,7 @@ class WorkoutResultScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         automaticallyImplyLeading: false,
-        title: const Text('Session review'),
+        title: Text(AppText.workout.sessionReview),
       ),
       body: SafeArea(
         bottom: false,
@@ -230,7 +234,7 @@ class WorkoutResultScreen extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             Text(
-              'Daily reset complete',
+              AppText.workout.completeTitle,
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                 fontFamily: 'Fredoka',
@@ -240,8 +244,11 @@ class WorkoutResultScreen extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               baselineStatus(data.history).isComplete
-                  ? 'Results are compared only with compatible sessions.'
-                  : '${baselineStatus(data.history).readyGames} of ${activeGames.length} game baselines ready.',
+                  ? AppText.workout.compatibleResults
+                  : AppText.readyGameBaselines(
+                      baselineStatus(data.history).readyGames,
+                      activeGames.length,
+                    ),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 24),
@@ -296,10 +303,7 @@ class WorkoutResultScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 8),
-            const Text(
-              'These results describe performance in practiced BrainFlex tasks, not IQ, a medical assessment, or proof of everyday cognitive change.',
-              textAlign: TextAlign.center,
-            ),
+            Text(AppText.workout.resultDisclaimer, textAlign: TextAlign.center),
           ],
         ),
       ),
@@ -317,13 +321,15 @@ class WorkoutResultScreen extends StatelessWidget {
             child: Align(
               heightFactor: 1,
               child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 760),
+                constraints: const BoxConstraints(
+                  maxWidth: AppSettings.resultContentWidth,
+                ),
                 child: PrimaryAction(
                   expanded: true,
                   color: context.brain.success,
                   onPressed: () => Navigator.pop(context),
                   icon: Icons.done_rounded,
-                  label: 'Done for today',
+                  label: AppText.workout.done,
                 ),
               ),
             ),
@@ -334,13 +340,13 @@ class WorkoutResultScreen extends StatelessWidget {
   }
 
   String _rawMetrics(GameResult result) {
-    final accuracy = '${(result.accuracy * 100).round()}% accuracy';
+    final accuracy = AppText.accuracy((result.accuracy * 100).round());
     if (result.type == GameType.reflexTap && result.reactionMs != null) {
-      return '$accuracy · ${result.reactionMs} ms median reaction';
+      return '$accuracy · ${AppText.medianReaction(result.reactionMs!)}';
     }
     final falseStarts = result.metrics['falseStarts']?.round() ?? 0;
     if (result.type == GameType.signalStop) {
-      return '$accuracy · $falseStarts false start${falseStarts == 1 ? '' : 's'}';
+      return '$accuracy · ${AppText.falseStarts(falseStarts)}';
     }
     final span = result.metrics['span']?.round() ?? 0;
     if (span > 0 &&
@@ -351,10 +357,12 @@ class WorkoutResultScreen extends StatelessWidget {
           GameType.objectTracker,
           GameType.towerPlanner,
         }.contains(result.type)) {
-      return '$accuracy · span $span';
+      return '$accuracy · ${AppText.span(span)}';
     }
     final response = result.metrics['medianResponseMs']?.round() ?? 0;
-    return response > 0 ? '$accuracy · $response ms median response' : accuracy;
+    return response > 0
+        ? '$accuracy · ${AppText.medianResponse(response)}'
+        : accuracy;
   }
 
   String _comparison(GameResult result, BrainState data) {
@@ -366,8 +374,8 @@ class WorkoutResultScreen extends StatelessWidget {
     String delta(double value) =>
         '${value >= 0 ? '+' : ''}${value.toStringAsFixed(1)}';
     final baseline = comparison.baselineDelta == null
-        ? 'Baseline change: available after 3 compatible daily results'
-        : 'Baseline change: ${delta(comparison.baselineDelta!)} levels';
+        ? AppText.baselinePending()
+        : AppText.baselineChange(delta(comparison.baselineDelta!));
     final previous = selfComparisonMessage(
       comparison,
       currentAt: result.completedAt ?? DateTime.now(),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../app/theme/brain_theme.dart';
+import '../../core/config/app_config.dart';
 import '../../core/models/brain_models.dart';
 import '../../core/state/brain_cubit.dart';
 import '../../core/widgets/common.dart';
@@ -39,7 +40,9 @@ class _NameCaptureScreenState extends State<NameCaptureScreen> {
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(22),
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 520),
+            constraints: const BoxConstraints(
+              maxWidth: AppSettings.profileCardWidth,
+            ),
             child: AppCard(
               padding: const EdgeInsets.all(24),
               child: Column(
@@ -48,22 +51,22 @@ class _NameCaptureScreenState extends State<NameCaptureScreen> {
                   const BrandMark(size: 72),
                   const SizedBox(height: 16),
                   Text(
-                    'Add your name',
+                    AppText.settings.addName,
                     style: Theme.of(context).textTheme.headlineMedium,
                   ),
                   const SizedBox(height: 8),
-                  const Text(
-                    'Your progress is still here. This name stays only on this device.',
+                  Text(
+                    AppText.onboarding.returningProfileBody,
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 20),
                   TextFormField(
                     controller: controller,
                     autofocus: true,
-                    maxLength: 30,
+                    maxLength: AppSettings.maximumDisplayNameCharacters,
                     textInputAction: TextInputAction.done,
-                    decoration: const InputDecoration(
-                      labelText: 'Your name',
+                    decoration: InputDecoration(
+                      labelText: AppText.settings.yourName,
                       border: OutlineInputBorder(),
                     ),
                     autovalidateMode: AutovalidateMode.onUserInteraction,
@@ -79,7 +82,9 @@ class _NameCaptureScreenState extends State<NameCaptureScreen> {
                         ? _save
                         : null,
                     icon: Icons.arrow_forward_rounded,
-                    label: saving ? 'Saving' : 'Continue',
+                    label: saving
+                        ? AppText.saving
+                        : AppText.onboarding.continueLabel,
                   ),
                 ],
               ),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../core/config/app_config.dart';
 import '../../core/models/brain_models.dart';
 import '../../core/state/brain_cubit.dart';
 import '../../core/widgets/common.dart';
@@ -23,7 +24,7 @@ class _GamesScreenState extends State<GamesScreen> {
   Widget build(BuildContext context) {
     final domains = activeGames.map((game) => game.skill).toSet().toList();
     return Scaffold(
-      appBar: AppBar(toolbarHeight: 70, title: const Text('Train')),
+      appBar: AppBar(toolbarHeight: 70, title: Text(AppText.navigation.train)),
       body: SafeArea(
         bottom: false,
         child: Column(
@@ -32,22 +33,19 @@ class _GamesScreenState extends State<GamesScreen> {
               child: ListView(
                 padding: const EdgeInsets.fromLTRB(16, 4, 16, 18),
                 children: [
-                  const Center(child: PageEyebrow('Choose a practice game')),
+                  Center(child: PageEyebrow(AppText.train.chooseGame)),
                   const SizedBox(height: 14),
-                  const Text(
-                    'You vs you: each game compares only with your own compatible practice. Relaxed sessions never affect trends.',
-                    textAlign: TextAlign.center,
-                  ),
+                  Text(AppText.train.intro, textAlign: TextAlign.center),
                   const SizedBox(height: 14),
                   Semantics(
-                    label: 'Filter games by cognitive domain',
+                    label: AppText.train.filterSemantics,
                     child: Wrap(
                       alignment: WrapAlignment.center,
                       spacing: 8,
                       runSpacing: 8,
                       children: [
                         FilterChip(
-                          label: const Text('All'),
+                          label: Text(AppText.train.all),
                           selected: selectedDomain == null,
                           onSelected: (_) =>
                               setState(() => selectedDomain = null),
@@ -65,7 +63,9 @@ class _GamesScreenState extends State<GamesScreen> {
                   const SizedBox(height: 12),
                   Center(
                     child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 920),
+                      constraints: const BoxConstraints(
+                        maxWidth: AppSettings.trainContentWidth,
+                      ),
                       child: Column(
                         children: [
                           for (final domain in domains)
@@ -95,7 +95,7 @@ class _GamesScreenState extends State<GamesScreen> {
 
   Widget _gameGrid(BuildContext context, List<GameType> games) => LayoutBuilder(
     builder: (context, box) {
-      final wide = box.maxWidth >= 680;
+      final wide = box.maxWidth >= AppSettings.gameGridBreakpoint;
       return Wrap(
         spacing: 14,
         runSpacing: 16,
@@ -140,14 +140,14 @@ class _GamesScreenState extends State<GamesScreen> {
                       ),
                     ),
                     Text(
-                      '${game.domain} · Level $difficulty',
+                      AppText.gameLevel(game.domain, difficulty),
                       style: TextStyle(color: context.brain.textMuted),
                     ),
                   ],
                 ),
               ),
               IconButton.filled(
-                tooltip: 'Play ${game.title}',
+                tooltip: AppText.playGame(game.title),
                 onPressed: () => _chooseMode(context, game),
                 icon: const Icon(Icons.play_arrow_rounded),
               ),
@@ -156,27 +156,33 @@ class _GamesScreenState extends State<GamesScreen> {
           const SizedBox(height: 14),
           Text(
             best == null
-                ? 'Your first standard result will become a personal starting point.'
-                : 'Personal level ${trainingLevel(difficulty: best.difficulty, score: best.normalized).toStringAsFixed(1)} · ${(best.accuracy * 100).round()}% accuracy',
+                ? AppText.train.firstResult
+                : AppText.personalLevel(
+                    trainingLevel(
+                      difficulty: best.difficulty,
+                      score: best.normalized,
+                    ).toStringAsFixed(1),
+                    (best.accuracy * 100).round(),
+                  ),
           ),
           const SizedBox(height: 10),
           Wrap(
             spacing: 4,
             children: [
               Tooltip(
-                message: 'Tutorial for ${game.title}',
+                message: AppText.tutorialFor(game.title),
                 child: TextButton.icon(
                   onPressed: () => replayGameTutorial(context, game),
                   icon: const Icon(Icons.school_outlined),
-                  label: const Text('Tutorial'),
+                  label: Text(AppText.train.tutorial),
                 ),
               ),
               Tooltip(
-                message: 'Research basis for ${game.title}',
+                message: AppText.researchFor(game.title),
                 child: TextButton.icon(
                   onPressed: () => showResearchBasisSheet(context, game),
                   icon: const Icon(Icons.science_outlined),
-                  label: const Text('Research basis'),
+                  label: Text(AppText.train.researchBasis),
                 ),
               ),
             ],
@@ -186,17 +192,8 @@ class _GamesScreenState extends State<GamesScreen> {
     );
   }
 
-  String _domainLabel(SkillDomain domain) => switch (domain) {
-    SkillDomain.focus => 'Focus and attention',
-    SkillDomain.calculation => 'Calculation',
-    SkillDomain.memory => 'Memory',
-    SkillDomain.reaction => 'Reaction',
-    SkillDomain.visualSearch => 'Visual search',
-    SkillDomain.executiveControl => 'Executive control',
-    SkillDomain.processingSpeed => 'Processing speed',
-    SkillDomain.reasoning => 'Reasoning and planning',
-    SkillDomain.spatial => 'Spatial reasoning',
-  };
+  String _domainLabel(SkillDomain domain) =>
+      AppText.skillDomainLabels[domain.name]!;
 
   Future<void> _chooseMode(BuildContext context, GameType game) async {
     final mode = await showModalBottomSheet<GameMode>(
@@ -216,18 +213,18 @@ class _GamesScreenState extends State<GamesScreen> {
               ...[
                 (
                   GameMode.standard,
-                  'Standard',
-                  'Comparable practice that contributes to skill trends',
+                  AppText.gameModeLabels[GameMode.standard.name]!,
+                  AppText.train.standardBody,
                 ),
                 (
                   GameMode.personalBest,
-                  'Challenge My Best',
-                  'Challenge a result with matching rules and difficulty',
+                  AppText.gameModeLabels[GameMode.personalBest.name]!,
+                  AppText.train.personalBestBody,
                 ),
                 (
                   GameMode.relaxed,
-                  'Relaxed',
-                  'Untimed practice that does not affect your trends',
+                  AppText.gameModeLabels[GameMode.relaxed.name]!,
+                  AppText.train.relaxedBody,
                 ),
               ].map(
                 (m) => Padding(

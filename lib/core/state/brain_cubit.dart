@@ -2,6 +2,7 @@ import 'dart:math';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../config/app_config.dart';
 import '../models/brain_models.dart';
 import '../storage/brain_repository.dart';
 import '../training/training_analytics.dart';
@@ -59,23 +60,23 @@ class BrainCubit extends Cubit<BrainViewState> {
       final seeded = Random(stableSeed('$today|missions'));
       final game = activeGames[seeded.nextInt(activeGames.length)];
       data.missions = [
-        const Mission(
+        Mission(
           id: 'workout',
-          title: "Complete today's workout",
+          title: AppText.missions.workout,
           target: 1,
-          reward: 40,
+          reward: AppSettings.workoutMissionReward,
         ),
         Mission(
           id: 'correct',
-          title: 'Get 15 correct in ${game.title}',
-          target: 15,
-          reward: 30,
+          title: AppText.correctMission(game.title),
+          target: AppSettings.dailyCorrectTarget,
+          reward: AppSettings.correctMissionReward,
         ),
-        const Mission(
+        Mission(
           id: 'record',
-          title: 'Improve on one of your results',
+          title: AppText.missions.improvement,
           target: 1,
-          reward: 50,
+          reward: AppSettings.improvementMissionReward,
         ),
       ];
       data.lastMissionDate = today;
@@ -140,11 +141,20 @@ class BrainCubit extends Cubit<BrainViewState> {
   Future<void> startWorkout({required List<GameType> order}) async {
     final today = localDate();
     if (data.daily.any((e) => e.date == today)) return;
-    if (order.length != 5 || order.toSet().length != 5) {
-      throw ArgumentError.value(order, 'order', 'Choose five unique games');
+    if (order.length != AppSettings.workoutGameCount ||
+        order.toSet().length != AppSettings.workoutGameCount) {
+      throw ArgumentError.value(
+        order,
+        'order',
+        AppText.missions.chooseUniqueGames,
+      );
     }
     if (order.any((game) => !game.isActive)) {
-      throw ArgumentError.value(order, 'order', 'Choose active games only');
+      throw ArgumentError.value(
+        order,
+        'order',
+        AppText.missions.chooseActiveGames,
+      );
     }
     data.draft ??= WorkoutDraft(date: today, order: List.unmodifiable(order));
     await _commit();
@@ -185,7 +195,9 @@ class BrainCubit extends Cubit<BrainViewState> {
       final definition = gameDefinition(recorded.type);
       data.difficulties[recorded.type.name] = adaptDifficulty(
         recorded.difficulty,
-        recentComparable.take(3).map((item) => item.normalized),
+        recentComparable
+            .take(AppSettings.trendWindowSize)
+            .map((item) => item.normalized),
         masteryScore: definition.masteryScore,
         struggleScore: definition.struggleScore,
       );
@@ -342,24 +354,30 @@ class BrainCubit extends Cubit<BrainViewState> {
   }
 
   void _evaluateAchievements(DailySummary s) {
-    data.achievements.add('First Spark');
-    if (data.currentStreak >= 7) data.achievements.add('One Week Strong');
+    data.achievements.add(AppText.achievements.firstSpark);
+    if (data.currentStreak >= 7) {
+      data.achievements.add(AppText.achievements.oneWeekStrong);
+    }
     if ((s.reactionMs ?? 9999) < 250) {
-      data.achievements.add('Lightning Fingers');
+      data.achievements.add(AppText.achievements.lightningFingers);
     }
     if (data.history
             .where((e) => e.type == GameType.memoryTiles && e.accuracy == 1)
             .length >=
         5) {
-      data.achievements.add('Memory Machine');
+      data.achievements.add(AppText.achievements.memoryMachine);
     }
     if (data.history
             .where((e) => e.type == GameType.mathBlitz)
             .fold<int>(0, (a, b) => a + b.correct) >=
         25) {
-      data.achievements.add('Math Wizard');
+      data.achievements.add(AppText.achievements.mathWizard);
     }
-    if (data.currentStreak >= 30) data.achievements.add('Unstoppable');
-    if (s.accuracy > 95) data.achievements.add('Perfectionist');
+    if (data.currentStreak >= 30) {
+      data.achievements.add(AppText.achievements.unstoppable);
+    }
+    if (s.accuracy > 95) {
+      data.achievements.add(AppText.achievements.perfectionist);
+    }
   }
 }

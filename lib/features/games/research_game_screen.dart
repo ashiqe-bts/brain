@@ -4,6 +4,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 
 import '../../app/theme/brain_theme.dart';
+import '../../core/config/app_config.dart';
 import '../../core/models/brain_models.dart';
 import '../../core/training/game_catalog.dart';
 import '../../core/training/training_analytics.dart';
@@ -44,8 +45,8 @@ class _ResearchGameScreenState extends State<ResearchGameScreen>
   Timer? delayTimer;
   GameLifecycle lifecycle = GameLifecycle.countdown;
   ResearchTrial? trial;
-  int countdown = 3;
-  int timeLeft = 30;
+  int countdown = AppSettings.gameCountdownSeconds;
+  int timeLeft = AppSettings.defaultTimedSessionSeconds;
   int attempts = 0;
   int correct = 0;
   int score = 0;
@@ -74,7 +75,7 @@ class _ResearchGameScreenState extends State<ResearchGameScreen>
     WidgetsBinding.instance.addObserver(this);
     definition = gameDefinition(widget.type);
     timeLeft = definition.standardSeconds == 0
-        ? 30
+        ? AppSettings.defaultTimedSessionSeconds
         : definition.standardSeconds;
     engine = ResearchGameEngine(
       seed:
@@ -363,14 +364,14 @@ class _ResearchGameScreenState extends State<ResearchGameScreen>
           actions: [
             if (lifecycle == GameLifecycle.running)
               IconButton(
-                tooltip: 'Pause game',
+                tooltip: AppText.gameplay.pause,
                 onPressed: _pause,
                 icon: const Icon(Icons.pause_rounded),
               ),
             if (timed)
               Padding(
                 padding: const EdgeInsets.fromLTRB(8, 16, 16, 16),
-                child: Text('$timeLeft S'),
+                child: Text(AppText.secondsRemaining(timeLeft)),
               ),
           ],
         ),
@@ -396,9 +397,12 @@ class _ResearchGameScreenState extends State<ResearchGameScreen>
       children: [
         const Icon(Icons.pause_circle_outline_rounded, size: 72),
         const SizedBox(height: 16),
-        Text('Paused', style: Theme.of(context).textTheme.headlineSmall),
+        Text(
+          AppText.gameplay.paused,
+          style: Theme.of(context).textTheme.headlineSmall,
+        ),
         const SizedBox(height: 16),
-        FilledButton(onPressed: _resume, child: const Text('Resume')),
+        FilledButton(onPressed: _resume, child: Text(AppText.gameplay.resume)),
       ],
     ),
   );
@@ -413,7 +417,7 @@ class _ResearchGameScreenState extends State<ResearchGameScreen>
               ? timeLeft / max(1, definition.standardSeconds)
               : min(1, attempts / targetTrials),
           color: context.gameAccent(widget.type),
-          primaryStat: 'Score $score',
+          primaryStat: AppText.score(score),
           secondaryStat: '$correct/$attempts',
           answerCorrect: lastAnswerCorrect,
         ),
@@ -439,7 +443,7 @@ class _ResearchGameScreenState extends State<ResearchGameScreen>
         if (widget.mode == GameMode.relaxed)
           TextButton(
             onPressed: _finish,
-            child: const Text('Finish relaxed session'),
+            child: Text(AppText.gameplay.finishRelaxed),
           ),
       ],
     ),
@@ -449,16 +453,16 @@ class _ResearchGameScreenState extends State<ResearchGameScreen>
     final leave = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Leave this round?'),
-        content: const Text('This unfinished round will not be saved.'),
+        title: Text(AppText.gameplay.leaveTitle),
+        content: Text(AppText.gameplay.researchLeaveBody),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext, false),
-            child: const Text('Keep playing'),
+            child: Text(AppText.gameplay.keepPlaying),
           ),
           TextButton(
             onPressed: () => Navigator.pop(dialogContext, true),
-            child: const Text('Leave'),
+            child: Text(AppText.gameplay.leave),
           ),
         ],
       ),

@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../core/config/app_config.dart';
 import '../../core/models/brain_models.dart';
 import '../../core/state/brain_cubit.dart';
 import '../../core/training/training_analytics.dart';
@@ -48,8 +49,8 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
   final reflexWatch = Stopwatch();
   Timer? timer, delayTimer;
   GameLifecycle lifecycle = GameLifecycle.initial;
-  int countdown = 3,
-      timeLeft = 30,
+  int countdown = AppSettings.gameCountdownSeconds,
+      timeLeft = AppSettings.defaultTimedSessionSeconds,
       score = 0,
       correct = 0,
       attempts = 0,
@@ -82,7 +83,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
     trialFactory = GameTrialFactory(seed);
     colorTrials = trialFactory.colorTrials(120);
     mathTrials = trialFactory.mathTrials(widget.difficulty, count: 120);
-    timeLeft = 30;
+    timeLeft = AppSettings.defaultTimedSessionSeconds;
     if (usesResearchGame) return;
     _countdown();
   }
@@ -394,7 +395,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
               Padding(
                 padding: const EdgeInsets.all(16),
                 child: Text(
-                  '$timeLeft S',
+                  AppText.secondsRemaining(timeLeft),
                   style: TextStyle(
                     fontFamily: 'Fredoka',
                     color: context.rewardInk,
@@ -434,7 +435,10 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
         children: [
           const Icon(Icons.pause_circle_outline_rounded, size: 72),
           const SizedBox(height: 16),
-          Text('Paused', style: Theme.of(context).textTheme.headlineSmall),
+          Text(
+            AppText.gameplay.paused,
+            style: Theme.of(context).textTheme.headlineSmall,
+          ),
           const SizedBox(height: 16),
           FilledButton(
             onPressed: () {
@@ -446,7 +450,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
                 _startTimer();
               }
             },
-            child: const Text('Resume'),
+            child: Text(AppText.gameplay.resume),
           ),
         ],
       ),
@@ -461,10 +465,12 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
         children: [
           SessionHud(
             label: widget.mode.displayTitle,
-            progress: timed ? timeLeft / 30 : min(1, correct / 10),
+            progress: timed
+                ? timeLeft / AppSettings.defaultTimedSessionSeconds
+                : min(1, correct / 10),
             color: context.gameAccent(widget.type),
-            primaryStat: 'Score $score',
-            secondaryStat: 'Combo $combo',
+            primaryStat: AppText.score(score),
+            secondaryStat: AppText.combo(combo),
             answerCorrect: lastAnswerCorrect,
           ),
           const SizedBox(height: 20),
@@ -487,7 +493,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
           if (widget.mode == GameMode.relaxed)
             TextButton(
               onPressed: _finish,
-              child: const Text('Finish relaxed session'),
+              child: Text(AppText.gameplay.finishRelaxed),
             ),
         ],
       ),
@@ -526,10 +532,10 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
   );
   Widget _visualSearch() => Column(
     children: [
-      const Text('Find the target'),
+      Text(AppText.gameplay.findTarget),
       const SizedBox(height: 8),
       Semantics(
-        label: 'Target symbol',
+        label: AppText.gameplay.targetSymbol,
         child: Container(
           width: 64,
           height: 64,
@@ -555,7 +561,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
           ),
           itemCount: itemCount,
           itemBuilder: (context, i) => Semantics(
-            label: 'Search item ${i + 1}',
+            label: AppText.searchItem(i + 1),
             button: true,
             child: InkWell(
               onTap: () => _answerOdd(i),
@@ -603,16 +609,16 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
     final yes = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Leave this round?'),
-        content: const Text('Your current round progress will be lost.'),
+        title: Text(AppText.gameplay.leaveTitle),
+        content: Text(AppText.gameplay.classicLeaveBody),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Stay'),
+            child: Text(AppText.gameplay.stay),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Leave'),
+            child: Text(AppText.gameplay.leave),
           ),
         ],
       ),

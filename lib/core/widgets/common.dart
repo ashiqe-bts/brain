@@ -152,7 +152,7 @@ class ProgressMeter extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Semantics(
-    label: '$label, ${(value.clamp(0, 1) * 100).round()} percent',
+    label: AppText.percentSemantics(label, (value.clamp(0, 1) * 100).round()),
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -199,7 +199,7 @@ class SessionHud extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Semantics(
     label:
-        '$label, ${(progress.clamp(0, 1) * 100).round()} percent, $primaryStat, $secondaryStat',
+        '${AppText.percentSemantics(label, (progress.clamp(0, 1) * 100).round())}, $primaryStat, $secondaryStat',
     child: Column(
       children: [
         Row(
@@ -360,7 +360,7 @@ class BrandMark extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Semantics(
     image: true,
-    label: '${AppText.appName} focus mark',
+    label: AppText.focusMark(),
     child: SizedBox.square(
       dimension: size,
       child: CustomPaint(

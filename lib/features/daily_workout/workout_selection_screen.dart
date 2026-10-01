@@ -4,7 +4,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../app/theme/brain_theme.dart';
 import '../../app/theme/game_visuals.dart';
 import '../../core/config/app_config.dart';
-import '../../core/models/brain_models.dart';
 import '../../core/state/brain_cubit.dart';
 import '../../core/training/training_analytics.dart';
 import '../../core/widgets/common.dart';
@@ -25,7 +24,7 @@ class _WorkoutSelectionScreenState extends State<WorkoutSelectionScreen> {
     final data = context.watch<BrainCubit>().state.data;
     final baseline = baselineStatus(data.history);
     return Scaffold(
-      appBar: AppBar(title: const Text('Daily workout')),
+      appBar: AppBar(title: Text(AppText.workout.dailyWorkout)),
       body: SafeArea(
         bottom: false,
         child: ListView.builder(
@@ -34,14 +33,14 @@ class _WorkoutSelectionScreenState extends State<WorkoutSelectionScreen> {
           itemBuilder: (context, index) {
             if (index == 0) {
               return ResponsiveContent(
-                maxWidth: 820,
+                maxWidth: AppSettings.standardContentWidth,
                 child: Padding(
                   padding: const EdgeInsets.only(bottom: 18),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Build your daily mix',
+                        AppText.workout.buildMix,
                         style: Theme.of(context).textTheme.headlineMedium
                             ?.copyWith(
                               fontFamily: 'Fredoka',
@@ -50,7 +49,7 @@ class _WorkoutSelectionScreenState extends State<WorkoutSelectionScreen> {
                       ),
                       const SizedBox(height: 6),
                       Text(
-                        'Choose 5 games',
+                        AppText.workout.chooseGames,
                         style: Theme.of(context).textTheme.titleMedium
                             ?.copyWith(color: context.brain.textMuted),
                       ),
@@ -69,7 +68,7 @@ class _WorkoutSelectionScreenState extends State<WorkoutSelectionScreen> {
                           ),
                           const SizedBox(width: 12),
                           Text(
-                            '${selected.length} / ${AppSettings.workoutGameCount}',
+                            AppText.selectedGames(selected.length),
                             style: const TextStyle(fontWeight: FontWeight.w900),
                           ),
                         ],
@@ -83,7 +82,9 @@ class _WorkoutSelectionScreenState extends State<WorkoutSelectionScreen> {
                         }),
                         icon: const Icon(Icons.auto_awesome_rounded),
                         label: Text(
-                          selected.isEmpty ? 'Random 5' : 'Reshuffle 5',
+                          selected.isEmpty
+                              ? AppText.workout.randomFive
+                              : AppText.workout.reshuffleFive,
                         ),
                       ),
                     ],
@@ -97,7 +98,9 @@ class _WorkoutSelectionScreenState extends State<WorkoutSelectionScreen> {
             final progress = baseline.forGame(game);
             return Center(
               child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 820),
+                constraints: const BoxConstraints(
+                  maxWidth: AppSettings.standardContentWidth,
+                ),
                 child: Padding(
                   padding: const EdgeInsets.only(bottom: 6),
                   child: Material(
@@ -108,8 +111,12 @@ class _WorkoutSelectionScreenState extends State<WorkoutSelectionScreen> {
                     child: Semantics(
                       selected: chosen,
                       button: true,
-                      label:
-                          '${game.title}, ${game.domain}, level ${data.difficulties[game.name] ?? 1}, baseline ${progress.completed} of 3',
+                      label: AppText.gameSelectionSemantics(
+                        title: game.title,
+                        domain: game.domain,
+                        level: data.difficulties[game.name] ?? 1,
+                        baseline: progress.completed,
+                      ),
                       child: CheckboxListTile(
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16),
@@ -130,7 +137,11 @@ class _WorkoutSelectionScreenState extends State<WorkoutSelectionScreen> {
                           style: const TextStyle(fontWeight: FontWeight.w800),
                         ),
                         subtitle: Text(
-                          '${game.domain} · Level ${data.difficulties[game.name] ?? 1} · Baseline ${progress.completed}/3',
+                          AppText.gameSelectionSubtitle(
+                            domain: game.domain,
+                            level: data.difficulties[game.name] ?? 1,
+                            baseline: progress.completed,
+                          ),
                         ),
                       ),
                     ),
@@ -155,7 +166,9 @@ class _WorkoutSelectionScreenState extends State<WorkoutSelectionScreen> {
             child: Align(
               heightFactor: 1,
               child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 820),
+                constraints: const BoxConstraints(
+                  maxWidth: AppSettings.standardContentWidth,
+                ),
                 child: PrimaryAction(
                   expanded: true,
                   color: context.brain.success,
@@ -163,7 +176,7 @@ class _WorkoutSelectionScreenState extends State<WorkoutSelectionScreen> {
                       ? _start
                       : null,
                   icon: Icons.play_arrow_rounded,
-                  label: 'Start workout',
+                  label: AppText.workout.start,
                 ),
               ),
             ),

@@ -35,7 +35,10 @@ class _ProgressScreenState extends State<ProgressScreen> {
     final domains = activeGames.map((game) => game.skill).toSet().toList();
     _initializeOverview(data.history);
     return Scaffold(
-      appBar: AppBar(toolbarHeight: 70, title: const Text('Insights')),
+      appBar: AppBar(
+        toolbarHeight: 70,
+        title: Text(AppText.navigation.insights),
+      ),
       body: SafeArea(
         bottom: false,
         child: ListView(
@@ -43,22 +46,24 @@ class _ProgressScreenState extends State<ProgressScreen> {
           children: [
             Center(
               child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 820),
+                constraints: const BoxConstraints(
+                  maxWidth: AppSettings.standardContentWidth,
+                ),
                 child: Column(
                   children: [
                     _baseline(context, baseline),
-                    const SectionHeader('Combined progress'),
+                    SectionHeader(AppText.progress.combined),
                     _overviewChart(context, data),
-                    const SectionHeader('Fifteen-game profile'),
+                    SectionHeader(AppText.progress.profile),
                     Semantics(
-                      label: 'Filter insights by cognitive domain',
+                      label: AppText.progress.filterSemantics,
                       child: Wrap(
                         alignment: WrapAlignment.center,
                         spacing: 8,
                         runSpacing: 8,
                         children: [
                           FilterChip(
-                            label: const Text('All'),
+                            label: Text(AppText.train.all),
                             selected: selectedDomain == null,
                             onSelected: (_) =>
                                 setState(() => selectedDomain = null),
@@ -88,17 +93,17 @@ class _ProgressScreenState extends State<ProgressScreen> {
                               ),
                             ),
                       ],
-                    const SectionHeader('Weekly review'),
+                    SectionHeader(AppText.progress.weeklyReview),
                     _weeklyReview(context, review, baseline.isComplete),
-                    const SectionHeader('Recent sessions'),
+                    SectionHeader(AppText.progress.recentSessions),
                     _history(context, data),
-                    const SectionHeader('Activity calendar'),
+                    SectionHeader(AppText.progress.activityCalendar),
                     AppCard(child: _calendar(context, data)),
-                    const SectionHeader('Achievements'),
+                    SectionHeader(AppText.progress.achievements),
                     _achievements(context, data),
                     const SizedBox(height: 16),
-                    const Text(
-                      'BrainFlex measures practice performance in these tasks. It does not measure IQ, diagnose a condition, or prove changes in everyday cognition.',
+                    Text(
+                      AppText.progress.disclaimer,
                       textAlign: TextAlign.center,
                     ),
                   ],
@@ -138,13 +143,13 @@ class _ProgressScreenState extends State<ProgressScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Compare games on the shared training-level scale',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
+          Text(
+            AppText.progress.compareScale,
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
           ),
           const SizedBox(height: 6),
           Text(
-            'Select up to five games. Lines are separate—BrainFlex does not average them into an overall score.',
+            AppText.progress.selectGames,
             style: TextStyle(color: context.brain.textMuted),
           ),
           const SizedBox(height: 12),
@@ -179,7 +184,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
           ),
           const SizedBox(height: 14),
           ProgressLineChart(
-            valueLabel: 'Training level',
+            valueLabel: AppText.metricTrainingLevel,
             minimum: 1,
             maximum: 10,
             series: [
@@ -218,8 +223,11 @@ class _ProgressScreenState extends State<ProgressScreen> {
             Expanded(
               child: Text(
                 baseline.isComplete
-                    ? 'All game baselines complete'
-                    : '${baseline.readyGames} of ${activeGames.length} game baselines ready',
+                    ? AppText.progress.allBaselines
+                    : AppText.baselineReady(
+                        baseline.readyGames,
+                        activeGames.length,
+                      ),
                 style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w900,
@@ -233,8 +241,8 @@ class _ProgressScreenState extends State<ProgressScreen> {
         const SizedBox(height: 10),
         Text(
           baseline.isComplete
-              ? 'Trends use comparable, versioned sessions and rolling medians.'
-              : '${baseline.remaining} compatible game round${baseline.remaining == 1 ? '' : 's'} remain. Individual games unlock after three official results.',
+              ? AppText.progress.trendMethod
+              : AppText.baselineRemaining(baseline.remaining),
         ),
       ],
     ),
@@ -260,15 +268,21 @@ class _ProgressScreenState extends State<ProgressScreen> {
           );
     final latest = eligible.firstOrNull;
     final (icon, label) = switch (trend.direction) {
-      TrendDirection.improving => (Icons.trending_up_rounded, 'Improving'),
+      TrendDirection.improving => (
+        Icons.trending_up_rounded,
+        AppText.progress.improving,
+      ),
       TrendDirection.needsAttention => (
         Icons.trending_down_rounded,
-        'Needs attention',
+        AppText.progress.needsAttention,
       ),
-      TrendDirection.stable => (Icons.trending_flat_rounded, 'Steady'),
+      TrendDirection.stable => (
+        Icons.trending_flat_rounded,
+        AppText.progress.steady,
+      ),
       TrendDirection.insufficient => (
         Icons.more_horiz_rounded,
-        'More sessions needed',
+        AppText.progress.moreNeeded,
       ),
     };
     return Padding(
@@ -293,13 +307,13 @@ class _ProgressScreenState extends State<ProgressScreen> {
                         ),
                       ),
                       Text(
-                        '${game.domain} · ${trend.samples} comparable sessions',
+                        AppText.comparableDomain(game.domain, trend.samples),
                       ),
                     ],
                   ),
                 ),
                 IconButton(
-                  tooltip: 'Research basis for ${game.title}',
+                  tooltip: AppText.researchFor(game.title),
                   onPressed: () => showResearchBasisSheet(context, game),
                   icon: const Icon(Icons.science_outlined),
                 ),
@@ -321,19 +335,30 @@ class _ProgressScreenState extends State<ProgressScreen> {
             const SizedBox(height: 12),
             Text(
               latest == null
-                  ? 'No comparable result yet'
-                  : 'Training level ${trainingLevel(difficulty: latest.difficulty, score: latest.normalized).toStringAsFixed(1)} · ${(latest.accuracy * 100).round()}% accuracy${_metric(latest)}',
+                  ? AppText.progress.noResult
+                  : AppText.trainingResult(
+                      trainingLevel(
+                        difficulty: latest.difficulty,
+                        score: latest.normalized,
+                      ).toStringAsFixed(1),
+                      (latest.accuracy * 100).round(),
+                      _metric(latest),
+                    ),
             ),
             if (trend.direction != TrendDirection.insufficient)
               Text(
-                '${trend.delta >= 0 ? '+' : ''}${trend.delta.toStringAsFixed(1)} levels from your baseline median',
+                AppText.trendDelta(
+                  '${trend.delta >= 0 ? '+' : ''}${trend.delta.toStringAsFixed(1)}',
+                ),
               ),
             if (eligible.isNotEmpty) ...[
               const SizedBox(height: 10),
               ProgressSparkline(
                 color: context.gameAccent(game),
-                semanticLabel:
-                    '${game.title} training level history with ${eligible.length} comparable sessions',
+                semanticLabel: AppText.chartSemantics(
+                  game.title,
+                  eligible.length,
+                ),
                 points: [
                   for (final result
                       in eligible.reversed
@@ -346,8 +371,12 @@ class _ProgressScreenState extends State<ProgressScreen> {
                         difficulty: result.difficulty,
                         score: result.normalized,
                       ),
-                      label:
-                          'Level ${trainingLevel(difficulty: result.difficulty, score: result.normalized).toStringAsFixed(1)}',
+                      label: AppText.level(
+                        trainingLevel(
+                          difficulty: result.difficulty,
+                          score: result.normalized,
+                        ).toStringAsFixed(1),
+                      ),
                     ),
                 ],
               ),
@@ -362,7 +391,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
                   ),
                 ),
                 icon: const Icon(Icons.show_chart_rounded),
-                label: const Text('View details'),
+                label: Text(AppText.progress.viewDetails),
               ),
             ),
           ],
@@ -371,21 +400,12 @@ class _ProgressScreenState extends State<ProgressScreen> {
     );
   }
 
-  String _domainLabel(SkillDomain domain) => switch (domain) {
-    SkillDomain.focus => 'Focus and attention',
-    SkillDomain.calculation => 'Calculation',
-    SkillDomain.memory => 'Memory',
-    SkillDomain.reaction => 'Reaction',
-    SkillDomain.visualSearch => 'Visual search',
-    SkillDomain.executiveControl => 'Executive control',
-    SkillDomain.processingSpeed => 'Processing speed',
-    SkillDomain.reasoning => 'Reasoning and planning',
-    SkillDomain.spatial => 'Spatial reasoning',
-  };
+  String _domainLabel(SkillDomain domain) =>
+      AppText.skillDomainLabels[domain.name]!;
 
   String _metric(GameResult result) {
     if (result.type == GameType.reflexTap && result.reactionMs != null) {
-      return ' · ${result.reactionMs} ms median';
+      return AppText.medianMilliseconds(result.reactionMs!);
     }
     return gameDefinition(result.type).rawMetricFormatter(result.metrics);
   }
@@ -399,19 +419,21 @@ class _ProgressScreenState extends State<ProgressScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          '${review.workouts} workout${review.workouts == 1 ? '' : 's'} in the last 7 days',
+          AppText.weeklyWorkouts(review.workouts),
           style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
         ),
         const SizedBox(height: 8),
         Text(
           baselineReady
-              ? 'Next week, prioritize ${review.recommendations.map((item) => item.game.domain).join(' and ')}.'
-              : 'Recommendations unlock after all per-game baselines are ready.',
+              ? AppText.nextWeek(
+                  review.recommendations
+                      .map((item) => item.game.domain)
+                      .join(' and '),
+                )
+              : AppText.progress.recommendationsLocked,
         ),
         const SizedBox(height: 8),
-        const Text(
-          'A single fast or slow day is normal. BrainFlex waits for repeated comparable results before labeling a trend.',
-        ),
+        Text(AppText.progress.naturalVariation),
       ],
     ),
   );
@@ -424,11 +446,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
         ),
       );
     if (recent.isEmpty) {
-      return const AppCard(
-        child: Text(
-          'Complete a Standard or daily session to start your history.',
-        ),
-      );
+      return AppCard(child: Text(AppText.progress.emptyHistory));
     }
     return AppCard(
       child: Column(
@@ -439,7 +457,12 @@ class _ProgressScreenState extends State<ProgressScreen> {
             leading: GameIcon(game: result.type, decorated: true),
             title: Text(result.type.title),
             subtitle: Text(
-              '${result.mode.displayTitle} · ${time == null ? 'Earlier version' : DateFormat.MMMd().add_jm().format(time)}',
+              AppText.sessionSubtitle(
+                result.mode.displayTitle,
+                time == null
+                    ? AppText.progress.earlierVersion
+                    : DateFormat.MMMd().add_jm().format(time),
+              ),
             ),
             trailing: Text(
               trainingLevel(
@@ -464,7 +487,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
         Row(
           children: [
             IconButton(
-              tooltip: 'Previous month',
+              tooltip: AppText.progress.previousMonth,
               onPressed: () => setState(() => monthOffset--),
               icon: const Icon(Icons.chevron_left),
             ),
@@ -476,7 +499,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
               ),
             ),
             IconButton(
-              tooltip: 'Next month',
+              tooltip: AppText.progress.nextMonth,
               onPressed: monthOffset < 0
                   ? () => setState(() => monthOffset++)
                   : null,
@@ -486,7 +509,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
         ),
         Row(
           children: [
-            for (final label in ['M', 'T', 'W', 'T', 'F', 'S', 'S'])
+            for (final label in AppText.calendarWeekdays)
               Expanded(child: Text(label, textAlign: TextAlign.center)),
           ],
         ),
@@ -505,7 +528,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
             final complete = data.daily.any((summary) => summary.date == date);
             final today = date == localDate();
             return Semantics(
-              label: '$date, ${complete ? 'workout complete' : 'no workout'}',
+              label: AppText.calendarDay(date, complete),
               child: Container(
                 margin: const EdgeInsets.all(3),
                 alignment: Alignment.center,
@@ -531,15 +554,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
   }
 
   Widget _achievements(BuildContext context, BrainState data) {
-    const all = {
-      'First Spark': 'Complete your first workout',
-      'One Week Strong': 'Maintain a 7-day streak',
-      'Lightning Fingers': 'React in under 250 ms',
-      'Memory Machine': 'Perfect five Memory Tiles rounds',
-      'Math Wizard': 'Get 25 Calculation answers correct',
-      'Unstoppable': 'Reach a 30-day streak',
-      'Perfectionist': 'Finish a workout above 95% accuracy',
-    };
+    const all = AppText.achievementDescriptions;
     return AppCard(
       child: Column(
         children: all.entries.map((entry) {
@@ -551,7 +566,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
             ),
             title: Text(entry.key),
             subtitle: Text(entry.value),
-            trailing: earned ? const Text('Complete') : null,
+            trailing: earned ? Text(AppText.progress.complete) : null,
           );
         }).toList(),
       ),

@@ -161,7 +161,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         child: ConstrainedBox(
           constraints: BoxConstraints(minHeight: constraints.maxHeight - 48),
           child: ResponsiveContent(
-            maxWidth: 1080,
+            maxWidth: AppSettings.onboardingContentWidth,
             child: wide
                 ? Row(
                     children: [
@@ -240,11 +240,11 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     child: TextFormField(
       controller: nameController,
       autofocus: true,
-      maxLength: 30,
+      maxLength: AppSettings.maximumDisplayNameCharacters,
       textInputAction: TextInputAction.done,
-      decoration: const InputDecoration(
-        labelText: 'Your name',
-        hintText: 'Enter a display name',
+      decoration: InputDecoration(
+        labelText: AppText.settings.yourName,
+        hintText: AppText.enterDisplayName,
       ),
       autovalidateMode: AutovalidateMode.onUserInteraction,
       validator: (value) => displayNameError(value ?? ''),
@@ -297,7 +297,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   Widget _navigation() => Padding(
     padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
     child: ResponsiveContent(
-      maxWidth: 620,
+      maxWidth: AppSettings.narrowContentWidth,
       child: Row(
         children: [
           TextButton.icon(

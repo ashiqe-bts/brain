@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../app/theme/brain_theme.dart';
 import '../../app/theme/game_visuals.dart';
+import '../../core/config/app_config.dart';
 import '../../core/models/brain_models.dart';
 import '../../core/state/brain_cubit.dart';
 import '../../core/training/game_catalog.dart';
@@ -14,7 +15,7 @@ class SessionResultScreen extends StatefulWidget {
   const SessionResultScreen({
     super.key,
     required this.result,
-    this.actionLabel = 'Back to Train',
+    this.actionLabel = AppText.backToTrain,
   });
 
   final GameResult result;
@@ -55,14 +56,14 @@ class _SessionResultScreenState extends State<SessionResultScreen> {
     return Scaffold(
       appBar: AppBar(
         automaticallyImplyLeading: false,
-        title: const Text('Session review'),
+        title: Text(AppText.workout.sessionReview),
       ),
       body: SafeArea(
         bottom: false,
         child: ListView(
           padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
           children: [
-            const PageEyebrow('Round complete'),
+            PageEyebrow(AppText.results.roundComplete),
             const SizedBox(height: 14),
             Center(
               child: GameIcon(
@@ -83,7 +84,7 @@ class _SessionResultScreenState extends State<SessionResultScreen> {
             const SizedBox(height: 6),
             Text(
               widget.result.mode == GameMode.relaxed
-                  ? 'Relaxed practice · excluded from progress trends'
+                  ? AppText.results.relaxed
                   : selfComparisonMessage(
                       comparison,
                       currentAt: widget.result.completedAt ?? DateTime.now(),
@@ -96,7 +97,7 @@ class _SessionResultScreenState extends State<SessionResultScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const PageEyebrow('Current result'),
+                  PageEyebrow(AppText.results.current),
                   const SizedBox(height: 8),
                   Text(
                     selectedMetric.formatValue(widget.result),
@@ -112,15 +113,15 @@ class _SessionResultScreenState extends State<SessionResultScreen> {
                     runSpacing: 10,
                     children: [
                       _ComparisonTile(
-                        label: 'Previous',
+                        label: AppText.results.previous,
                         value: previous == null
-                            ? 'Not available'
+                            ? AppText.results.unavailable
                             : selectedMetric.formatValue(previous),
                       ),
                       _ComparisonTile(
-                        label: 'Baseline median',
+                        label: AppText.results.baselineMedian,
                         value: baseline == null
-                            ? 'After 3 daily results'
+                            ? AppText.afterBaselineResults()
                             : _formatNumber(baseline),
                       ),
                     ],
@@ -128,7 +129,7 @@ class _SessionResultScreenState extends State<SessionResultScreen> {
                 ],
               ),
             ),
-            const SectionHeader('Progress graph'),
+            SectionHeader(AppText.results.progressGraph),
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               child: Row(
@@ -152,13 +153,13 @@ class _SessionResultScreenState extends State<SessionResultScreen> {
                 valueLabel: selectedMetric.label,
                 minimum:
                     selectedMetric.key == GameMetricDefinition.trainingLevelKey
-                    ? 1
+                    ? AppSettings.minimumDifficulty.toDouble()
                     : selectedMetric.percent
                     ? 0
                     : null,
                 maximum:
                     selectedMetric.key == GameMetricDefinition.trainingLevelKey
-                    ? 10
+                    ? AppSettings.maximumDifficulty.toDouble()
                     : selectedMetric.percent
                     ? 100
                     : null,
@@ -174,8 +175,8 @@ class _SessionResultScreenState extends State<SessionResultScreen> {
                           label: selectedMetric.formatValue(point.result),
                           note: !point.includedInTrend
                               ? widget.result.mode == GameMode.relaxed
-                                    ? 'Relaxed, excluded from trend'
-                                    : 'Challenge, excluded from trend'
+                                    ? AppText.results.relaxedNote
+                                    : AppText.results.challengeNote
                               : null,
                         ),
                     ],
@@ -183,7 +184,7 @@ class _SessionResultScreenState extends State<SessionResultScreen> {
                 ],
               ),
             ),
-            const SectionHeader('All measured skills'),
+            SectionHeader(AppText.results.measuredSkills),
             Wrap(
               spacing: 10,
               runSpacing: 10,
@@ -224,7 +225,9 @@ class _SessionResultScreenState extends State<SessionResultScreen> {
             child: Align(
               heightFactor: 1,
               child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 760),
+                constraints: const BoxConstraints(
+                  maxWidth: AppSettings.resultContentWidth,
+                ),
                 child: PrimaryAction(
                   expanded: true,
                   color: context.brain.success,
@@ -265,9 +268,12 @@ class _SessionResultScreenState extends State<SessionResultScreen> {
             )
             .toList()
           ..sort((a, b) => a.completedAt!.compareTo(b.completedAt!));
-    if (values.length < 3) return null;
+    if (values.length < AppSettings.baselineSessionCount) return null;
     final first =
-        values.take(3).map((result) => selectedMetric.value(result)!).toList()
+        values
+            .take(AppSettings.baselineSessionCount)
+            .map((result) => selectedMetric.value(result)!)
+            .toList()
           ..sort();
     return first.length.isOdd
         ? first[first.length ~/ 2]
@@ -340,9 +346,9 @@ class _MetricTile extends StatelessWidget {
         ),
         const SizedBox(height: 2),
         Text(switch (direction) {
-          MetricDirection.higherIsBetter => 'Higher is better',
-          MetricDirection.lowerIsBetter => 'Lower is better',
-          MetricDirection.neutral => 'Context measure',
+          MetricDirection.higherIsBetter => AppText.results.higherBetter,
+          MetricDirection.lowerIsBetter => AppText.results.lowerBetter,
+          MetricDirection.neutral => AppText.results.contextMeasure,
         }, style: Theme.of(context).textTheme.labelSmall),
       ],
     ),

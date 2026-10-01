@@ -3,7 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../app/theme/brain_theme.dart';
 import '../../app/theme/game_visuals.dart';
-import '../../core/models/brain_models.dart';
+import '../../core/config/app_config.dart';
 import '../../core/state/brain_cubit.dart';
 import '../../core/training/game_catalog.dart';
 import '../../core/training/training_analytics.dart';
@@ -47,7 +47,7 @@ class _GameInsightScreenState extends State<GameInsightScreen> {
     );
     final baseline = baselineStatus(data.history).forGame(widget.game);
     return Scaffold(
-      appBar: AppBar(title: Text('${widget.game.title} insights')),
+      appBar: AppBar(title: Text(AppText.gameInsights(widget.game.title))),
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.all(20),
@@ -70,14 +70,17 @@ class _GameInsightScreenState extends State<GameInsightScreen> {
                         style: Theme.of(context).textTheme.titleLarge,
                       ),
                       Text(
-                        '${trend.samples} comparable sessions · Baseline ${baseline.completed}/3',
+                        AppText.insightSummary(
+                          trend.samples,
+                          baseline.completed,
+                        ),
                       ),
                     ],
                   ),
                 ),
               ],
             ),
-            const SectionHeader('Metric'),
+            SectionHeader(AppText.progress.metric),
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               child: Row(
@@ -132,15 +135,14 @@ class _GameInsightScreenState extends State<GameInsightScreen> {
               tonal: true,
               child: Text(
                 trend.direction == TrendDirection.insufficient
-                    ? 'Complete at least three post-baseline comparable sessions before BrainFlex labels a direction.'
-                    : '${trend.delta >= 0 ? '+' : ''}${trend.delta.toStringAsFixed(1)} levels from your baseline median. Rolling medians reduce the effect of one unusually fast or slow day.',
+                    ? AppText.progress.insufficientTrend
+                    : AppText.trendExplanation(
+                        '${trend.delta >= 0 ? '+' : ''}${trend.delta.toStringAsFixed(1)}',
+                      ),
               ),
             ),
             const SizedBox(height: 16),
-            const Text(
-              'Charts describe performance in this practiced task and are not a medical or IQ assessment.',
-              textAlign: TextAlign.center,
-            ),
+            Text(AppText.progress.chartDisclaimer, textAlign: TextAlign.center),
           ],
         ),
       ),

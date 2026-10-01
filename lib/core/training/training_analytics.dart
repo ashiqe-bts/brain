@@ -13,7 +13,8 @@ class BaselineStatus {
 
   int get completedRounds =>
       games.values.fold(0, (sum, item) => sum + item.completed);
-  int get requiredRounds => activeGames.length * 3;
+  int get requiredRounds =>
+      activeGames.length * AppSettings.baselineSessionCount;
   int get completed => completedRounds;
   int get required => requiredRounds;
   int get remaining => max(0, requiredRounds - completedRounds);
@@ -30,7 +31,7 @@ class GameBaselineStatus {
   const GameBaselineStatus({required this.completed});
 
   final int completed;
-  int get required => 3;
+  int get required => AppSettings.baselineSessionCount;
   int get remaining => max(0, required - completed);
   bool get isComplete => completed >= required;
 }
@@ -103,7 +104,7 @@ List<ProgressPoint> progressPoints({
   required GameMetricDefinition metric,
   required Iterable<GameResult> history,
   GameResult? currentOverlay,
-  int limit = 30,
+  int limit = AppSettings.maximumChartResults,
 }) {
   final comparable =
       history
@@ -147,7 +148,7 @@ String selfComparisonMessage(
   required DateTime currentAt,
 }) {
   final change = comparison.previousDelta;
-  if (change == null) return 'This is your personal starting point.';
+  if (change == null) return AppText.analytics.startingPoint;
   final previousAt = comparison.previousCompletedAt;
   final currentDay = DateTime(currentAt.year, currentAt.month, currentAt.day);
   final previousDay = previousAt == null
@@ -155,13 +156,14 @@ String selfComparisonMessage(
       : DateTime(previousAt.year, previousAt.month, previousAt.day);
   final yesterday =
       previousDay != null && currentDay.difference(previousDay).inDays == 1;
-  final reference = yesterday ? 'yesterday' : 'your last run';
-  if (change.abs() <= .05) return 'Matched $reference.';
+  final reference = yesterday
+      ? AppText.analytics.yesterday
+      : AppText.analytics.lastRun;
+  if (change.abs() <= .05) return AppText.matched(reference);
   if (change > 0) {
-    return 'Better than $reference by ${change.toStringAsFixed(1)} levels.';
+    return AppText.betterThan(reference, change.toStringAsFixed(1));
   }
-  return '${change.abs().toStringAsFixed(1)} levels below $reference. '
-      'One session naturally varies.';
+  return AppText.below(reference, change.abs().toStringAsFixed(1));
 }
 
 BaselineStatus baselineStatus(Iterable<Object> source) {
@@ -174,7 +176,7 @@ BaselineStatus baselineStatus(Iterable<Object> source) {
       for (final game in activeGames)
         game: GameBaselineStatus(
           completed: min(
-            3,
+            AppSettings.baselineSessionCount,
             results
                 .where(
                   (result) =>
@@ -362,13 +364,13 @@ WeeklyReview weeklyReview({
     workouts: workouts,
     trends: trends,
     recommendations: ranked
-        .take(2)
+        .take(AppSettings.weeklyRecommendationCount)
         .map(
           (game) => ReviewRecommendation(
             game: game,
-            reason: trends[game]!.samples < 3
-                ? 'Build more comparable history'
-                : 'Prioritize the weaker rolling trend',
+            reason: trends[game]!.samples < AppSettings.trendWindowSize
+                ? AppText.analytics.buildHistory
+                : AppText.analytics.weakerTrend,
           ),
         )
         .toList(),
@@ -377,45 +379,15 @@ WeeklyReview weeklyReview({
 
 String sessionTip(GameResult result) {
   if (result.accuracy < .75) {
-    return 'Prioritize accuracy before speed on the next comparable round.';
+    return AppText.analytics.accuracyTip;
   }
   return switch (result.type) {
-    GameType.colorClash =>
-      'Keep naming the ink color silently before choosing an answer.',
-    GameType.mathBlitz =>
-      'Check the operation first, then estimate before calculating exactly.',
-    GameType.memoryTiles =>
-      'Group nearby tiles into small shapes instead of memorizing one by one.',
     GameType.reflexTap =>
       result.metrics['falseStarts'] != null &&
               result.metrics['falseStarts']! > 0
-          ? 'Wait for the full signal; false starts matter more than raw speed.'
-          : 'Keep your finger relaxed and compare results on the same device.',
-    GameType.visualSearch =>
-      'Scan in a consistent path instead of jumping randomly around the grid.',
-    GameType.signalStop =>
-      'Prioritize successful stops; fast go responses only help when control stays accurate.',
-    GameType.peripheralFocus =>
-      'Keep your gaze centered and use peripheral vision instead of chasing the target.',
-    GameType.nBackNavigator =>
-      'Update one position at a time instead of rehearsing the whole sequence.',
-    GameType.ruleSwitch =>
-      'Read the rule cue before the item, especially immediately after a switch.',
-    GameType.arrowGuard =>
-      'Anchor attention on the center arrow and let the surrounding arrows blur.',
-    GameType.pairLink =>
-      'Create a quick mental connection between each pair before recall begins.',
-    GameType.symbolSprint =>
-      'Check the key before answering; accuracy builds speed more reliably than guessing.',
-    GameType.objectTracker =>
-      'Spread attention across the targets instead of following only one object.',
-    GameType.towerPlanner => 'Plan the first two moves before touching a disk.',
-    GameType.dualTaskDash =>
-      'Use a steady rhythm and protect accuracy on both tasks.',
-    GameType.logicSeries =>
-      'Look for one changing feature at a time before combining rules.',
-    GameType.spatialRotation =>
-      'Choose one distinctive corner and mentally track it through the rotation.',
+          ? AppText.analytics.reflexWait
+          : AppText.analytics.reflexRelax,
+    _ => AppText.sessionTips[result.type.name]!,
   };
 }
 

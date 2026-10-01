@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../app/theme/brain_theme.dart';
+import '../../core/config/app_config.dart';
 import '../../core/widgets/common.dart';
 import 'game_engine.dart';
 import 'tutorial_guide.dart';
@@ -26,11 +27,13 @@ class ColorClashBoard extends StatelessWidget {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        const Text('Tap the INK color, not the word'),
+        Text(gameContent[GameType.colorClash]!.instructions),
         const SizedBox(height: 20),
         Semantics(
-          label:
-              'Game stimulus: word ${colorNames[trial.wordIndex]} in ${colorNames[trial.colorIndex]} ink',
+          label: AppText.colorStimulus(
+            colorNames[trial.wordIndex],
+            colorNames[trial.colorIndex],
+          ),
           child: Text(
             colorNames[trial.wordIndex],
             style: TextStyle(
@@ -82,10 +85,10 @@ class MathBlitzBoard extends StatelessWidget {
   Widget build(BuildContext context) => Column(
     mainAxisAlignment: MainAxisAlignment.center,
     children: [
-      const Text('Is this equation correct?'),
+      Text(gameContent[GameType.mathBlitz]!.instructions),
       const SizedBox(height: 28),
       Semantics(
-        label: 'Game stimulus: ${trial.expression}',
+        label: AppText.gameStimulus(trial.expression),
         child: Text(
           trial.expression,
           textAlign: TextAlign.center,
@@ -103,7 +106,7 @@ class MathBlitzBoard extends StatelessWidget {
                 color: context.brain.success,
                 onPressed: () => onAnswer(true),
                 icon: Icons.check_rounded,
-                label: 'TRUE',
+                label: AppText.gameplay.trueLabel,
               ),
             ),
           ),
@@ -116,7 +119,7 @@ class MathBlitzBoard extends StatelessWidget {
                 color: context.brain.danger,
                 onPressed: () => onAnswer(false),
                 icon: Icons.close_rounded,
-                label: 'FALSE',
+                label: AppText.gameplay.falseLabel,
               ),
             ),
           ),
