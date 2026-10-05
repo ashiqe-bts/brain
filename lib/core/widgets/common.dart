@@ -247,31 +247,47 @@ class SessionHud extends StatelessWidget {
                   ),
                 ),
               ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-                decoration: BoxDecoration(
-                  color: color,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Text(
-                  primaryStat,
-                  style: TextStyle(
-                    color: context.onColor(color),
-                    fontWeight: FontWeight.w900,
+            ],
+          ),
+          const SizedBox(height: 7),
+          Row(
+            children: [
+              Flexible(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 9,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: color,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Text(
+                    primaryStat,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: context.onColor(color),
+                      fontWeight: FontWeight.w900,
+                    ),
                   ),
                 ),
               ),
               const SizedBox(width: 8),
-              AnimatedSwitcher(
-                duration: MediaQuery.disableAnimationsOf(context)
-                    ? Duration.zero
-                    : const Duration(milliseconds: 180),
-                child: Text(
-                  secondaryStat,
-                  key: ValueKey(secondaryStat),
-                  style: TextStyle(
-                    color: context.brain.textMuted,
-                    fontWeight: FontWeight.w800,
+              Flexible(
+                child: AnimatedSwitcher(
+                  duration: MediaQuery.disableAnimationsOf(context)
+                      ? Duration.zero
+                      : const Duration(milliseconds: 180),
+                  child: Text(
+                    secondaryStat,
+                    key: ValueKey(secondaryStat),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: context.brain.textMuted,
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
                 ),
               ),

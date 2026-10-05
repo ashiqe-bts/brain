@@ -47,6 +47,7 @@ void main() {
 
     expect(find.byKey(roundCelebrationKey), findsOneWidget);
     expect(find.byKey(dailyCelebrationKey), findsOneWidget);
+    expect(find.byKey(completionBadgeKey), findsNWidgets(2));
     expect(
       tester.widget<IgnorePointer>(find.byKey(roundCelebrationKey)).ignoring,
       isTrue,

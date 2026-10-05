@@ -389,7 +389,12 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
       },
       child: Scaffold(
         appBar: AppBar(
-          title: Text(widget.type.title, style: const TextStyle(fontSize: 20)),
+          title: Text(
+            widget.type.title,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(fontSize: 20),
+          ),
           actions: [
             if (timed)
               Padding(

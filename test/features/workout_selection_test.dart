@@ -4,6 +4,7 @@ import 'package:brainflex/core/state/brain_cubit.dart';
 import 'package:brainflex/core/storage/app_database.dart';
 import 'package:brainflex/core/storage/brain_repository.dart';
 import 'package:brainflex/features/daily_workout/workout_selection_screen.dart';
+import 'package:brainflex/app/theme/game_visuals.dart';
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -88,6 +89,7 @@ void main() {
       expect(find.text('Choose 5 games'), findsOneWidget);
       expect(find.text('Start workout'), findsOneWidget);
       expect(find.text('0 / 5'), findsOneWidget);
+      expect(find.byType(GameThumbnail), findsWidgets);
       expect(tester.takeException(), isNull);
     },
   );

@@ -10,6 +10,7 @@ const gameStageKey = Key('game-stage');
 const roundCelebrationKey = Key('round-celebration');
 const dailyCelebrationKey = Key('daily-celebration');
 const stillCelebrationKey = Key('still-celebration');
+const completionBadgeKey = Key('completion-badge');
 
 class GameStage extends StatelessWidget {
   const GameStage({
@@ -254,21 +255,71 @@ class _CelebrationOverlayState extends State<CelebrationOverlay>
               )
             : AnimatedBuilder(
                 animation: controller,
-                builder: (context, _) => CustomPaint(
-                  painter: _ConfettiPainter(
-                    progress: controller.value,
-                    daily: daily,
-                    colors: [
-                      context.brain.reward,
-                      context.brain.primary,
-                      context.brain.secondary,
-                      context.brain.success,
-                      context.brain.danger,
+                builder: (context, _) {
+                  final entrance = Curves.easeOutBack.transform(
+                    (controller.value / .28).clamp(0, 1),
+                  );
+                  final exit = ((1 - controller.value) / .22)
+                      .clamp(0.0, 1.0)
+                      .toDouble();
+                  return Stack(
+                    children: [
+                      Positioned.fill(
+                        child: CustomPaint(
+                          painter: _ConfettiPainter(
+                            progress: controller.value,
+                            daily: daily,
+                            colors: [
+                              context.brain.reward,
+                              context.brain.primary,
+                              context.brain.secondary,
+                              context.brain.success,
+                              context.brain.danger,
+                            ],
+                            outlined: context.brain.background == Colors.black,
+                          ),
+                        ),
+                      ),
+                      Center(
+                        child: Opacity(
+                          opacity: math.min(1.0, math.min(entrance, exit)),
+                          child: Transform.scale(
+                            scale: .72 + entrance * .28,
+                            child: Container(
+                              key: completionBadgeKey,
+                              width: daily ? 112 : 88,
+                              height: daily ? 112 : 88,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: context.brain.surface,
+                                border: Border.all(
+                                  color: context.brain.reward,
+                                  width: 4,
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: context.brain.reward.withValues(
+                                      alpha: .42,
+                                    ),
+                                    blurRadius: 22,
+                                    spreadRadius: 4,
+                                  ),
+                                ],
+                              ),
+                              child: Icon(
+                                daily
+                                    ? Icons.emoji_events_rounded
+                                    : Icons.check_rounded,
+                                size: daily ? 58 : 48,
+                                color: context.brain.reward,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
                     ],
-                    outlined: context.brain.background == Colors.black,
-                  ),
-                  child: const SizedBox.expand(),
-                ),
+                  );
+                },
               ),
       ),
     );

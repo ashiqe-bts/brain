@@ -2,10 +2,13 @@ import 'dart:async';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../app/theme/brain_theme.dart';
 import '../../core/config/app_config.dart';
 import '../../core/models/brain_models.dart';
+import '../../core/state/brain_cubit.dart';
 import '../../core/training/game_catalog.dart';
 import '../../core/training/training_analytics.dart';
 import '../../core/widgets/common.dart';
@@ -205,6 +208,13 @@ class _ResearchGameScreenState extends State<ResearchGameScreen>
       score = max(0, score - 2);
       if (trial!.condition == 'stop') falseStarts++;
     }
+    final cubit = context.read<BrainCubit>();
+    if (cubit.data.sound && !automatic) {
+      SystemSound.play(SystemSoundType.click);
+    }
+    if (cubit.data.haptics && !automatic) {
+      ok ? HapticFeedback.lightImpact() : HapticFeedback.mediumImpact();
+    }
     setState(() => lastAnswerCorrect = ok);
     delayTimer = Timer(const Duration(milliseconds: 260), _nextTrial);
   }
@@ -360,7 +370,11 @@ class _ResearchGameScreenState extends State<ResearchGameScreen>
       },
       child: Scaffold(
         appBar: AppBar(
-          title: Text(widget.type.title),
+          title: Text(
+            widget.type.title,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
           actions: [
             if (lifecycle == GameLifecycle.running)
               IconButton(
@@ -425,6 +439,8 @@ class _ResearchGameScreenState extends State<ResearchGameScreen>
         Text(
           definition.instructions,
           textAlign: TextAlign.center,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
           style: Theme.of(context).textTheme.titleMedium,
         ),
         const SizedBox(height: 12),

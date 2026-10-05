@@ -344,7 +344,7 @@ class _PeripheralConsole extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => SizedBox(
-    width: 230,
+    width: double.infinity,
     height: 150,
     child: Stack(
       alignment: Alignment.center,
@@ -475,44 +475,47 @@ class _ArrowLane extends StatelessWidget {
   final Color accent;
 
   @override
-  Widget build(BuildContext context) => Row(
-    mainAxisSize: MainAxisSize.min,
-    children: List.generate(5, (index) {
-      final center = index == 2;
-      final right = center || visual.congruent ? visual.right : !visual.right;
-      return Container(
-        margin: const EdgeInsets.symmetric(horizontal: 3),
-        width: center ? 52 : 40,
-        height: center ? 58 : 46,
-        decoration: BoxDecoration(
-          gradient: center
-              ? LinearGradient(
-                  colors: [Color.lerp(accent, Colors.white, .3)!, accent],
-                )
-              : null,
-          color: center ? null : context.brain.hud,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: center ? accent : context.brain.outline,
-            width: center ? 2 : 1,
+  Widget build(BuildContext context) => FittedBox(
+    fit: BoxFit.scaleDown,
+    child: Row(
+      mainAxisSize: MainAxisSize.min,
+      children: List.generate(5, (index) {
+        final center = index == 2;
+        final right = center || visual.congruent ? visual.right : !visual.right;
+        return Container(
+          margin: const EdgeInsets.symmetric(horizontal: 3),
+          width: center ? 52 : 40,
+          height: center ? 58 : 46,
+          decoration: BoxDecoration(
+            gradient: center
+                ? LinearGradient(
+                    colors: [Color.lerp(accent, Colors.white, .3)!, accent],
+                  )
+                : null,
+            color: center ? null : context.brain.hud,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: center ? accent : context.brain.outline,
+              width: center ? 2 : 1,
+            ),
+            boxShadow: center
+                ? [
+                    BoxShadow(
+                      color: accent.withValues(alpha: .36),
+                      offset: const Offset(0, 5),
+                      blurRadius: 5,
+                    ),
+                  ]
+                : null,
           ),
-          boxShadow: center
-              ? [
-                  BoxShadow(
-                    color: accent.withValues(alpha: .36),
-                    offset: const Offset(0, 5),
-                    blurRadius: 5,
-                  ),
-                ]
-              : null,
-        ),
-        child: Icon(
-          right ? Icons.arrow_forward_rounded : Icons.arrow_back_rounded,
-          size: center ? 34 : 26,
-          color: center ? context.onColor(accent) : context.brain.textMuted,
-        ),
-      );
-    }),
+          child: Icon(
+            right ? Icons.arrow_forward_rounded : Icons.arrow_back_rounded,
+            size: center ? 34 : 26,
+            color: center ? context.onColor(accent) : context.brain.textMuted,
+          ),
+        );
+      }),
+    ),
   );
 }
 
@@ -522,22 +525,25 @@ class _PairCards extends StatelessWidget {
   final Color accent;
 
   @override
-  Widget build(BuildContext context) => Row(
-    mainAxisSize: MainAxisSize.min,
-    children: [
-      _TokenCard(id: visual.left, accent: accent),
-      Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        child: Icon(
-          visual.recall ? Icons.link_rounded : Icons.add_rounded,
-          size: 32,
-          color: accent,
+  Widget build(BuildContext context) => FittedBox(
+    fit: BoxFit.scaleDown,
+    child: Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _TokenCard(id: visual.left, accent: accent),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Icon(
+            visual.recall ? Icons.link_rounded : Icons.add_rounded,
+            size: 32,
+            color: accent,
+          ),
         ),
-      ),
-      visual.partner == null
-          ? _MysteryCard(accent: accent)
-          : _TokenCard(id: visual.partner!, accent: accent),
-    ],
+        visual.partner == null
+            ? _MysteryCard(accent: accent)
+            : _TokenCard(id: visual.partner!, accent: accent),
+      ],
+    ),
   );
 }
 
@@ -587,8 +593,11 @@ class _DualConsole extends StatelessWidget {
   final Color accent;
 
   @override
-  Widget build(BuildContext context) => Row(
-    mainAxisSize: MainAxisSize.min,
+  Widget build(BuildContext context) => Wrap(
+    alignment: WrapAlignment.center,
+    runAlignment: WrapAlignment.center,
+    spacing: 12,
+    runSpacing: 12,
     children: [
       _ConsoleTile(
         child: Text(
@@ -600,7 +609,6 @@ class _DualConsole extends StatelessWidget {
           ),
         ),
       ),
-      const SizedBox(width: 12),
       _ConsoleTile(
         child: Wrap(
           spacing: 4,
@@ -669,30 +677,33 @@ class _RotationBoard extends StatelessWidget {
   Widget build(BuildContext context) => Column(
     mainAxisSize: MainAxisSize.min,
     children: [
-      Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          CustomPaint(
-            size: const Size(82, 82),
-            painter: _CubeClusterPainter(
-              accent: accent,
-              mirrored: false,
-              quarterTurns: 0,
+      FittedBox(
+        fit: BoxFit.scaleDown,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CustomPaint(
+              size: const Size(82, 82),
+              painter: _CubeClusterPainter(
+                accent: accent,
+                mirrored: false,
+                quarterTurns: 0,
+              ),
             ),
-          ),
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 12),
-            child: Icon(Icons.compare_arrows_rounded),
-          ),
-          CustomPaint(
-            size: const Size(82, 82),
-            painter: _CubeClusterPainter(
-              accent: accent,
-              mirrored: !visual.same,
-              quarterTurns: visual.angle ~/ 90,
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 12),
+              child: Icon(Icons.compare_arrows_rounded),
             ),
-          ),
-        ],
+            CustomPaint(
+              size: const Size(82, 82),
+              painter: _CubeClusterPainter(
+                accent: accent,
+                mirrored: !visual.same,
+                quarterTurns: visual.angle ~/ 90,
+              ),
+            ),
+          ],
+        ),
       ),
       const SizedBox(height: 8),
       Text(
@@ -1197,7 +1208,7 @@ class _TrackingFieldState extends State<_TrackingField> {
   Widget build(BuildContext context) {
     final reduceMotion = MediaQuery.disableAnimationsOf(context);
     return SizedBox(
-      width: 240,
+      width: double.infinity,
       height: 150,
       child: Stack(
         children: List.generate(6, (index) {
