@@ -5,10 +5,37 @@ import 'brain_theme.dart';
 
 @immutable
 class GameVisualSpec {
-  const GameVisualSpec({required this.icon, required this.semanticLabel});
+  const GameVisualSpec({
+    required this.icon,
+    required this.semanticLabel,
+    required this.motif,
+    required this.sceneLabel,
+  });
 
   final IconData icon;
   final String semanticLabel;
+  final GameMotif motif;
+  final String sceneLabel;
+}
+
+enum GameMotif {
+  colorOrbs,
+  numberBlocks,
+  memoryGrid,
+  lightning,
+  searchLens,
+  signalGate,
+  focusRadar,
+  memoryPath,
+  switchTracks,
+  arrowLane,
+  linkedCards,
+  symbolConsole,
+  trackingArena,
+  towerWorkshop,
+  splitDashboard,
+  sequenceSteps,
+  isometricCubes,
 }
 
 GameVisualSpec gameVisualFor(GameType type) => GameVisualSpec(
@@ -32,6 +59,8 @@ GameVisualSpec gameVisualFor(GameType type) => GameVisualSpec(
     GameType.spatialRotation => Icons.threed_rotation_rounded,
   },
   semanticLabel: gameContent[type]!.semanticLabel,
+  motif: GameMotif.values[type.index],
+  sceneLabel: '${type.title} game board',
 );
 
 class GameIcon extends StatelessWidget {
@@ -52,12 +81,7 @@ class GameIcon extends StatelessWidget {
   Widget build(BuildContext context) {
     final visual = gameVisualFor(game);
     final accent = context.gameAccent(game);
-    final icon = Icon(
-      visual.icon,
-      size: size,
-      color: accent,
-      semanticLabel: semantic ? visual.semanticLabel : null,
-    );
+    final icon = Icon(visual.icon, size: size, color: context.onColor(accent));
     if (!decorated) return ExcludeSemantics(excluding: !semantic, child: icon);
     return Semantics(
       label: semantic ? visual.semanticLabel : null,
@@ -67,8 +91,24 @@ class GameIcon extends StatelessWidget {
         height: size + 24,
         alignment: Alignment.center,
         decoration: BoxDecoration(
-          color: accent.withValues(alpha: .12),
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color.lerp(accent, Colors.white, .28)!, accent],
+          ),
           borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: Theme.of(context).brightness == Brightness.light
+                ? accent.withValues(alpha: .72)
+                : context.brain.outline,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: accent.withValues(alpha: .24),
+              offset: const Offset(0, 4),
+              blurRadius: 0,
+            ),
+          ],
         ),
         child: icon,
       ),
