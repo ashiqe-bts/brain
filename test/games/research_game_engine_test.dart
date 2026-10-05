@@ -24,6 +24,8 @@ void main() {
       expect(repeated.prompt, trial.prompt, reason: game.name);
       expect(repeated.options, trial.options, reason: game.name);
       expect(repeated.correctIndex, trial.correctIndex, reason: game.name);
+      expect(trial.visual, isA<ResearchVisual>(), reason: game.name);
+      expect(repeated.visual.runtimeType, trial.visual.runtimeType);
     }
   });
 

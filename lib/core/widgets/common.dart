@@ -200,63 +200,94 @@ class SessionHud extends StatelessWidget {
   Widget build(BuildContext context) => Semantics(
     label:
         '${AppText.percentSemantics(label, (progress.clamp(0, 1) * 100).round())}, $primaryStat, $secondaryStat',
-    child: Column(
-      children: [
-        Row(
-          children: [
-            if (answerCorrect != null) ...[
-              Semantics(
-                liveRegion: true,
-                label: answerCorrect!
-                    ? AppText.gameplay.correct
-                    : AppText.gameplay.tryNext,
-                child: Icon(
-                  answerCorrect!
-                      ? Icons.check_circle_rounded
-                      : Icons.cancel_outlined,
-                  color: answerCorrect!
-                      ? context.brain.success
-                      : context.brain.danger,
-                  size: 22,
+    child: Container(
+      padding: const EdgeInsets.fromLTRB(14, 11, 14, 12),
+      decoration: BoxDecoration(
+        color: context.brain.hud,
+        borderRadius: BorderRadius.circular(17),
+        border: Border.all(color: color.withValues(alpha: .55)),
+        boxShadow: [
+          BoxShadow(
+            color: color.withValues(alpha: .14),
+            offset: const Offset(0, 4),
+            blurRadius: 0,
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              if (answerCorrect != null) ...[
+                Semantics(
+                  liveRegion: true,
+                  label: answerCorrect!
+                      ? AppText.gameplay.correct
+                      : AppText.gameplay.tryNext,
+                  child: Icon(
+                    answerCorrect!
+                        ? Icons.check_circle_rounded
+                        : Icons.cancel_outlined,
+                    color: answerCorrect!
+                        ? context.brain.success
+                        : context.brain.danger,
+                    size: 22,
+                  ),
+                ),
+                const SizedBox(width: 8),
+              ],
+              Expanded(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: context.brain.textMuted,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                decoration: BoxDecoration(
+                  color: color,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(
+                  primaryStat,
+                  style: TextStyle(
+                    color: context.onColor(color),
+                    fontWeight: FontWeight.w900,
+                  ),
                 ),
               ),
               const SizedBox(width: 8),
-            ],
-            Expanded(
-              child: Text(
-                label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  color: context.brain.textMuted,
-                  fontWeight: FontWeight.w700,
+              AnimatedSwitcher(
+                duration: MediaQuery.disableAnimationsOf(context)
+                    ? Duration.zero
+                    : const Duration(milliseconds: 180),
+                child: Text(
+                  secondaryStat,
+                  key: ValueKey(secondaryStat),
+                  style: TextStyle(
+                    color: context.brain.textMuted,
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
               ),
-            ),
-            Text(
-              primaryStat,
-              style: const TextStyle(fontWeight: FontWeight.w900),
-            ),
-            const SizedBox(width: 12),
-            Text(
-              secondaryStat,
-              style: TextStyle(
-                color: context.brain.textMuted,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 10),
-        ClipRRect(
-          borderRadius: BorderRadius.circular(4),
-          child: LinearProgressIndicator(
-            minHeight: 5,
-            value: progress.clamp(0, 1),
-            color: color,
+            ],
           ),
-        ),
-      ],
+          const SizedBox(height: 10),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(6),
+            child: LinearProgressIndicator(
+              minHeight: 7,
+              value: progress.clamp(0, 1),
+              color: color,
+            ),
+          ),
+        ],
+      ),
     ),
   );
 }

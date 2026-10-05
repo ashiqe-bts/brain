@@ -3,6 +3,7 @@ import 'package:brainflex/core/models/brain_models.dart';
 import 'package:brainflex/core/training/game_catalog.dart';
 import 'package:brainflex/features/games/classic_game_board.dart';
 import 'package:brainflex/features/games/game_tutorial_screen.dart';
+import 'package:brainflex/features/games/game_experience.dart';
 import 'package:brainflex/features/games/research_game_board.dart';
 import 'package:brainflex/features/games/tutorial_guide.dart';
 import 'package:flutter/material.dart';
@@ -27,6 +28,7 @@ void main() {
       } else {
         expect(find.byType(ResearchGameBoard), findsOneWidget);
       }
+      expect(find.byType(GameStage), findsOneWidget);
       expect(find.bySemanticsLabel(RegExp('Game stimulus:')), findsOneWidget);
       expect(find.textContaining('Score '), findsNothing);
       expect(tester.takeException(), isNull);

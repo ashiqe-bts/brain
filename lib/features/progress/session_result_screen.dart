@@ -10,6 +10,7 @@ import '../../core/training/game_catalog.dart';
 import '../../core/training/training_analytics.dart';
 import '../../core/widgets/common.dart';
 import 'progress_chart.dart';
+import '../games/game_experience.dart';
 
 class SessionResultScreen extends StatefulWidget {
   const SessionResultScreen({
@@ -58,158 +59,169 @@ class _SessionResultScreenState extends State<SessionResultScreen> {
         automaticallyImplyLeading: false,
         title: Text(AppText.workout.sessionReview),
       ),
-      body: SafeArea(
-        bottom: false,
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
-          children: [
-            PageEyebrow(AppText.results.roundComplete),
-            const SizedBox(height: 14),
-            Center(
-              child: GameIcon(
-                game: widget.result.type,
-                size: 38,
-                decorated: true,
-                semantic: true,
-              ),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              widget.result.type.title,
-              textAlign: TextAlign.center,
-              style: Theme.of(
-                context,
-              ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w900),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              widget.result.mode == GameMode.relaxed
-                  ? AppText.results.relaxed
-                  : selfComparisonMessage(
-                      comparison,
-                      currentAt: widget.result.completedAt ?? DateTime.now(),
-                    ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 18),
-            AppCard(
-              tonal: true,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  PageEyebrow(AppText.results.current),
-                  const SizedBox(height: 8),
-                  Text(
-                    selectedMetric.formatValue(widget.result),
-                    style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                      color: context.gameAccent(widget.result.type),
-                      fontWeight: FontWeight.w900,
-                    ),
+      body: Stack(
+        children: [
+          SafeArea(
+            bottom: false,
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
+              children: [
+                PageEyebrow(AppText.results.roundComplete),
+                const SizedBox(height: 14),
+                Center(
+                  child: GameIcon(
+                    game: widget.result.type,
+                    size: 38,
+                    decorated: true,
+                    semantic: true,
                   ),
-                  Text(selectedMetric.label),
-                  const SizedBox(height: 14),
-                  Wrap(
-                    spacing: 10,
-                    runSpacing: 10,
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  widget.result.type.title,
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  widget.result.mode == GameMode.relaxed
+                      ? AppText.results.relaxed
+                      : selfComparisonMessage(
+                          comparison,
+                          currentAt:
+                              widget.result.completedAt ?? DateTime.now(),
+                        ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 18),
+                AppCard(
+                  tonal: true,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _ComparisonTile(
-                        label: AppText.results.previous,
-                        value: previous == null
-                            ? AppText.results.unavailable
-                            : selectedMetric.formatValue(previous),
+                      PageEyebrow(AppText.results.current),
+                      const SizedBox(height: 8),
+                      Text(
+                        selectedMetric.formatValue(widget.result),
+                        style: Theme.of(context).textTheme.displaySmall
+                            ?.copyWith(
+                              color: context.gameAccent(widget.result.type),
+                              fontWeight: FontWeight.w900,
+                            ),
                       ),
-                      _ComparisonTile(
-                        label: AppText.results.baselineMedian,
-                        value: baseline == null
-                            ? AppText.afterBaselineResults()
-                            : _formatNumber(baseline),
+                      Text(selectedMetric.label),
+                      const SizedBox(height: 14),
+                      Wrap(
+                        spacing: 10,
+                        runSpacing: 10,
+                        children: [
+                          _ComparisonTile(
+                            label: AppText.results.previous,
+                            value: previous == null
+                                ? AppText.results.unavailable
+                                : selectedMetric.formatValue(previous),
+                          ),
+                          _ComparisonTile(
+                            label: AppText.results.baselineMedian,
+                            value: baseline == null
+                                ? AppText.afterBaselineResults()
+                                : _formatNumber(baseline),
+                          ),
+                        ],
                       ),
                     ],
                   ),
-                ],
-              ),
-            ),
-            SectionHeader(AppText.results.progressGraph),
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: [
-                  for (final metric in metrics)
-                    Padding(
-                      padding: const EdgeInsets.only(right: 8),
-                      child: ChoiceChip(
-                        label: Text(metric.label),
-                        selected: selectedMetric.key == metric.key,
-                        onSelected: (_) =>
-                            setState(() => selectedMetric = metric),
-                      ),
-                    ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 12),
-            AppCard(
-              child: ProgressLineChart(
-                valueLabel: selectedMetric.label,
-                minimum:
-                    selectedMetric.key == GameMetricDefinition.trainingLevelKey
-                    ? AppSettings.minimumDifficulty.toDouble()
-                    : selectedMetric.percent
-                    ? 0
-                    : null,
-                maximum:
-                    selectedMetric.key == GameMetricDefinition.trainingLevelKey
-                    ? AppSettings.maximumDifficulty.toDouble()
-                    : selectedMetric.percent
-                    ? 100
-                    : null,
-                series: [
-                  ProgressChartSeries(
-                    label: widget.result.type.title,
-                    color: context.gameAccent(widget.result.type),
-                    points: [
-                      for (final point in points)
-                        ProgressChartPoint(
-                          at: point.result.completedAt ?? DateTime.now(),
-                          value: point.value,
-                          label: selectedMetric.formatValue(point.result),
-                          note: !point.includedInTrend
-                              ? widget.result.mode == GameMode.relaxed
-                                    ? AppText.results.relaxedNote
-                                    : AppText.results.challengeNote
-                              : null,
+                ),
+                SectionHeader(AppText.results.progressGraph),
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: [
+                      for (final metric in metrics)
+                        Padding(
+                          padding: const EdgeInsets.only(right: 8),
+                          child: ChoiceChip(
+                            label: Text(metric.label),
+                            selected: selectedMetric.key == metric.key,
+                            onSelected: (_) =>
+                                setState(() => selectedMetric = metric),
+                          ),
                         ),
                     ],
                   ),
-                ],
-              ),
-            ),
-            SectionHeader(AppText.results.measuredSkills),
-            Wrap(
-              spacing: 10,
-              runSpacing: 10,
-              children: [
-                for (final metric in metrics)
-                  _MetricTile(
-                    label: metric.label,
-                    value: metric.formatValue(widget.result),
-                    direction: metric.direction,
+                ),
+                const SizedBox(height: 12),
+                AppCard(
+                  child: ProgressLineChart(
+                    valueLabel: selectedMetric.label,
+                    minimum:
+                        selectedMetric.key ==
+                            GameMetricDefinition.trainingLevelKey
+                        ? AppSettings.minimumDifficulty.toDouble()
+                        : selectedMetric.percent
+                        ? 0
+                        : null,
+                    maximum:
+                        selectedMetric.key ==
+                            GameMetricDefinition.trainingLevelKey
+                        ? AppSettings.maximumDifficulty.toDouble()
+                        : selectedMetric.percent
+                        ? 100
+                        : null,
+                    series: [
+                      ProgressChartSeries(
+                        label: widget.result.type.title,
+                        color: context.gameAccent(widget.result.type),
+                        points: [
+                          for (final point in points)
+                            ProgressChartPoint(
+                              at: point.result.completedAt ?? DateTime.now(),
+                              value: point.value,
+                              label: selectedMetric.formatValue(point.result),
+                              note: !point.includedInTrend
+                                  ? widget.result.mode == GameMode.relaxed
+                                        ? AppText.results.relaxedNote
+                                        : AppText.results.challengeNote
+                                  : null,
+                            ),
+                        ],
+                      ),
+                    ],
                   ),
+                ),
+                SectionHeader(AppText.results.measuredSkills),
+                Wrap(
+                  spacing: 10,
+                  runSpacing: 10,
+                  children: [
+                    for (final metric in metrics)
+                      _MetricTile(
+                        label: metric.label,
+                        value: metric.formatValue(widget.result),
+                        direction: metric.direction,
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 18),
+                AppCard(
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Icon(Icons.lightbulb_outline_rounded),
+                      const SizedBox(width: 12),
+                      Expanded(child: Text(sessionTip(widget.result))),
+                    ],
+                  ),
+                ),
               ],
             ),
-            const SizedBox(height: 18),
-            AppCard(
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Icon(Icons.lightbulb_outline_rounded),
-                  const SizedBox(width: 12),
-                  Expanded(child: Text(sessionTip(widget.result))),
-                ],
-              ),
-            ),
-          ],
-        ),
+          ),
+          const Positioned.fill(
+            child: CelebrationOverlay(level: CelebrationLevel.round),
+          ),
+        ],
       ),
       bottomNavigationBar: SafeArea(
         top: false,

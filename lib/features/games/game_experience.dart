@@ -76,7 +76,25 @@ class GameStage extends StatelessWidget {
                 ),
               ),
             ),
-            Padding(padding: padding, child: child),
+            LayoutBuilder(
+              builder: (context, constraints) {
+                if (!constraints.hasBoundedHeight) {
+                  return Padding(padding: padding, child: child);
+                }
+                return SingleChildScrollView(
+                  padding: padding,
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(
+                      minHeight: math.max(
+                        0,
+                        constraints.maxHeight - padding.vertical,
+                      ),
+                    ),
+                    child: child,
+                  ),
+                );
+              },
+            ),
           ],
         ),
       ),
@@ -120,6 +138,61 @@ class GameDepthPanel extends StatelessWidget {
       ),
       child: child,
     );
+  }
+}
+
+class GameAnswerButton extends StatelessWidget {
+  const GameAnswerButton({
+    super.key,
+    required this.label,
+    required this.onPressed,
+    required this.color,
+    this.icon,
+    this.expanded = false,
+  });
+
+  final String label;
+  final VoidCallback? onPressed;
+  final Color color;
+  final IconData? icon;
+  final bool expanded;
+
+  @override
+  Widget build(BuildContext context) {
+    final buttonStyle = ButtonStyle(
+      backgroundColor: WidgetStatePropertyAll(color),
+      foregroundColor: WidgetStatePropertyAll(context.onColor(color)),
+      minimumSize: const WidgetStatePropertyAll(Size(88, 54)),
+      padding: const WidgetStatePropertyAll(
+        EdgeInsets.symmetric(horizontal: 18, vertical: 13),
+      ),
+      elevation: WidgetStateProperty.resolveWith(
+        (states) => states.contains(WidgetState.pressed) ? 1 : 7,
+      ),
+      shadowColor: WidgetStatePropertyAll(color.withValues(alpha: .58)),
+      side: WidgetStatePropertyAll(
+        BorderSide(color: context.onColor(color).withValues(alpha: .48)),
+      ),
+      shape: WidgetStatePropertyAll(
+        RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      ),
+      textStyle: const WidgetStatePropertyAll(
+        TextStyle(fontWeight: FontWeight.w900, fontSize: 16),
+      ),
+    );
+    final button = icon == null
+        ? FilledButton(
+            onPressed: onPressed,
+            style: buttonStyle,
+            child: Text(label, textAlign: TextAlign.center),
+          )
+        : FilledButton.icon(
+            onPressed: onPressed,
+            style: buttonStyle,
+            icon: Icon(icon),
+            label: Text(label, textAlign: TextAlign.center),
+          );
+    return expanded ? SizedBox(width: double.infinity, child: button) : button;
   }
 }
 

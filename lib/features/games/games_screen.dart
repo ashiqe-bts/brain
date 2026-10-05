@@ -126,7 +126,7 @@ class _GamesScreenState extends State<GamesScreen> {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              GameIcon(game: game, size: 28, decorated: true),
+              GameThumbnail(game: game, semantic: true),
               const SizedBox(width: 14),
               Expanded(
                 child: Column(

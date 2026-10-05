@@ -5,6 +5,8 @@ import 'package:brainflex/core/storage/app_database.dart';
 import 'package:brainflex/core/storage/brain_repository.dart';
 import 'package:brainflex/features/progress/progress_screen.dart';
 import 'package:brainflex/features/progress/session_result_screen.dart';
+import 'package:brainflex/features/daily_workout/workout_screen.dart';
+import 'package:brainflex/features/games/game_experience.dart';
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -37,6 +39,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Round complete'), findsOneWidget);
+    expect(find.byKey(roundCelebrationKey), findsOneWidget);
     expect(find.text('Progress graph'), findsOneWidget);
     expect(
       find.textContaining('excluded from progress trends'),
@@ -52,6 +55,27 @@ void main() {
     expect(find.text('Accuracy'), findsWidgets);
     expect(find.text('Back to Train'), findsOneWidget);
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('daily review launches the full workout celebration', (
+    tester,
+  ) async {
+    final result = _result(3);
+    final cubit = BrainCubit(repository, BrainState(history: [result]));
+    addTearDown(cubit.close);
+
+    await tester.pumpWidget(
+      _harness(
+        cubit,
+        WorkoutResultScreen(
+          summary: DailySummary(date: '2026-01-03', results: [result]),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    expect(find.byKey(dailyCelebrationKey), findsOneWidget);
+    expect(find.bySemanticsLabel('Daily workout complete'), findsOneWidget);
   });
 
   testWidgets('insights includes combined progress without an overall score', (

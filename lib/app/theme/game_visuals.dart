@@ -115,3 +115,69 @@ class GameIcon extends StatelessWidget {
     );
   }
 }
+
+class GameThumbnail extends StatelessWidget {
+  const GameThumbnail({
+    super.key,
+    required this.game,
+    this.width = 76,
+    this.height = 68,
+    this.semantic = false,
+  });
+
+  final GameType game;
+  final double width;
+  final double height;
+  final bool semantic;
+
+  @override
+  Widget build(BuildContext context) {
+    final visual = gameVisualFor(game);
+    final accent = context.gameAccent(game);
+    return Semantics(
+      label: semantic ? visual.semanticLabel : null,
+      excludeSemantics: !semantic,
+      child: Container(
+        width: width,
+        height: height,
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color.lerp(accent, Colors.white, .34)!, accent],
+          ),
+          borderRadius: BorderRadius.circular(17),
+          border: Border.all(color: context.brain.outline),
+          boxShadow: [
+            BoxShadow(
+              color: accent.withValues(alpha: .3),
+              offset: const Offset(0, 5),
+            ),
+          ],
+        ),
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            Positioned(
+              right: -8,
+              top: -8,
+              child: Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.white.withValues(alpha: .14),
+                ),
+              ),
+            ),
+            Icon(
+              visual.icon,
+              size: height * .48,
+              color: context.onColor(accent),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}

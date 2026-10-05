@@ -131,7 +131,11 @@ class _WorkoutSelectionScreenState extends State<WorkoutSelectionScreen> {
                                     : selected.add(game);
                               })
                             : null,
-                        secondary: GameIcon(game: game, decorated: true),
+                        secondary: GameThumbnail(
+                          game: game,
+                          width: 58,
+                          height: 52,
+                        ),
                         title: Text(
                           game.title,
                           style: const TextStyle(fontWeight: FontWeight.w800),

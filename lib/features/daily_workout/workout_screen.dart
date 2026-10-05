@@ -9,6 +9,7 @@ import '../../core/state/brain_cubit.dart';
 import '../../core/training/training_analytics.dart';
 import '../../core/widgets/common.dart';
 import '../games/game_launcher.dart';
+import '../games/game_experience.dart';
 import '../progress/session_result_screen.dart';
 
 class WorkoutScreen extends StatefulWidget {
@@ -211,101 +212,112 @@ class WorkoutResultScreen extends StatelessWidget {
         automaticallyImplyLeading: false,
         title: Text(AppText.workout.sessionReview),
       ),
-      body: SafeArea(
-        bottom: false,
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
-          children: [
-            Center(
-              child: Container(
-                width: 72,
-                height: 72,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: context.brain.success.withValues(alpha: .14),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  Icons.check_rounded,
-                  size: 40,
-                  color: context.brain.success,
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              AppText.workout.completeTitle,
-              textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                fontFamily: 'Fredoka',
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              baselineStatus(data.history).isComplete
-                  ? AppText.workout.compatibleResults
-                  : AppText.readyGameBaselines(
-                      baselineStatus(data.history).readyGames,
-                      activeGames.length,
+      body: Stack(
+        children: [
+          SafeArea(
+            bottom: false,
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
+              children: [
+                Center(
+                  child: Container(
+                    width: 72,
+                    height: 72,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: context.brain.success.withValues(alpha: .14),
+                      shape: BoxShape.circle,
                     ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 24),
-            AppCard(
-              tonal: true,
-              child: Column(
-                children: [
-                  for (final (index, result) in summary.results.indexed) ...[
-                    if (index > 0) const Divider(height: 28),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
+                    child: Icon(
+                      Icons.check_rounded,
+                      size: 40,
+                      color: context.brain.success,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  AppText.workout.completeTitle,
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                    fontFamily: 'Fredoka',
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  baselineStatus(data.history).isComplete
+                      ? AppText.workout.compatibleResults
+                      : AppText.readyGameBaselines(
+                          baselineStatus(data.history).readyGames,
+                          activeGames.length,
+                        ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 24),
+                AppCard(
+                  tonal: true,
+                  child: Column(
+                    children: [
+                      for (final (index, result)
+                          in summary.results.indexed) ...[
+                        if (index > 0) const Divider(height: 28),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            GameIcon(
-                              game: result.type,
-                              size: 26,
-                              decorated: true,
-                            ),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: Text(
-                                result.type.domain,
-                                style: const TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w900,
+                            Row(
+                              children: [
+                                GameIcon(
+                                  game: result.type,
+                                  size: 26,
+                                  decorated: true,
                                 ),
-                              ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Text(
+                                    result.type.domain,
+                                    style: const TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.w900,
+                                    ),
+                                  ),
+                                ),
+                                Text(
+                                  trainingLevel(
+                                    difficulty: result.difficulty,
+                                    score: result.normalized,
+                                  ).toStringAsFixed(1),
+                                  style: const TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w900,
+                                  ),
+                                ),
+                              ],
                             ),
-                            Text(
-                              trainingLevel(
-                                difficulty: result.difficulty,
-                                score: result.normalized,
-                              ).toStringAsFixed(1),
-                              style: const TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.w900,
-                              ),
-                            ),
+                            const SizedBox(height: 8),
+                            Text(_rawMetrics(result)),
+                            const SizedBox(height: 6),
+                            Text(_comparison(result, data)),
+                            const SizedBox(height: 6),
+                            Text(sessionTip(result)),
                           ],
                         ),
-                        const SizedBox(height: 8),
-                        Text(_rawMetrics(result)),
-                        const SizedBox(height: 6),
-                        Text(_comparison(result, data)),
-                        const SizedBox(height: 6),
-                        Text(sessionTip(result)),
                       ],
-                    ),
-                  ],
-                ],
-              ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  AppText.workout.resultDisclaimer,
+                  textAlign: TextAlign.center,
+                ),
+              ],
             ),
-            const SizedBox(height: 8),
-            Text(AppText.workout.resultDisclaimer, textAlign: TextAlign.center),
-          ],
-        ),
+          ),
+          const Positioned.fill(
+            child: CelebrationOverlay(level: CelebrationLevel.daily),
+          ),
+        ],
       ),
       bottomNavigationBar: SafeArea(
         top: false,
