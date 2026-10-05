@@ -54,6 +54,20 @@ void main() {
     expect(conditions, containsAll(<String>{'go', 'stop'}));
   });
 
+  test('memory visual payload preserves the generated zero-based grid', () {
+    final trial = ResearchGameEngine(
+      seed: 12,
+      type: GameType.memoryTiles,
+      difficulty: 4,
+    ).nextTrial();
+    final visual = trial.visual as MemoryGridVisual;
+    final promptCells = trial.prompt.split(',').map(int.parse).toSet();
+    final cueCells = trial.cue.split(',').map(int.parse).toSet();
+
+    expect(visual.before.map((cell) => cell + 1).toSet(), promptCells);
+    expect(visual.after.map((cell) => cell + 1).toSet(), cueCells);
+  });
+
   test('object tracking asks for final positions, not visible identities', () {
     final trial = ResearchGameEngine(
       seed: 8,

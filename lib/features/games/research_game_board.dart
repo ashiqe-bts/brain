@@ -214,7 +214,7 @@ class _MemoryBoard extends StatelessWidget {
       ),
       itemCount: count,
       itemBuilder: (context, index) {
-        final active = values.contains(index + 1);
+        final active = values.contains(index);
         return Semantics(
           label: AppText.tileSemantics(index + 1, active),
           child: AnimatedContainer(

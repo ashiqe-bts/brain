@@ -59,7 +59,25 @@ GameVisualSpec gameVisualFor(GameType type) => GameVisualSpec(
     GameType.spatialRotation => Icons.threed_rotation_rounded,
   },
   semanticLabel: gameContent[type]!.semanticLabel,
-  motif: GameMotif.values[type.index],
+  motif: switch (type) {
+    GameType.colorClash => GameMotif.colorOrbs,
+    GameType.mathBlitz => GameMotif.numberBlocks,
+    GameType.memoryTiles => GameMotif.memoryGrid,
+    GameType.reflexTap => GameMotif.lightning,
+    GameType.visualSearch => GameMotif.searchLens,
+    GameType.signalStop => GameMotif.signalGate,
+    GameType.peripheralFocus => GameMotif.focusRadar,
+    GameType.nBackNavigator => GameMotif.memoryPath,
+    GameType.ruleSwitch => GameMotif.switchTracks,
+    GameType.arrowGuard => GameMotif.arrowLane,
+    GameType.pairLink => GameMotif.linkedCards,
+    GameType.symbolSprint => GameMotif.symbolConsole,
+    GameType.objectTracker => GameMotif.trackingArena,
+    GameType.towerPlanner => GameMotif.towerWorkshop,
+    GameType.dualTaskDash => GameMotif.splitDashboard,
+    GameType.logicSeries => GameMotif.sequenceSteps,
+    GameType.spatialRotation => GameMotif.isometricCubes,
+  },
   sceneLabel: '${type.title} game board',
 );
 
@@ -81,7 +99,12 @@ class GameIcon extends StatelessWidget {
   Widget build(BuildContext context) {
     final visual = gameVisualFor(game);
     final accent = context.gameAccent(game);
-    final icon = Icon(visual.icon, size: size, color: context.onColor(accent));
+    final icon = Icon(
+      visual.icon,
+      size: size,
+      color: decorated ? context.onColor(accent) : accent,
+      semanticLabel: semantic && !decorated ? visual.semanticLabel : null,
+    );
     if (!decorated) return ExcludeSemantics(excluding: !semantic, child: icon);
     return Semantics(
       label: semantic ? visual.semanticLabel : null,

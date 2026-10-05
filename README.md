@@ -13,13 +13,15 @@ Every Train card includes a research-basis sheet naming the studied paradigm, po
 - First launch opens with a value-first welcome, then asks for a local display name and optional reminder; Home opens with a personal greeting.
 - Today lets users select five different games or generate a balanced Random 5, then shows baseline status, streaks, and practice recommendations.
 - Every game has a required production-equivalent tutorial on first play for its current rules version. Tutorials reuse the real board, controls, stimuli, timing, and animations, add a delayed helper hand, and can be replayed without affecting progress.
+- The active catalog uses responsive 2.5D game stages, dimensional controls, custom-painted stimuli, and distinct per-game visual worlds without requiring a 3D engine or network assets.
 - Train offers Standard, Relaxed, and Challenge My Best sessions.
 - Every scored session ends with a metric-selectable progress graph, current/previous/baseline comparisons, and game-specific measures.
+- Every completed round opens with a short party-popper celebration; finishing all five daily games adds a larger finale. Reduced-motion mode uses a static celebration instead.
 - Insights provides a multi-game training-level chart, 15 separate charted game profiles, history, rolling trends, weekly reviews, and achievements.
 - Standard and official sessions contribute to trends. Relaxed sessions are untimed and excluded.
 - Challenge My Best requires the same game rules version and difficulty. Result feedback compares only with the latest compatible personal attempt.
 - Participation XP remains compatible with existing data but is de-emphasized in the interface. Skill levels are shown separately with raw metrics.
-- Calm Light, Calm Dark, and High Contrast themes share a tonal, icon-led Material 3 design. Compact layouts use bottom navigation; wide Chrome layouts use a navigation rail.
+- Calm Light, Calm Dark, and High Contrast themes share a playful, accessible Material 3 game language. Compact layouts use bottom navigation; wide Chrome layouts use a navigation rail.
 - All data stays on the device. There are no accounts, cloud sync, product telemetry, advertising, or paid gameplay advantages.
 
 ## Run locally
