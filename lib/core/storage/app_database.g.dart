@@ -986,6 +986,1015 @@ class StoredDailyRecordsCompanion extends UpdateCompanion<StoredDailyRecord> {
   }
 }
 
+class $ProfileSnapshotsTable extends ProfileSnapshots
+    with TableInfo<$ProfileSnapshotsTable, ProfileSnapshot> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ProfileSnapshotsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _ownerIdMeta = const VerificationMeta(
+    'ownerId',
+  );
+  @override
+  late final GeneratedColumn<String> ownerId = GeneratedColumn<String>(
+    'owner_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _valueMeta = const VerificationMeta('value');
+  @override
+  late final GeneratedColumn<String> value = GeneratedColumn<String>(
+    'value',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [ownerId, value, updatedAt];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'profile_snapshots';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<ProfileSnapshot> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('owner_id')) {
+      context.handle(
+        _ownerIdMeta,
+        ownerId.isAcceptableOrUnknown(data['owner_id']!, _ownerIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_ownerIdMeta);
+    }
+    if (data.containsKey('value')) {
+      context.handle(
+        _valueMeta,
+        value.isAcceptableOrUnknown(data['value']!, _valueMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_valueMeta);
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {ownerId};
+  @override
+  ProfileSnapshot map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ProfileSnapshot(
+      ownerId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}owner_id'],
+      )!,
+      value: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}value'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+    );
+  }
+
+  @override
+  $ProfileSnapshotsTable createAlias(String alias) {
+    return $ProfileSnapshotsTable(attachedDatabase, alias);
+  }
+}
+
+class ProfileSnapshot extends DataClass implements Insertable<ProfileSnapshot> {
+  final String ownerId;
+  final String value;
+  final DateTime updatedAt;
+  const ProfileSnapshot({
+    required this.ownerId,
+    required this.value,
+    required this.updatedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['owner_id'] = Variable<String>(ownerId);
+    map['value'] = Variable<String>(value);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    return map;
+  }
+
+  ProfileSnapshotsCompanion toCompanion(bool nullToAbsent) {
+    return ProfileSnapshotsCompanion(
+      ownerId: Value(ownerId),
+      value: Value(value),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory ProfileSnapshot.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ProfileSnapshot(
+      ownerId: serializer.fromJson<String>(json['ownerId']),
+      value: serializer.fromJson<String>(json['value']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'ownerId': serializer.toJson<String>(ownerId),
+      'value': serializer.toJson<String>(value),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+    };
+  }
+
+  ProfileSnapshot copyWith({
+    String? ownerId,
+    String? value,
+    DateTime? updatedAt,
+  }) => ProfileSnapshot(
+    ownerId: ownerId ?? this.ownerId,
+    value: value ?? this.value,
+    updatedAt: updatedAt ?? this.updatedAt,
+  );
+  ProfileSnapshot copyWithCompanion(ProfileSnapshotsCompanion data) {
+    return ProfileSnapshot(
+      ownerId: data.ownerId.present ? data.ownerId.value : this.ownerId,
+      value: data.value.present ? data.value.value : this.value,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ProfileSnapshot(')
+          ..write('ownerId: $ownerId, ')
+          ..write('value: $value, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(ownerId, value, updatedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ProfileSnapshot &&
+          other.ownerId == this.ownerId &&
+          other.value == this.value &&
+          other.updatedAt == this.updatedAt);
+}
+
+class ProfileSnapshotsCompanion extends UpdateCompanion<ProfileSnapshot> {
+  final Value<String> ownerId;
+  final Value<String> value;
+  final Value<DateTime> updatedAt;
+  final Value<int> rowid;
+  const ProfileSnapshotsCompanion({
+    this.ownerId = const Value.absent(),
+    this.value = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  ProfileSnapshotsCompanion.insert({
+    required String ownerId,
+    required String value,
+    required DateTime updatedAt,
+    this.rowid = const Value.absent(),
+  }) : ownerId = Value(ownerId),
+       value = Value(value),
+       updatedAt = Value(updatedAt);
+  static Insertable<ProfileSnapshot> custom({
+    Expression<String>? ownerId,
+    Expression<String>? value,
+    Expression<DateTime>? updatedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (ownerId != null) 'owner_id': ownerId,
+      if (value != null) 'value': value,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  ProfileSnapshotsCompanion copyWith({
+    Value<String>? ownerId,
+    Value<String>? value,
+    Value<DateTime>? updatedAt,
+    Value<int>? rowid,
+  }) {
+    return ProfileSnapshotsCompanion(
+      ownerId: ownerId ?? this.ownerId,
+      value: value ?? this.value,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (ownerId.present) {
+      map['owner_id'] = Variable<String>(ownerId.value);
+    }
+    if (value.present) {
+      map['value'] = Variable<String>(value.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ProfileSnapshotsCompanion(')
+          ..write('ownerId: $ownerId, ')
+          ..write('value: $value, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $ProfileGameRecordsTable extends ProfileGameRecords
+    with TableInfo<$ProfileGameRecordsTable, ProfileGameRecord> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ProfileGameRecordsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _recordIdMeta = const VerificationMeta(
+    'recordId',
+  );
+  @override
+  late final GeneratedColumn<String> recordId = GeneratedColumn<String>(
+    'record_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _ownerIdMeta = const VerificationMeta(
+    'ownerId',
+  );
+  @override
+  late final GeneratedColumn<String> ownerId = GeneratedColumn<String>(
+    'owner_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _gameTypeMeta = const VerificationMeta(
+    'gameType',
+  );
+  @override
+  late final GeneratedColumn<String> gameType = GeneratedColumn<String>(
+    'game_type',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _playedAtMsMeta = const VerificationMeta(
+    'playedAtMs',
+  );
+  @override
+  late final GeneratedColumn<int> playedAtMs = GeneratedColumn<int>(
+    'played_at_ms',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _payloadMeta = const VerificationMeta(
+    'payload',
+  );
+  @override
+  late final GeneratedColumn<String> payload = GeneratedColumn<String>(
+    'payload',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    recordId,
+    ownerId,
+    gameType,
+    playedAtMs,
+    payload,
+    updatedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'profile_game_records';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<ProfileGameRecord> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('record_id')) {
+      context.handle(
+        _recordIdMeta,
+        recordId.isAcceptableOrUnknown(data['record_id']!, _recordIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_recordIdMeta);
+    }
+    if (data.containsKey('owner_id')) {
+      context.handle(
+        _ownerIdMeta,
+        ownerId.isAcceptableOrUnknown(data['owner_id']!, _ownerIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_ownerIdMeta);
+    }
+    if (data.containsKey('game_type')) {
+      context.handle(
+        _gameTypeMeta,
+        gameType.isAcceptableOrUnknown(data['game_type']!, _gameTypeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_gameTypeMeta);
+    }
+    if (data.containsKey('played_at_ms')) {
+      context.handle(
+        _playedAtMsMeta,
+        playedAtMs.isAcceptableOrUnknown(
+          data['played_at_ms']!,
+          _playedAtMsMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_playedAtMsMeta);
+    }
+    if (data.containsKey('payload')) {
+      context.handle(
+        _payloadMeta,
+        payload.isAcceptableOrUnknown(data['payload']!, _payloadMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_payloadMeta);
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {ownerId, recordId};
+  @override
+  ProfileGameRecord map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ProfileGameRecord(
+      recordId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}record_id'],
+      )!,
+      ownerId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}owner_id'],
+      )!,
+      gameType: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}game_type'],
+      )!,
+      playedAtMs: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}played_at_ms'],
+      )!,
+      payload: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}payload'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+    );
+  }
+
+  @override
+  $ProfileGameRecordsTable createAlias(String alias) {
+    return $ProfileGameRecordsTable(attachedDatabase, alias);
+  }
+}
+
+class ProfileGameRecord extends DataClass
+    implements Insertable<ProfileGameRecord> {
+  final String recordId;
+  final String ownerId;
+  final String gameType;
+  final int playedAtMs;
+  final String payload;
+  final DateTime updatedAt;
+  const ProfileGameRecord({
+    required this.recordId,
+    required this.ownerId,
+    required this.gameType,
+    required this.playedAtMs,
+    required this.payload,
+    required this.updatedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['record_id'] = Variable<String>(recordId);
+    map['owner_id'] = Variable<String>(ownerId);
+    map['game_type'] = Variable<String>(gameType);
+    map['played_at_ms'] = Variable<int>(playedAtMs);
+    map['payload'] = Variable<String>(payload);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    return map;
+  }
+
+  ProfileGameRecordsCompanion toCompanion(bool nullToAbsent) {
+    return ProfileGameRecordsCompanion(
+      recordId: Value(recordId),
+      ownerId: Value(ownerId),
+      gameType: Value(gameType),
+      playedAtMs: Value(playedAtMs),
+      payload: Value(payload),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory ProfileGameRecord.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ProfileGameRecord(
+      recordId: serializer.fromJson<String>(json['recordId']),
+      ownerId: serializer.fromJson<String>(json['ownerId']),
+      gameType: serializer.fromJson<String>(json['gameType']),
+      playedAtMs: serializer.fromJson<int>(json['playedAtMs']),
+      payload: serializer.fromJson<String>(json['payload']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'recordId': serializer.toJson<String>(recordId),
+      'ownerId': serializer.toJson<String>(ownerId),
+      'gameType': serializer.toJson<String>(gameType),
+      'playedAtMs': serializer.toJson<int>(playedAtMs),
+      'payload': serializer.toJson<String>(payload),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+    };
+  }
+
+  ProfileGameRecord copyWith({
+    String? recordId,
+    String? ownerId,
+    String? gameType,
+    int? playedAtMs,
+    String? payload,
+    DateTime? updatedAt,
+  }) => ProfileGameRecord(
+    recordId: recordId ?? this.recordId,
+    ownerId: ownerId ?? this.ownerId,
+    gameType: gameType ?? this.gameType,
+    playedAtMs: playedAtMs ?? this.playedAtMs,
+    payload: payload ?? this.payload,
+    updatedAt: updatedAt ?? this.updatedAt,
+  );
+  ProfileGameRecord copyWithCompanion(ProfileGameRecordsCompanion data) {
+    return ProfileGameRecord(
+      recordId: data.recordId.present ? data.recordId.value : this.recordId,
+      ownerId: data.ownerId.present ? data.ownerId.value : this.ownerId,
+      gameType: data.gameType.present ? data.gameType.value : this.gameType,
+      playedAtMs: data.playedAtMs.present
+          ? data.playedAtMs.value
+          : this.playedAtMs,
+      payload: data.payload.present ? data.payload.value : this.payload,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ProfileGameRecord(')
+          ..write('recordId: $recordId, ')
+          ..write('ownerId: $ownerId, ')
+          ..write('gameType: $gameType, ')
+          ..write('playedAtMs: $playedAtMs, ')
+          ..write('payload: $payload, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(recordId, ownerId, gameType, playedAtMs, payload, updatedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ProfileGameRecord &&
+          other.recordId == this.recordId &&
+          other.ownerId == this.ownerId &&
+          other.gameType == this.gameType &&
+          other.playedAtMs == this.playedAtMs &&
+          other.payload == this.payload &&
+          other.updatedAt == this.updatedAt);
+}
+
+class ProfileGameRecordsCompanion extends UpdateCompanion<ProfileGameRecord> {
+  final Value<String> recordId;
+  final Value<String> ownerId;
+  final Value<String> gameType;
+  final Value<int> playedAtMs;
+  final Value<String> payload;
+  final Value<DateTime> updatedAt;
+  final Value<int> rowid;
+  const ProfileGameRecordsCompanion({
+    this.recordId = const Value.absent(),
+    this.ownerId = const Value.absent(),
+    this.gameType = const Value.absent(),
+    this.playedAtMs = const Value.absent(),
+    this.payload = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  ProfileGameRecordsCompanion.insert({
+    required String recordId,
+    required String ownerId,
+    required String gameType,
+    required int playedAtMs,
+    required String payload,
+    required DateTime updatedAt,
+    this.rowid = const Value.absent(),
+  }) : recordId = Value(recordId),
+       ownerId = Value(ownerId),
+       gameType = Value(gameType),
+       playedAtMs = Value(playedAtMs),
+       payload = Value(payload),
+       updatedAt = Value(updatedAt);
+  static Insertable<ProfileGameRecord> custom({
+    Expression<String>? recordId,
+    Expression<String>? ownerId,
+    Expression<String>? gameType,
+    Expression<int>? playedAtMs,
+    Expression<String>? payload,
+    Expression<DateTime>? updatedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (recordId != null) 'record_id': recordId,
+      if (ownerId != null) 'owner_id': ownerId,
+      if (gameType != null) 'game_type': gameType,
+      if (playedAtMs != null) 'played_at_ms': playedAtMs,
+      if (payload != null) 'payload': payload,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  ProfileGameRecordsCompanion copyWith({
+    Value<String>? recordId,
+    Value<String>? ownerId,
+    Value<String>? gameType,
+    Value<int>? playedAtMs,
+    Value<String>? payload,
+    Value<DateTime>? updatedAt,
+    Value<int>? rowid,
+  }) {
+    return ProfileGameRecordsCompanion(
+      recordId: recordId ?? this.recordId,
+      ownerId: ownerId ?? this.ownerId,
+      gameType: gameType ?? this.gameType,
+      playedAtMs: playedAtMs ?? this.playedAtMs,
+      payload: payload ?? this.payload,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (recordId.present) {
+      map['record_id'] = Variable<String>(recordId.value);
+    }
+    if (ownerId.present) {
+      map['owner_id'] = Variable<String>(ownerId.value);
+    }
+    if (gameType.present) {
+      map['game_type'] = Variable<String>(gameType.value);
+    }
+    if (playedAtMs.present) {
+      map['played_at_ms'] = Variable<int>(playedAtMs.value);
+    }
+    if (payload.present) {
+      map['payload'] = Variable<String>(payload.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ProfileGameRecordsCompanion(')
+          ..write('recordId: $recordId, ')
+          ..write('ownerId: $ownerId, ')
+          ..write('gameType: $gameType, ')
+          ..write('playedAtMs: $playedAtMs, ')
+          ..write('payload: $payload, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $ProfileDailyRecordsTable extends ProfileDailyRecords
+    with TableInfo<$ProfileDailyRecordsTable, ProfileDailyRecord> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ProfileDailyRecordsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _ownerIdMeta = const VerificationMeta(
+    'ownerId',
+  );
+  @override
+  late final GeneratedColumn<String> ownerId = GeneratedColumn<String>(
+    'owner_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _localDateMeta = const VerificationMeta(
+    'localDate',
+  );
+  @override
+  late final GeneratedColumn<String> localDate = GeneratedColumn<String>(
+    'local_date',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _payloadMeta = const VerificationMeta(
+    'payload',
+  );
+  @override
+  late final GeneratedColumn<String> payload = GeneratedColumn<String>(
+    'payload',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    ownerId,
+    localDate,
+    payload,
+    updatedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'profile_daily_records';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<ProfileDailyRecord> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('owner_id')) {
+      context.handle(
+        _ownerIdMeta,
+        ownerId.isAcceptableOrUnknown(data['owner_id']!, _ownerIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_ownerIdMeta);
+    }
+    if (data.containsKey('local_date')) {
+      context.handle(
+        _localDateMeta,
+        localDate.isAcceptableOrUnknown(data['local_date']!, _localDateMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_localDateMeta);
+    }
+    if (data.containsKey('payload')) {
+      context.handle(
+        _payloadMeta,
+        payload.isAcceptableOrUnknown(data['payload']!, _payloadMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_payloadMeta);
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {ownerId, localDate};
+  @override
+  ProfileDailyRecord map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ProfileDailyRecord(
+      ownerId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}owner_id'],
+      )!,
+      localDate: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}local_date'],
+      )!,
+      payload: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}payload'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+    );
+  }
+
+  @override
+  $ProfileDailyRecordsTable createAlias(String alias) {
+    return $ProfileDailyRecordsTable(attachedDatabase, alias);
+  }
+}
+
+class ProfileDailyRecord extends DataClass
+    implements Insertable<ProfileDailyRecord> {
+  final String ownerId;
+  final String localDate;
+  final String payload;
+  final DateTime updatedAt;
+  const ProfileDailyRecord({
+    required this.ownerId,
+    required this.localDate,
+    required this.payload,
+    required this.updatedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['owner_id'] = Variable<String>(ownerId);
+    map['local_date'] = Variable<String>(localDate);
+    map['payload'] = Variable<String>(payload);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    return map;
+  }
+
+  ProfileDailyRecordsCompanion toCompanion(bool nullToAbsent) {
+    return ProfileDailyRecordsCompanion(
+      ownerId: Value(ownerId),
+      localDate: Value(localDate),
+      payload: Value(payload),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory ProfileDailyRecord.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ProfileDailyRecord(
+      ownerId: serializer.fromJson<String>(json['ownerId']),
+      localDate: serializer.fromJson<String>(json['localDate']),
+      payload: serializer.fromJson<String>(json['payload']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'ownerId': serializer.toJson<String>(ownerId),
+      'localDate': serializer.toJson<String>(localDate),
+      'payload': serializer.toJson<String>(payload),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+    };
+  }
+
+  ProfileDailyRecord copyWith({
+    String? ownerId,
+    String? localDate,
+    String? payload,
+    DateTime? updatedAt,
+  }) => ProfileDailyRecord(
+    ownerId: ownerId ?? this.ownerId,
+    localDate: localDate ?? this.localDate,
+    payload: payload ?? this.payload,
+    updatedAt: updatedAt ?? this.updatedAt,
+  );
+  ProfileDailyRecord copyWithCompanion(ProfileDailyRecordsCompanion data) {
+    return ProfileDailyRecord(
+      ownerId: data.ownerId.present ? data.ownerId.value : this.ownerId,
+      localDate: data.localDate.present ? data.localDate.value : this.localDate,
+      payload: data.payload.present ? data.payload.value : this.payload,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ProfileDailyRecord(')
+          ..write('ownerId: $ownerId, ')
+          ..write('localDate: $localDate, ')
+          ..write('payload: $payload, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(ownerId, localDate, payload, updatedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ProfileDailyRecord &&
+          other.ownerId == this.ownerId &&
+          other.localDate == this.localDate &&
+          other.payload == this.payload &&
+          other.updatedAt == this.updatedAt);
+}
+
+class ProfileDailyRecordsCompanion extends UpdateCompanion<ProfileDailyRecord> {
+  final Value<String> ownerId;
+  final Value<String> localDate;
+  final Value<String> payload;
+  final Value<DateTime> updatedAt;
+  final Value<int> rowid;
+  const ProfileDailyRecordsCompanion({
+    this.ownerId = const Value.absent(),
+    this.localDate = const Value.absent(),
+    this.payload = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  ProfileDailyRecordsCompanion.insert({
+    required String ownerId,
+    required String localDate,
+    required String payload,
+    required DateTime updatedAt,
+    this.rowid = const Value.absent(),
+  }) : ownerId = Value(ownerId),
+       localDate = Value(localDate),
+       payload = Value(payload),
+       updatedAt = Value(updatedAt);
+  static Insertable<ProfileDailyRecord> custom({
+    Expression<String>? ownerId,
+    Expression<String>? localDate,
+    Expression<String>? payload,
+    Expression<DateTime>? updatedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (ownerId != null) 'owner_id': ownerId,
+      if (localDate != null) 'local_date': localDate,
+      if (payload != null) 'payload': payload,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  ProfileDailyRecordsCompanion copyWith({
+    Value<String>? ownerId,
+    Value<String>? localDate,
+    Value<String>? payload,
+    Value<DateTime>? updatedAt,
+    Value<int>? rowid,
+  }) {
+    return ProfileDailyRecordsCompanion(
+      ownerId: ownerId ?? this.ownerId,
+      localDate: localDate ?? this.localDate,
+      payload: payload ?? this.payload,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (ownerId.present) {
+      map['owner_id'] = Variable<String>(ownerId.value);
+    }
+    if (localDate.present) {
+      map['local_date'] = Variable<String>(localDate.value);
+    }
+    if (payload.present) {
+      map['payload'] = Variable<String>(payload.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ProfileDailyRecordsCompanion(')
+          ..write('ownerId: $ownerId, ')
+          ..write('localDate: $localDate, ')
+          ..write('payload: $payload, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -994,9 +2003,20 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       $StoredGameRecordsTable(this);
   late final $StoredDailyRecordsTable storedDailyRecords =
       $StoredDailyRecordsTable(this);
+  late final $ProfileSnapshotsTable profileSnapshots = $ProfileSnapshotsTable(
+    this,
+  );
+  late final $ProfileGameRecordsTable profileGameRecords =
+      $ProfileGameRecordsTable(this);
+  late final $ProfileDailyRecordsTable profileDailyRecords =
+      $ProfileDailyRecordsTable(this);
   late final Index gameRecordsTypePlayedAt = Index(
     'game_records_type_played_at',
     'CREATE INDEX game_records_type_played_at ON stored_game_records (game_type, played_at_ms)',
+  );
+  late final Index profileGameRecordsOwnerPlayedAt = Index(
+    'profile_game_records_owner_played_at',
+    'CREATE INDEX profile_game_records_owner_played_at ON profile_game_records (owner_id, played_at_ms)',
   );
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
@@ -1006,7 +2026,11 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     appSnapshots,
     storedGameRecords,
     storedDailyRecords,
+    profileSnapshots,
+    profileGameRecords,
+    profileDailyRecords,
     gameRecordsTypePlayedAt,
+    profileGameRecordsOwnerPlayedAt,
   ];
 }
 
@@ -1596,6 +2620,605 @@ typedef $$StoredDailyRecordsTableProcessedTableManager =
       StoredDailyRecord,
       PrefetchHooks Function()
     >;
+typedef $$ProfileSnapshotsTableCreateCompanionBuilder =
+    ProfileSnapshotsCompanion Function({
+      required String ownerId,
+      required String value,
+      required DateTime updatedAt,
+      Value<int> rowid,
+    });
+typedef $$ProfileSnapshotsTableUpdateCompanionBuilder =
+    ProfileSnapshotsCompanion Function({
+      Value<String> ownerId,
+      Value<String> value,
+      Value<DateTime> updatedAt,
+      Value<int> rowid,
+    });
+
+class $$ProfileSnapshotsTableFilterComposer
+    extends Composer<_$AppDatabase, $ProfileSnapshotsTable> {
+  $$ProfileSnapshotsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get ownerId => $composableBuilder(
+    column: $table.ownerId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get value => $composableBuilder(
+    column: $table.value,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$ProfileSnapshotsTableOrderingComposer
+    extends Composer<_$AppDatabase, $ProfileSnapshotsTable> {
+  $$ProfileSnapshotsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get ownerId => $composableBuilder(
+    column: $table.ownerId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get value => $composableBuilder(
+    column: $table.value,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$ProfileSnapshotsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $ProfileSnapshotsTable> {
+  $$ProfileSnapshotsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get ownerId =>
+      $composableBuilder(column: $table.ownerId, builder: (column) => column);
+
+  GeneratedColumn<String> get value =>
+      $composableBuilder(column: $table.value, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+}
+
+class $$ProfileSnapshotsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $ProfileSnapshotsTable,
+          ProfileSnapshot,
+          $$ProfileSnapshotsTableFilterComposer,
+          $$ProfileSnapshotsTableOrderingComposer,
+          $$ProfileSnapshotsTableAnnotationComposer,
+          $$ProfileSnapshotsTableCreateCompanionBuilder,
+          $$ProfileSnapshotsTableUpdateCompanionBuilder,
+          (
+            ProfileSnapshot,
+            BaseReferences<
+              _$AppDatabase,
+              $ProfileSnapshotsTable,
+              ProfileSnapshot
+            >,
+          ),
+          ProfileSnapshot,
+          PrefetchHooks Function()
+        > {
+  $$ProfileSnapshotsTableTableManager(
+    _$AppDatabase db,
+    $ProfileSnapshotsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ProfileSnapshotsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$ProfileSnapshotsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$ProfileSnapshotsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> ownerId = const Value.absent(),
+                Value<String> value = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ProfileSnapshotsCompanion(
+                ownerId: ownerId,
+                value: value,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String ownerId,
+                required String value,
+                required DateTime updatedAt,
+                Value<int> rowid = const Value.absent(),
+              }) => ProfileSnapshotsCompanion.insert(
+                ownerId: ownerId,
+                value: value,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$ProfileSnapshotsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $ProfileSnapshotsTable,
+      ProfileSnapshot,
+      $$ProfileSnapshotsTableFilterComposer,
+      $$ProfileSnapshotsTableOrderingComposer,
+      $$ProfileSnapshotsTableAnnotationComposer,
+      $$ProfileSnapshotsTableCreateCompanionBuilder,
+      $$ProfileSnapshotsTableUpdateCompanionBuilder,
+      (
+        ProfileSnapshot,
+        BaseReferences<_$AppDatabase, $ProfileSnapshotsTable, ProfileSnapshot>,
+      ),
+      ProfileSnapshot,
+      PrefetchHooks Function()
+    >;
+typedef $$ProfileGameRecordsTableCreateCompanionBuilder =
+    ProfileGameRecordsCompanion Function({
+      required String recordId,
+      required String ownerId,
+      required String gameType,
+      required int playedAtMs,
+      required String payload,
+      required DateTime updatedAt,
+      Value<int> rowid,
+    });
+typedef $$ProfileGameRecordsTableUpdateCompanionBuilder =
+    ProfileGameRecordsCompanion Function({
+      Value<String> recordId,
+      Value<String> ownerId,
+      Value<String> gameType,
+      Value<int> playedAtMs,
+      Value<String> payload,
+      Value<DateTime> updatedAt,
+      Value<int> rowid,
+    });
+
+class $$ProfileGameRecordsTableFilterComposer
+    extends Composer<_$AppDatabase, $ProfileGameRecordsTable> {
+  $$ProfileGameRecordsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get recordId => $composableBuilder(
+    column: $table.recordId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get ownerId => $composableBuilder(
+    column: $table.ownerId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get gameType => $composableBuilder(
+    column: $table.gameType,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get playedAtMs => $composableBuilder(
+    column: $table.playedAtMs,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get payload => $composableBuilder(
+    column: $table.payload,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$ProfileGameRecordsTableOrderingComposer
+    extends Composer<_$AppDatabase, $ProfileGameRecordsTable> {
+  $$ProfileGameRecordsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get recordId => $composableBuilder(
+    column: $table.recordId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get ownerId => $composableBuilder(
+    column: $table.ownerId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get gameType => $composableBuilder(
+    column: $table.gameType,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get playedAtMs => $composableBuilder(
+    column: $table.playedAtMs,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get payload => $composableBuilder(
+    column: $table.payload,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$ProfileGameRecordsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $ProfileGameRecordsTable> {
+  $$ProfileGameRecordsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get recordId =>
+      $composableBuilder(column: $table.recordId, builder: (column) => column);
+
+  GeneratedColumn<String> get ownerId =>
+      $composableBuilder(column: $table.ownerId, builder: (column) => column);
+
+  GeneratedColumn<String> get gameType =>
+      $composableBuilder(column: $table.gameType, builder: (column) => column);
+
+  GeneratedColumn<int> get playedAtMs => $composableBuilder(
+    column: $table.playedAtMs,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get payload =>
+      $composableBuilder(column: $table.payload, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+}
+
+class $$ProfileGameRecordsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $ProfileGameRecordsTable,
+          ProfileGameRecord,
+          $$ProfileGameRecordsTableFilterComposer,
+          $$ProfileGameRecordsTableOrderingComposer,
+          $$ProfileGameRecordsTableAnnotationComposer,
+          $$ProfileGameRecordsTableCreateCompanionBuilder,
+          $$ProfileGameRecordsTableUpdateCompanionBuilder,
+          (
+            ProfileGameRecord,
+            BaseReferences<
+              _$AppDatabase,
+              $ProfileGameRecordsTable,
+              ProfileGameRecord
+            >,
+          ),
+          ProfileGameRecord,
+          PrefetchHooks Function()
+        > {
+  $$ProfileGameRecordsTableTableManager(
+    _$AppDatabase db,
+    $ProfileGameRecordsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ProfileGameRecordsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$ProfileGameRecordsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$ProfileGameRecordsTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> recordId = const Value.absent(),
+                Value<String> ownerId = const Value.absent(),
+                Value<String> gameType = const Value.absent(),
+                Value<int> playedAtMs = const Value.absent(),
+                Value<String> payload = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ProfileGameRecordsCompanion(
+                recordId: recordId,
+                ownerId: ownerId,
+                gameType: gameType,
+                playedAtMs: playedAtMs,
+                payload: payload,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String recordId,
+                required String ownerId,
+                required String gameType,
+                required int playedAtMs,
+                required String payload,
+                required DateTime updatedAt,
+                Value<int> rowid = const Value.absent(),
+              }) => ProfileGameRecordsCompanion.insert(
+                recordId: recordId,
+                ownerId: ownerId,
+                gameType: gameType,
+                playedAtMs: playedAtMs,
+                payload: payload,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$ProfileGameRecordsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $ProfileGameRecordsTable,
+      ProfileGameRecord,
+      $$ProfileGameRecordsTableFilterComposer,
+      $$ProfileGameRecordsTableOrderingComposer,
+      $$ProfileGameRecordsTableAnnotationComposer,
+      $$ProfileGameRecordsTableCreateCompanionBuilder,
+      $$ProfileGameRecordsTableUpdateCompanionBuilder,
+      (
+        ProfileGameRecord,
+        BaseReferences<
+          _$AppDatabase,
+          $ProfileGameRecordsTable,
+          ProfileGameRecord
+        >,
+      ),
+      ProfileGameRecord,
+      PrefetchHooks Function()
+    >;
+typedef $$ProfileDailyRecordsTableCreateCompanionBuilder =
+    ProfileDailyRecordsCompanion Function({
+      required String ownerId,
+      required String localDate,
+      required String payload,
+      required DateTime updatedAt,
+      Value<int> rowid,
+    });
+typedef $$ProfileDailyRecordsTableUpdateCompanionBuilder =
+    ProfileDailyRecordsCompanion Function({
+      Value<String> ownerId,
+      Value<String> localDate,
+      Value<String> payload,
+      Value<DateTime> updatedAt,
+      Value<int> rowid,
+    });
+
+class $$ProfileDailyRecordsTableFilterComposer
+    extends Composer<_$AppDatabase, $ProfileDailyRecordsTable> {
+  $$ProfileDailyRecordsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get ownerId => $composableBuilder(
+    column: $table.ownerId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get localDate => $composableBuilder(
+    column: $table.localDate,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get payload => $composableBuilder(
+    column: $table.payload,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$ProfileDailyRecordsTableOrderingComposer
+    extends Composer<_$AppDatabase, $ProfileDailyRecordsTable> {
+  $$ProfileDailyRecordsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get ownerId => $composableBuilder(
+    column: $table.ownerId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get localDate => $composableBuilder(
+    column: $table.localDate,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get payload => $composableBuilder(
+    column: $table.payload,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$ProfileDailyRecordsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $ProfileDailyRecordsTable> {
+  $$ProfileDailyRecordsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get ownerId =>
+      $composableBuilder(column: $table.ownerId, builder: (column) => column);
+
+  GeneratedColumn<String> get localDate =>
+      $composableBuilder(column: $table.localDate, builder: (column) => column);
+
+  GeneratedColumn<String> get payload =>
+      $composableBuilder(column: $table.payload, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+}
+
+class $$ProfileDailyRecordsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $ProfileDailyRecordsTable,
+          ProfileDailyRecord,
+          $$ProfileDailyRecordsTableFilterComposer,
+          $$ProfileDailyRecordsTableOrderingComposer,
+          $$ProfileDailyRecordsTableAnnotationComposer,
+          $$ProfileDailyRecordsTableCreateCompanionBuilder,
+          $$ProfileDailyRecordsTableUpdateCompanionBuilder,
+          (
+            ProfileDailyRecord,
+            BaseReferences<
+              _$AppDatabase,
+              $ProfileDailyRecordsTable,
+              ProfileDailyRecord
+            >,
+          ),
+          ProfileDailyRecord,
+          PrefetchHooks Function()
+        > {
+  $$ProfileDailyRecordsTableTableManager(
+    _$AppDatabase db,
+    $ProfileDailyRecordsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ProfileDailyRecordsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$ProfileDailyRecordsTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer: () =>
+              $$ProfileDailyRecordsTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> ownerId = const Value.absent(),
+                Value<String> localDate = const Value.absent(),
+                Value<String> payload = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ProfileDailyRecordsCompanion(
+                ownerId: ownerId,
+                localDate: localDate,
+                payload: payload,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String ownerId,
+                required String localDate,
+                required String payload,
+                required DateTime updatedAt,
+                Value<int> rowid = const Value.absent(),
+              }) => ProfileDailyRecordsCompanion.insert(
+                ownerId: ownerId,
+                localDate: localDate,
+                payload: payload,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$ProfileDailyRecordsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $ProfileDailyRecordsTable,
+      ProfileDailyRecord,
+      $$ProfileDailyRecordsTableFilterComposer,
+      $$ProfileDailyRecordsTableOrderingComposer,
+      $$ProfileDailyRecordsTableAnnotationComposer,
+      $$ProfileDailyRecordsTableCreateCompanionBuilder,
+      $$ProfileDailyRecordsTableUpdateCompanionBuilder,
+      (
+        ProfileDailyRecord,
+        BaseReferences<
+          _$AppDatabase,
+          $ProfileDailyRecordsTable,
+          ProfileDailyRecord
+        >,
+      ),
+      ProfileDailyRecord,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -1606,4 +3229,10 @@ class $AppDatabaseManager {
       $$StoredGameRecordsTableTableManager(_db, _db.storedGameRecords);
   $$StoredDailyRecordsTableTableManager get storedDailyRecords =>
       $$StoredDailyRecordsTableTableManager(_db, _db.storedDailyRecords);
+  $$ProfileSnapshotsTableTableManager get profileSnapshots =>
+      $$ProfileSnapshotsTableTableManager(_db, _db.profileSnapshots);
+  $$ProfileGameRecordsTableTableManager get profileGameRecords =>
+      $$ProfileGameRecordsTableTableManager(_db, _db.profileGameRecords);
+  $$ProfileDailyRecordsTableTableManager get profileDailyRecords =>
+      $$ProfileDailyRecordsTableTableManager(_db, _db.profileDailyRecords);
 }

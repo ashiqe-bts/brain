@@ -3,6 +3,7 @@ import 'package:brainflex/core/models/brain_models.dart';
 import 'package:brainflex/core/training/game_catalog.dart';
 import 'package:brainflex/features/games/classic_game_board.dart';
 import 'package:brainflex/features/games/game_tutorial_screen.dart';
+import 'package:brainflex/features/games/game_experience.dart';
 import 'package:brainflex/features/games/research_game_board.dart';
 import 'package:brainflex/features/games/tutorial_guide.dart';
 import 'package:flutter/material.dart';
@@ -27,6 +28,7 @@ void main() {
       } else {
         expect(find.byType(ResearchGameBoard), findsOneWidget);
       }
+      expect(find.byType(GameStage), findsOneWidget);
       expect(find.bySemanticsLabel(RegExp('Game stimulus:')), findsOneWidget);
       expect(find.textContaining('Score '), findsNothing);
       expect(tester.takeException(), isNull);
@@ -196,6 +198,31 @@ Future<void> _finishCurrentResearchStep(WidgetTester tester) async {
   if (board.showingStimulus) {
     await tester.pump(Duration(milliseconds: board.trial.exposureMs));
     board = tester.widget<ResearchGameBoard>(find.byType(ResearchGameBoard));
+  }
+  if (board.type == GameType.memoryTiles) {
+    final tile = int.parse(
+      board.trial.options[board.trial.correctIndex].split(' ').last,
+    );
+    await tester.tap(find.byKey(ValueKey('memory-tile-$tile')));
+    await tester.pump(const Duration(milliseconds: 700));
+    return;
+  }
+  if (board.type == GameType.objectTracker) {
+    for (var index = 0; index < board.trial.span; index++) {
+      await tester.tap(find.byKey(ValueKey('firefly-$index')));
+      await tester.pump();
+    }
+    await tester.tap(find.text('Confirm fireflies'));
+    await tester.pump(const Duration(milliseconds: 700));
+    return;
+  }
+  if (board.type == GameType.towerPlanner) {
+    final move = board.trial.towerMoves[board.trial.correctIndex];
+    await tester.tap(find.byKey(ValueKey('tower-peg-${move.from}')));
+    await tester.pump();
+    await tester.tap(find.byKey(ValueKey('tower-peg-${move.to}')));
+    await tester.pump(const Duration(milliseconds: 700));
+    return;
   }
   final answer = find.widgetWithText(
     FilledButton,

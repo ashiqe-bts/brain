@@ -1,0 +1,92 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function owns(uid) {
+      return request.auth != null && request.auth.uid == uid;
+    }
+
+    function only(fields) {
+      return request.resource.data.keys().hasOnly(fields);
+    }
+
+    match /users/{uid} {
+      allow read, delete: if owns(uid);
+      allow create: if owns(uid)
+        && only(['schemaVersion', 'displayName', 'accountStatus', 'createdAt', 'updatedAt'])
+        && request.resource.data.schemaVersion == 1
+        && request.resource.data.accountStatus in ['active', 'pendingVerification']
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.updatedAt == request.time
+        && (!('displayName' in request.resource.data)
+          || request.resource.data.displayName == null
+          || (request.resource.data.displayName is string
+            && request.resource.data.displayName.size() <= 30));
+      allow update: if owns(uid)
+        && only(['schemaVersion', 'displayName', 'accountStatus', 'createdAt', 'updatedAt'])
+        && request.resource.data.schemaVersion == 1
+        && request.resource.data.accountStatus in ['active', 'pendingVerification']
+        && request.resource.data.createdAt == resource.data.createdAt
+        && request.resource.data.updatedAt == request.time
+        && (!('displayName' in request.resource.data)
+          || request.resource.data.displayName == null
+          || (request.resource.data.displayName is string
+            && request.resource.data.displayName.size() <= 30));
+
+      match /state/{documentId} {
+        allow read: if owns(uid) && documentId == 'current';
+        allow create, update: if owns(uid)
+          && documentId == 'current'
+          && only([
+            'schemaVersion', 'onboarded', 'displayName', 'xp', 'level',
+            'currentStreak', 'longestStreak', 'lastCompletedDate', 'workouts',
+            'difficulties', 'missions', 'achievements', 'completedTutorials',
+            'draft', 'lastMissionDate', 'revision', 'updatedAt'
+          ])
+          && request.resource.data.schemaVersion == 1
+          && request.resource.data.revision is int
+          && request.resource.data.xp is int
+          && request.resource.data.level is int
+          && request.resource.data.workouts is int
+          && request.resource.data.updatedAt == request.time;
+        allow delete: if owns(uid);
+      }
+
+      match /sessions/{sessionId} {
+        allow read, delete: if owns(uid);
+        allow create, update: if owns(uid)
+          && only([
+            'type', 'mode', 'score', 'normalized', 'accuracy', 'durationMs',
+            'difficulty', 'bestCombo', 'reactionMs', 'correct', 'attempts',
+            'checkpoints', 'id', 'completedAt', 'rulesVersion', 'metrics',
+            'scoreComponents', 'updatedAt'
+          ])
+          && request.resource.data.id == sessionId
+          && request.resource.data.score is int
+          && request.resource.data.durationMs is int
+          && request.resource.data.difficulty is int
+          && request.resource.data.updatedAt == request.time;
+      }
+
+      match /daily/{date} {
+        allow read, delete: if owns(uid);
+        allow create, update: if owns(uid)
+          && only([
+            'date', 'brainScore', 'focus', 'memory', 'speed', 'math',
+            'accuracy', 'reactionMs', 'results', 'skillRatings',
+            'gameRatings', 'updatedAt'
+          ])
+          && request.resource.data.date == date
+          && request.resource.data.results is list
+          && request.resource.data.updatedAt == request.time;
+      }
+    }
+
+    match /guestTransfers/{transferId} {
+      allow read, write: if false;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

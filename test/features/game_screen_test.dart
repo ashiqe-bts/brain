@@ -5,6 +5,7 @@ import 'package:brainflex/core/storage/app_database.dart';
 import 'package:brainflex/core/storage/brain_repository.dart';
 import 'package:brainflex/core/training/game_catalog.dart';
 import 'package:brainflex/features/games/game_screen.dart';
+import 'package:brainflex/features/games/game_experience.dart';
 import 'package:brainflex/core/widgets/common.dart';
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
@@ -131,4 +132,37 @@ void main() {
     expect(tester.takeException(), isNull);
     await tester.pumpWidget(const SizedBox.shrink());
   });
+
+  for (final game in activeGames) {
+    testWidgets('${game.name} 2.5D stage fits narrow large-text play', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(320, 720);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(
+        MediaQuery(
+          data: const MediaQueryData(textScaler: TextScaler.linear(2)),
+          child: BlocProvider.value(
+            value: cubit,
+            child: MaterialApp(
+              theme: buildBrainTheme(BrainTheme.highContrast),
+              home: GameScreen(
+                type: game,
+                mode: GameMode.relaxed,
+                difficulty: 1,
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump(const Duration(milliseconds: 3100));
+
+      expect(find.byType(GameStage), findsOneWidget);
+      expect(tester.takeException(), isNull);
+      await tester.pumpWidget(const SizedBox.shrink());
+    });
+  }
 }

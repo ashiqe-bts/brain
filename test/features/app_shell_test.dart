@@ -9,6 +9,7 @@ import 'package:brainflex/core/state/brain_cubit.dart';
 import 'package:brainflex/core/storage/app_database.dart';
 import 'package:brainflex/core/storage/brain_repository.dart';
 import 'package:brainflex/features/shell/app_shell.dart';
+import 'package:brainflex/features/progress/progress_screen.dart';
 
 void main() {
   late AppDatabase database;
@@ -29,7 +30,7 @@ void main() {
     await repository.close();
   });
 
-  testWidgets('uses Today, Train, and Insights without retired surfaces', (
+  testWidgets('uses Expedition, Games, and Journal as the core destinations', (
     tester,
   ) async {
     await tester.pumpWidget(
@@ -43,29 +44,44 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Today'), findsOneWidget);
+    expect(find.text('Expedition'), findsOneWidget);
     expect(find.text('Hey, Asha'), findsOneWidget);
-    expect(find.text('Ready for your daily reset?'), findsOneWidget);
-    expect(find.text('5 games • about 5 minutes'), findsOneWidget);
-    expect(find.text("Start today's workout"), findsOneWidget);
-    expect(find.text('Train'), findsOneWidget);
-    expect(find.text('Insights'), findsOneWidget);
+    expect(find.text("Today's brain-world expedition"), findsOneWidget);
+    expect(find.text('3 stages • 5–7 minutes'), findsOneWidget);
+    expect(find.text('Start expedition'), findsOneWidget);
+    expect(find.byKey(const Key('nova-mascot')), findsNothing);
+    expect(find.text('Games'), findsOneWidget);
+    expect(find.text('Journal'), findsOneWidget);
     expect(find.text('Lab'), findsNothing);
     expect(find.textContaining('Demo Ad'), findsNothing);
 
-    await tester.tap(find.text('Train'));
+    await tester.tap(find.text('Games'));
     await tester.pumpAndSettle();
-    await tester.scrollUntilVisible(find.text('Color Clash'), 300);
-    expect(find.byTooltip('Tutorial for Color Clash'), findsOneWidget);
+    await tester.scrollUntilVisible(find.text('Prism Rush'), 300);
+    expect(find.byTooltip('Tutorial for Prism Rush'), findsOneWidget);
     expect(find.text('Challenge My Best'), findsNothing);
+    expect(find.byKey(const Key('nova-mascot')), findsNothing);
 
-    await tester.tap(find.text('Insights'));
+    await tester.tap(find.text('Journal'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Fifteen-game profile'), findsOneWidget);
-    expect(find.text('0 of 15 game baselines ready'), findsOneWidget);
+    expect(find.text('Ten-game training journal'), findsOneWidget);
+    expect(find.text('0 of 10 game baselines ready'), findsOneWidget);
     expect(find.text('All'), findsOneWidget);
-    expect(find.byTooltip('Research basis for Color Clash'), findsOneWidget);
+    expect(find.byTooltip('Research basis for Prism Rush'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.text('Expedition collectibles'),
+      300,
+      scrollable: find
+          .descendant(
+            of: find.byType(ProgressScreen),
+            matching: find.byType(Scrollable),
+          )
+          .first,
+    );
+    expect(find.text('Expedition collectibles'), findsOneWidget);
+    expect(find.textContaining('Nova'), findsNothing);
+    expect(find.byKey(const Key('nova-mascot')), findsNothing);
   });
 
   testWidgets('existing users without a name receive the profile gate', (
@@ -80,7 +96,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Add your name'), findsOneWidget);
-    expect(find.text('Today'), findsNothing);
+    expect(find.text('Expedition'), findsNothing);
   });
 
   testWidgets('supports 200 percent text and high contrast navigation', (
@@ -100,15 +116,15 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Today'), findsOneWidget);
-    expect(find.text('Train'), findsOneWidget);
-    expect(find.text('Insights'), findsOneWidget);
+    expect(find.text('Expedition'), findsOneWidget);
+    expect(find.text('Games'), findsOneWidget);
+    expect(find.text('Journal'), findsOneWidget);
     expect(tester.takeException(), isNull);
 
-    await tester.tap(find.text('Train'));
+    await tester.tap(find.text('Games'));
     await tester.pumpAndSettle();
-    await tester.scrollUntilVisible(find.text('Color Clash'), 300);
-    expect(find.byTooltip('Tutorial for Color Clash'), findsOneWidget);
+    await tester.scrollUntilVisible(find.text('Prism Rush'), 300);
+    expect(find.byTooltip('Tutorial for Prism Rush'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
@@ -157,11 +173,11 @@ void main() {
     expect(tester.takeException(), isNull);
     expect(find.byType(IndexedStack), findsOneWidget);
 
-    await tester.tap(find.text('Train'));
+    await tester.tap(find.text('Games'));
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
 
-    await tester.tap(find.text('Insights'));
+    await tester.tap(find.text('Journal'));
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
   });

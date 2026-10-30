@@ -5,10 +5,37 @@ import 'brain_theme.dart';
 
 @immutable
 class GameVisualSpec {
-  const GameVisualSpec({required this.icon, required this.semanticLabel});
+  const GameVisualSpec({
+    required this.icon,
+    required this.semanticLabel,
+    required this.motif,
+    required this.sceneLabel,
+  });
 
   final IconData icon;
   final String semanticLabel;
+  final GameMotif motif;
+  final String sceneLabel;
+}
+
+enum GameMotif {
+  colorOrbs,
+  numberBlocks,
+  memoryGrid,
+  lightning,
+  searchLens,
+  signalGate,
+  focusRadar,
+  memoryPath,
+  switchTracks,
+  arrowLane,
+  linkedCards,
+  symbolConsole,
+  trackingArena,
+  towerWorkshop,
+  splitDashboard,
+  sequenceSteps,
+  isometricCubes,
 }
 
 GameVisualSpec gameVisualFor(GameType type) => GameVisualSpec(
@@ -32,6 +59,26 @@ GameVisualSpec gameVisualFor(GameType type) => GameVisualSpec(
     GameType.spatialRotation => Icons.threed_rotation_rounded,
   },
   semanticLabel: gameContent[type]!.semanticLabel,
+  motif: switch (type) {
+    GameType.colorClash => GameMotif.colorOrbs,
+    GameType.mathBlitz => GameMotif.numberBlocks,
+    GameType.memoryTiles => GameMotif.memoryGrid,
+    GameType.reflexTap => GameMotif.lightning,
+    GameType.visualSearch => GameMotif.searchLens,
+    GameType.signalStop => GameMotif.signalGate,
+    GameType.peripheralFocus => GameMotif.focusRadar,
+    GameType.nBackNavigator => GameMotif.memoryPath,
+    GameType.ruleSwitch => GameMotif.switchTracks,
+    GameType.arrowGuard => GameMotif.arrowLane,
+    GameType.pairLink => GameMotif.linkedCards,
+    GameType.symbolSprint => GameMotif.symbolConsole,
+    GameType.objectTracker => GameMotif.trackingArena,
+    GameType.towerPlanner => GameMotif.towerWorkshop,
+    GameType.dualTaskDash => GameMotif.splitDashboard,
+    GameType.logicSeries => GameMotif.sequenceSteps,
+    GameType.spatialRotation => GameMotif.isometricCubes,
+  },
+  sceneLabel: '${type.title} game board',
 );
 
 class GameIcon extends StatelessWidget {
@@ -55,8 +102,8 @@ class GameIcon extends StatelessWidget {
     final icon = Icon(
       visual.icon,
       size: size,
-      color: accent,
-      semanticLabel: semantic ? visual.semanticLabel : null,
+      color: decorated ? context.onColor(accent) : accent,
+      semanticLabel: semantic && !decorated ? visual.semanticLabel : null,
     );
     if (!decorated) return ExcludeSemantics(excluding: !semantic, child: icon);
     return Semantics(
@@ -67,10 +114,92 @@ class GameIcon extends StatelessWidget {
         height: size + 24,
         alignment: Alignment.center,
         decoration: BoxDecoration(
-          color: accent.withValues(alpha: .12),
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color.lerp(accent, Colors.white, .28)!, accent],
+          ),
           borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: Theme.of(context).brightness == Brightness.light
+                ? accent.withValues(alpha: .72)
+                : context.brain.outline,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: accent.withValues(alpha: .24),
+              offset: const Offset(0, 4),
+              blurRadius: 0,
+            ),
+          ],
         ),
         child: icon,
+      ),
+    );
+  }
+}
+
+class GameThumbnail extends StatelessWidget {
+  const GameThumbnail({
+    super.key,
+    required this.game,
+    this.width = 76,
+    this.height = 68,
+    this.semantic = false,
+  });
+
+  final GameType game;
+  final double width;
+  final double height;
+  final bool semantic;
+
+  @override
+  Widget build(BuildContext context) {
+    final visual = gameVisualFor(game);
+    final accent = context.gameAccent(game);
+    return Semantics(
+      label: semantic ? visual.semanticLabel : null,
+      excludeSemantics: !semantic,
+      child: Container(
+        width: width,
+        height: height,
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color.lerp(accent, Colors.white, .34)!, accent],
+          ),
+          borderRadius: BorderRadius.circular(17),
+          border: Border.all(color: context.brain.outline),
+          boxShadow: [
+            BoxShadow(
+              color: accent.withValues(alpha: .3),
+              offset: const Offset(0, 5),
+            ),
+          ],
+        ),
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            Positioned(
+              right: -8,
+              top: -8,
+              child: Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.white.withValues(alpha: .14),
+                ),
+              ),
+            ),
+            Icon(
+              visual.icon,
+              size: height * .48,
+              color: context.onColor(accent),
+            ),
+          ],
+        ),
       ),
     );
   }

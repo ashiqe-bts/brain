@@ -1,16 +1,17 @@
 import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../core/config/app_config.dart';
 import '../../core/models/brain_models.dart';
+import '../../core/services/game_feedback_service.dart';
 import '../../core/state/brain_cubit.dart';
 import '../../core/training/training_analytics.dart';
 import '../../core/widgets/common.dart';
 import '../../app/theme/brain_theme.dart';
 import 'classic_game_board.dart';
 import 'game_engine.dart';
+import 'game_module.dart';
 import 'research_game_screen.dart';
 
 class GameScreen extends StatefulWidget {
@@ -34,11 +35,10 @@ class GameScreen extends StatefulWidget {
 }
 
 class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
-  bool get usesResearchGame =>
-      widget.type != GameType.colorClash &&
-      widget.type != GameType.mathBlitz &&
-      widget.type != GameType.reflexTap &&
-      widget.type != GameType.visualSearch;
+  bool get usesResearchGame => widget.type.isActive
+      ? gameModule(widget.type).engineFamily == GameEngineFamily.research
+      : widget.type != GameType.reflexTap &&
+            widget.type != GameType.visualSearch;
 
   late final Random random;
   late final GameTrialFactory trialFactory;
@@ -47,6 +47,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
   final stopwatch = Stopwatch();
   final trialWatch = Stopwatch();
   final reflexWatch = Stopwatch();
+  final feedback = GameFeedbackService();
   Timer? timer, delayTimer;
   GameLifecycle lifecycle = GameLifecycle.initial;
   int countdown = AppSettings.gameCountdownSeconds,
@@ -93,6 +94,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
     WidgetsBinding.instance.removeObserver(this);
     timer?.cancel();
     delayTimer?.cancel();
+    unawaited(feedback.dispose());
     super.dispose();
   }
 
@@ -102,6 +104,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
         state == AppLifecycleState.inactive) {
       timer?.cancel();
       delayTimer?.cancel();
+      unawaited(feedback.stop());
       stopwatch.stop();
       if (mounted) setState(() => lifecycle = GameLifecycle.paused);
     } else if (state == AppLifecycleState.resumed &&
@@ -389,7 +392,12 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
       },
       child: Scaffold(
         appBar: AppBar(
-          title: Text(widget.type.title, style: const TextStyle(fontSize: 20)),
+          title: Text(
+            widget.type.title,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(fontSize: 20),
+          ),
           actions: [
             if (timed)
               Padding(
@@ -629,11 +637,12 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
   void _feedback(bool positive) {
     final cubit = context.read<BrainCubit>();
     lastAnswerCorrect = positive;
-    if (cubit.data.sound) {
-      SystemSound.play(SystemSoundType.click);
-    }
-    if (cubit.data.haptics) {
-      positive ? HapticFeedback.lightImpact() : HapticFeedback.mediumImpact();
-    }
+    unawaited(
+      feedback.emit(
+        positive ? GameFeedbackEvent.correct : GameFeedbackEvent.incorrect,
+        soundEnabled: cubit.data.sound,
+        hapticsEnabled: cubit.data.haptics,
+      ),
+    );
   }
 }

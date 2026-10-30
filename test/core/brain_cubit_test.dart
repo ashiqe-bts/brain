@@ -70,13 +70,17 @@ void main() {
   });
 
   test(
-    'daily workout stores a validated chosen order and dynamic ratings',
+    'daily expedition stores three stages and awards participation stars',
     () async {
-      final chosen = activeGames.skip(3).take(5).toList();
+      final chosen = const [
+        GameType.colorClash,
+        GameType.memoryTiles,
+        GameType.towerPlanner,
+      ];
       await cubit.startWorkout(order: chosen);
       final order = cubit.data.draft!.order;
       expect(order, chosen);
-      expect(order, hasLength(5));
+      expect(order, hasLength(3));
 
       for (final game in order) {
         await cubit.recordResult(
@@ -101,27 +105,47 @@ void main() {
       expect(summary!.results.map((result) => result.type), order);
       expect(summary.gameRatings.keys.toSet(), order.toSet());
       expect(cubit.data.workouts, 1);
+      expect(cubit.data.explorerProgress.totalMapStars, 3);
+      expect(cubit.data.explorerProgress.regionStars, {
+        ExpeditionRegion.focusFrontier: 1,
+        ExpeditionRegion.memoryGrove: 1,
+        ExpeditionRegion.puzzlePeaks: 1,
+      });
+    },
+  );
+
+  test(
+    'daily expedition generates regional stages and a unique bonus',
+    () async {
+      await cubit.startDailyExpedition();
+
+      final draft = cubit.data.draft!;
+      expect(draft.order, hasLength(3));
+      expect(
+        draft.order.map((game) => game.region).toSet(),
+        ExpeditionRegion.values.toSet(),
+      );
+      expect(draft.requiredRoundCount, 3);
+      expect(draft.bonusGame, isNot(isIn(draft.order)));
     },
   );
 
   test('daily workout rejects duplicate or inactive choices', () async {
     expect(
-      () => cubit.startWorkout(
-        order: List.filled(5, GameType.colorClash),
-      ),
+      () => cubit.startWorkout(order: List.filled(3, GameType.colorClash)),
       throwsArgumentError,
     );
     expect(
       () => cubit.startWorkout(
-        order: [GameType.reflexTap, ...activeGames.take(4)],
+        order: [GameType.reflexTap, ...activeGames.take(2)],
       ),
       throwsArgumentError,
     );
   });
 
   test('daily workout keeps an existing draft selection', () async {
-    final first = activeGames.take(5).toList();
-    final replacement = activeGames.skip(5).take(5).toList();
+    final first = activeGames.take(3).toList();
+    final replacement = activeGames.skip(3).take(3).toList();
 
     await cubit.startWorkout(order: first);
     await cubit.startWorkout(order: replacement);

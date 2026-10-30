@@ -31,12 +31,42 @@ enum SkillDomain {
   spatial,
 }
 
+enum ExpeditionRegion { focusFrontier, memoryGrove, puzzlePeaks }
+
+extension ExpeditionRegionX on ExpeditionRegion {
+  String get title => switch (this) {
+    ExpeditionRegion.focusFrontier => 'Focus Frontier',
+    ExpeditionRegion.memoryGrove => 'Memory Grove',
+    ExpeditionRegion.puzzlePeaks => 'Puzzle Peaks',
+  };
+}
+
 typedef SessionKind = GameMode;
 typedef GameRulesVersion = int;
 
 enum GameLifecycle { initial, countdown, running, paused, feedback, completed }
 
 extension GameTypeX on GameType {
+  ExpeditionRegion get region => switch (this) {
+    GameType.colorClash ||
+    GameType.signalStop ||
+    GameType.ruleSwitch ||
+    GameType.objectTracker ||
+    GameType.reflexTap ||
+    GameType.visualSearch ||
+    GameType.peripheralFocus ||
+    GameType.arrowGuard ||
+    GameType.symbolSprint ||
+    GameType.dualTaskDash => ExpeditionRegion.focusFrontier,
+    GameType.memoryTiles ||
+    GameType.nBackNavigator ||
+    GameType.pairLink => ExpeditionRegion.memoryGrove,
+    GameType.mathBlitz ||
+    GameType.towerPlanner ||
+    GameType.spatialRotation ||
+    GameType.logicSeries => ExpeditionRegion.puzzlePeaks,
+  };
+
   SkillDomain get skill => switch (this) {
     GameType.colorClash => SkillDomain.focus,
     GameType.mathBlitz => SkillDomain.calculation,
@@ -57,7 +87,14 @@ extension GameTypeX on GameType {
     GameType.spatialRotation => SkillDomain.spatial,
   };
   int get rulesVersion => switch (this) {
-    GameType.colorClash || GameType.mathBlitz || GameType.memoryTiles => 3,
+    GameType.colorClash || GameType.mathBlitz || GameType.memoryTiles => 4,
+    GameType.signalStop ||
+    GameType.nBackNavigator ||
+    GameType.ruleSwitch ||
+    GameType.pairLink ||
+    GameType.objectTracker ||
+    GameType.towerPlanner ||
+    GameType.spatialRotation => 2,
     GameType.reflexTap || GameType.visualSearch => 2,
     _ => 1,
   };
@@ -407,12 +444,97 @@ class Mission {
   );
 }
 
+class RewardDefinition {
+  const RewardDefinition({
+    required this.id,
+    required this.title,
+    required this.requiredStars,
+  });
+
+  final String id;
+  final String title;
+  final int requiredStars;
+}
+
+const expeditionRewards = <RewardDefinition>[
+  RewardDefinition(id: 'scout-cap', title: 'Scout Cap', requiredStars: 3),
+  RewardDefinition(id: 'prism-pin', title: 'Prism Pin', requiredStars: 6),
+  RewardDefinition(id: 'memory-leaf', title: 'Memory Leaf', requiredStars: 9),
+  RewardDefinition(id: 'orbit-ring', title: 'Orbit Ring', requiredStars: 12),
+  RewardDefinition(id: 'focus-lens', title: 'Focus Lens', requiredStars: 18),
+  RewardDefinition(id: 'forge-spark', title: 'Forge Spark', requiredStars: 24),
+  RewardDefinition(
+    id: 'portal-patch',
+    title: 'Portal Patch',
+    requiredStars: 30,
+  ),
+  RewardDefinition(id: 'firefly-jar', title: 'Firefly Jar', requiredStars: 39),
+  RewardDefinition(id: 'totem-crown', title: 'Totem Crown', requiredStars: 48),
+  RewardDefinition(
+    id: 'crystal-star',
+    title: 'Crystal Star',
+    requiredStars: 60,
+  ),
+  RewardDefinition(id: 'night-cape', title: 'Night Cape', requiredStars: 75),
+  RewardDefinition(id: 'star-trail', title: 'Star Trail', requiredStars: 90),
+];
+
+List<RewardDefinition> unlockedExpeditionRewards(int stars) =>
+    List.unmodifiable(
+      expeditionRewards.where((reward) => reward.requiredStars <= stars),
+    );
+
+class ExplorerProgress {
+  const ExplorerProgress({this.totalMapStars = 0, this.regionStars = const {}});
+
+  final int totalMapStars;
+  final Map<ExpeditionRegion, int> regionStars;
+
+  ExplorerProgress copyWith({
+    int? totalMapStars,
+    Map<ExpeditionRegion, int>? regionStars,
+  }) => ExplorerProgress(
+    totalMapStars: totalMapStars ?? this.totalMapStars,
+    regionStars: regionStars ?? this.regionStars,
+  );
+
+  Map<String, dynamic> toJson() => {
+    'totalMapStars': totalMapStars,
+    'regionStars': regionStars.map((key, value) => MapEntry(key.name, value)),
+  };
+
+  factory ExplorerProgress.fromJson(Map<String, dynamic>? json) {
+    if (json == null) return const ExplorerProgress();
+    return ExplorerProgress(
+      totalMapStars: json['totalMapStars'] as int? ?? 0,
+      regionStars: (json['regionStars'] as Map? ?? const {}).map(
+        (key, value) => MapEntry(
+          ExpeditionRegion.values.byName(key as String),
+          value as int,
+        ),
+      ),
+    );
+  }
+}
+
+class ExpeditionPlan {
+  const ExpeditionPlan({required this.coreGames, required this.bonusGame});
+
+  final List<GameType> coreGames;
+  final GameType bonusGame;
+}
+
 class WorkoutDraft {
   const WorkoutDraft({
     required this.date,
     required this.order,
     this.results = const [],
-  });
+    int? requiredRoundCount,
+    this.bonusGame,
+  }) : requiredRoundCount = requiredRoundCount ?? order.length;
+
+  final int requiredRoundCount;
+  final GameType? bonusGame;
   final String date;
   final List<GameType> order;
   final List<GameResult> results;
@@ -420,16 +542,25 @@ class WorkoutDraft {
     'date': date,
     'order': order.map((e) => e.name).toList(),
     'results': results.map((e) => e.toJson()).toList(),
+    'requiredRoundCount': requiredRoundCount,
+    'bonusGame': bonusGame?.name,
   };
-  factory WorkoutDraft.fromJson(Map<String, dynamic> j) => WorkoutDraft(
-    date: j['date'] as String,
-    order: (j['order'] as List)
+  factory WorkoutDraft.fromJson(Map<String, dynamic> j) {
+    final order = (j['order'] as List)
         .map((e) => gameTypeFromName(e as String))
-        .toList(),
-    results: (j['results'] as List)
-        .map((e) => GameResult.fromJson(Map<String, dynamic>.from(e as Map)))
-        .toList(),
-  );
+        .toList();
+    return WorkoutDraft(
+      date: j['date'] as String,
+      order: order,
+      results: (j['results'] as List? ?? const [])
+          .map((e) => GameResult.fromJson(Map<String, dynamic>.from(e as Map)))
+          .toList(),
+      requiredRoundCount: j['requiredRoundCount'] as int? ?? order.length,
+      bonusGame: j['bonusGame'] == null
+          ? null
+          : gameTypeFromName(j['bonusGame'] as String),
+    );
+  }
 }
 
 class BrainState {
@@ -457,6 +588,7 @@ class BrainState {
     List<Mission>? missions,
     Set<String>? achievements,
     Set<String>? completedTutorials,
+    this.explorerProgress = const ExplorerProgress(),
     this.draft,
     this.lastMissionDate,
   }) : difficulties = migrateDifficulties(difficulties),
@@ -488,6 +620,7 @@ class BrainState {
   List<Mission> missions;
   Set<String> achievements;
   Set<String> completedTutorials;
+  ExplorerProgress explorerProgress;
   WorkoutDraft? draft;
 
   int get xpNeeded => 300 + 50 * (level - 1);
@@ -517,6 +650,7 @@ class BrainState {
     'missions': missions.map((e) => e.toJson()).toList(),
     'achievements': achievements.toList(),
     'completedTutorials': completedTutorials.toList(),
+    'explorerProgress': explorerProgress.toJson(),
     'draft': draft?.toJson(),
     'lastMissionDate': lastMissionDate,
   };
@@ -558,6 +692,11 @@ class BrainState {
       achievements: Set<String>.from(j['achievements'] as List? ?? []),
       completedTutorials: Set<String>.from(
         j['completedTutorials'] as List? ?? [],
+      ),
+      explorerProgress: ExplorerProgress.fromJson(
+        j['explorerProgress'] == null
+            ? null
+            : Map<String, dynamic>.from(j['explorerProgress'] as Map),
       ),
       draft: j['draft'] == null
           ? null

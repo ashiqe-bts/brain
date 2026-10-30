@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 
 import '../../app/theme/brain_theme.dart';
+import '../../app/theme/expedition_theme.dart';
 import '../../app/theme/game_visuals.dart';
 import '../../core/config/app_config.dart';
 import '../../core/models/brain_models.dart';
@@ -101,6 +102,8 @@ class _ProgressScreenState extends State<ProgressScreen> {
                     AppCard(child: _calendar(context, data)),
                     SectionHeader(AppText.progress.achievements),
                     _achievements(context, data),
+                    const SectionHeader('Expedition collectibles'),
+                    _collection(context, data),
                     const SizedBox(height: 16),
                     Text(
                       AppText.progress.disclaimer,
@@ -572,4 +575,85 @@ class _ProgressScreenState extends State<ProgressScreen> {
       ),
     );
   }
+
+  Widget _collection(BuildContext context, BrainState data) {
+    final progress = data.explorerProgress;
+    final unlocked = unlockedExpeditionRewards(progress.totalMapStars);
+    return AppCard(
+      tonal: true,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '${progress.totalMapStars} map stars · ${unlocked.length} of ${expeditionRewards.length} found',
+            style: const TextStyle(fontWeight: FontWeight.w800),
+          ),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            children: [
+              for (final reward in expeditionRewards)
+                _RewardTile(
+                  reward: reward,
+                  unlocked: unlocked.contains(reward),
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _RewardTile extends StatelessWidget {
+  const _RewardTile({required this.reward, required this.unlocked});
+
+  final RewardDefinition reward;
+  final bool unlocked;
+
+  @override
+  Widget build(BuildContext context) => Semantics(
+    label: unlocked
+        ? '${reward.title}, collected'
+        : '${reward.title}, unlocks at ${reward.requiredStars} stars',
+    child: ExcludeSemantics(
+      child: Container(
+        width: 94,
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+        decoration: BoxDecoration(
+          color: unlocked
+              ? context.brain.reward.withValues(alpha: .28)
+              : context.brain.surface,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: unlocked ? context.brain.reward : context.brain.outline,
+            width: unlocked ? 2 : 1,
+          ),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              unlocked ? expeditionRewardIcon(reward) : Icons.lock_rounded,
+              color: unlocked ? context.brain.reward : context.brain.textMuted,
+            ),
+            const SizedBox(height: 5),
+            Text(
+              reward.title,
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800),
+            ),
+            Text(
+              unlocked ? 'Collected' : '${reward.requiredStars} ★',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 10, color: context.brain.textMuted),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
 }

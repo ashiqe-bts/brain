@@ -1,4 +1,6 @@
 import 'package:brainflex/app/theme/brain_theme.dart';
+import 'package:brainflex/core/auth/auth_controller.dart';
+import 'package:brainflex/core/auth/auth_service.dart';
 import 'package:brainflex/core/models/brain_models.dart';
 import 'package:brainflex/features/onboarding/onboarding_screen.dart';
 import 'package:brainflex/core/widgets/common.dart';
@@ -6,7 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  testWidgets('starts with a value-first welcome before asking for a name', (
+  testWidgets('get started opens the unified authentication gateway', (
     tester,
   ) async {
     tester.view.physicalSize = const Size(390, 844);
@@ -22,6 +24,8 @@ void main() {
 
     expect(find.text('A calmer way to challenge your focus.'), findsOneWidget);
     expect(find.text('Get started'), findsOneWidget);
+    expect(find.text('Continue with Google'), findsNothing);
+    expect(find.text('Continue with email'), findsNothing);
     expect(find.byType(TextFormField), findsNothing);
     expect(find.byType(AppCard), findsNothing);
 
@@ -33,9 +37,53 @@ void main() {
     button.onPressed!();
     await tester.pumpAndSettle();
 
+    expect(find.text('Create your account'), findsOneWidget);
+    expect(find.widgetWithText(TextFormField, 'Email'), findsOneWidget);
+    expect(find.widgetWithText(TextFormField, 'Password'), findsOneWidget);
+    expect(find.text('OR'), findsOneWidget);
+    expect(find.text('Continue with Google'), findsOneWidget);
+    expect(find.text('Continue as guest'), findsOneWidget);
+  });
+
+  testWidgets('continue as guest advances to the name step', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: buildBrainTheme(BrainTheme.calmLight),
+        home: const OnboardingScreen(),
+      ),
+    );
+
+    await tester.tap(find.text('Get started'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Continue as guest'));
+    await tester.pumpAndSettle();
+
     expect(find.text('What should we call you?'), findsOneWidget);
-    expect(find.byType(TextFormField), findsOneWidget);
-    expect(find.byType(AppCard), findsNothing);
+  });
+
+  testWidgets('successful Google authentication advances onboarding', (
+    tester,
+  ) async {
+    final service = _FakeAuthService();
+    final controller = AuthController(service);
+    addTearDown(controller.dispose);
+    await tester.pumpWidget(
+      AuthScope(
+        controller: controller,
+        child: MaterialApp(
+          theme: buildBrainTheme(BrainTheme.calmLight),
+          home: const OnboardingScreen(),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('Get started'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Continue with Google'));
+    await tester.pumpAndSettle();
+
+    expect(service.googleAttempts, 1);
+    expect(find.text('What should we call you?'), findsOneWidget);
   });
 
   testWidgets('welcome adapts to a wide Chrome-sized viewport', (tester) async {
@@ -102,6 +150,8 @@ void main() {
 
     await tester.tap(find.text('Get started'));
     await tester.pumpAndSettle();
+    await tester.tap(find.text('Continue as guest'));
+    await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextFormField), 'Asha');
     await tester.pump();
     final continueButton = tester.widget<FilledButton>(
@@ -121,4 +171,39 @@ void main() {
     expect(find.text('Tap the ink color'), findsNothing);
     expect(find.text('2 of 2'), findsOneWidget);
   });
+}
+
+class _FakeAuthService implements AuthService {
+  AccountSession session = const AccountSession(
+    uid: 'guest',
+    kind: AccountKind.guest,
+  );
+  int googleAttempts = 0;
+
+  @override
+  AccountSession get current => session;
+  @override
+  Stream<AccountSession> get sessions => Stream.value(session);
+  @override
+  Future<void> initialize() async {}
+  @override
+  Future<void> continueWithGoogle() async {
+    googleAttempts++;
+    session = const AccountSession(uid: 'account', kind: AccountKind.account);
+  }
+
+  @override
+  Future<void> deleteAccount() async {}
+  @override
+  Future<void> refreshVerification() async {}
+  @override
+  Future<void> sendPasswordReset(String email) async {}
+  @override
+  Future<void> sendVerification() async {}
+  @override
+  Future<void> signInWithEmail(String email, String password) async {}
+  @override
+  Future<void> signOutToGuest() async {}
+  @override
+  Future<void> upgradeWithEmail(String email, String password) async {}
 }

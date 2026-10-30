@@ -2,11 +2,98 @@ import 'dart:math';
 
 import '../../core/models/brain_models.dart';
 
+sealed class ResearchVisual {
+  const ResearchVisual();
+}
+
+class MemoryGridVisual extends ResearchVisual {
+  const MemoryGridVisual({required this.before, required this.after});
+  final Set<int> before;
+  final Set<int> after;
+}
+
+class SignalVisual extends ResearchVisual {
+  const SignalVisual({required this.stop});
+  final bool stop;
+}
+
+class PeripheralVisual extends ResearchVisual {
+  const PeripheralVisual({required this.shape, required this.direction});
+  final int shape;
+  final int direction;
+}
+
+class PositionVisual extends ResearchVisual {
+  const PositionVisual({required this.position, required this.n});
+  final int position;
+  final int n;
+}
+
+class RuleVisual extends ResearchVisual {
+  const RuleVisual({
+    required this.shape,
+    required this.color,
+    required this.useShape,
+  });
+  final int shape;
+  final int color;
+  final bool useShape;
+}
+
+class ArrowVisual extends ResearchVisual {
+  const ArrowVisual({required this.right, required this.congruent});
+  final bool right;
+  final bool congruent;
+}
+
+class PairVisual extends ResearchVisual {
+  const PairVisual({required this.left, this.partner, required this.recall});
+  final int left;
+  final int? partner;
+  final bool recall;
+}
+
+class SymbolKeyVisual extends ResearchVisual {
+  const SymbolKeyVisual({required this.values, required this.target});
+  final List<int> values;
+  final int target;
+}
+
+class TrackingVisual extends ResearchVisual {
+  const TrackingVisual({required this.targets, required this.movement});
+  final List<int> targets;
+  final List<int> movement;
+}
+
+class TowerVisual extends ResearchVisual {
+  const TowerVisual({required this.pegs, required this.target});
+  final List<List<int>> pegs;
+  final int target;
+}
+
+class DualTaskVisual extends ResearchVisual {
+  const DualTaskVisual({required this.value, required this.stars});
+  final int value;
+  final int stars;
+}
+
+class SeriesVisual extends ResearchVisual {
+  const SeriesVisual({required this.values});
+  final List<int> values;
+}
+
+class RotationVisual extends ResearchVisual {
+  const RotationVisual({required this.same, required this.angle});
+  final bool same;
+  final int angle;
+}
+
 class ResearchTrial {
   const ResearchTrial({
     required this.prompt,
     required this.options,
     required this.correctIndex,
+    required this.visual,
     this.cue = '',
     this.condition = 'standard',
     this.exposureMs = 0,
@@ -21,6 +108,7 @@ class ResearchTrial {
   final String cue;
   final List<String> options;
   final int correctIndex;
+  final ResearchVisual visual;
   final String condition;
   final int exposureMs;
   final int span;
@@ -119,6 +207,7 @@ class ResearchGameEngine {
       cue: after.map((item) => '${item + 1}').join(','),
       options: options.map((item) => 'Tile ${item + 1}').toList(),
       correctIndex: options.indexOf(changed),
+      visual: MemoryGridVisual(before: active, after: after),
       condition: 'change-detection',
       exposureMs: max(650, 1500 - difficulty * 70),
       span: span,
@@ -132,6 +221,7 @@ class ResearchGameEngine {
       cue: stop ? 'Withhold your response' : 'Respond quickly',
       options: const ['TAP', 'WAIT'],
       correctIndex: stop ? 1 : 0,
+      visual: SignalVisual(stop: stop),
       condition: stop ? 'stop' : 'go',
       exposureMs: 500 + _random.nextInt(500),
     );
@@ -155,6 +245,10 @@ class ResearchGameEngine {
       cue: 'Remember the center shape and edge position',
       options: shuffled,
       correctIndex: shuffled.indexOf(correct),
+      visual: PeripheralVisual(
+        shape: shapes.indexOf(shape),
+        direction: directions.indexOf(direction),
+      ),
       condition: 'central-peripheral',
       exposureMs: max(450, 1200 - difficulty * 60),
     );
@@ -181,6 +275,7 @@ class ResearchGameEngine {
       cue: '$n-back',
       options: const ['MATCH', 'NEW'],
       correctIndex: shouldMatch ? 0 : 1,
+      visual: PositionVisual(position: position, n: n),
       condition: shouldMatch ? 'match' : 'non-match',
       span: n,
     );
@@ -197,6 +292,7 @@ class ResearchGameEngine {
       cue: useShape ? 'RULE: SHAPE' : 'RULE: COLOR',
       options: useShape ? shapes : colors,
       correctIndex: useShape ? shape : color,
+      visual: RuleVisual(shape: shape, color: color, useShape: useShape),
       condition: _trialIndex > 0 && _trialIndex % 2 == 0 ? 'switch' : 'repeat',
     );
   }
@@ -211,6 +307,7 @@ class ResearchGameEngine {
       cue: 'Center arrow only',
       options: const ['LEFT', 'RIGHT'],
       correctIndex: right ? 1 : 0,
+      visual: ArrowVisual(right: right, congruent: congruent),
       condition: congruent ? 'congruent' : 'incongruent',
     );
   }
@@ -225,6 +322,7 @@ class ResearchGameEngine {
         cue: 'Delayed recall',
         options: options,
         correctIndex: options.indexOf(pair.$2),
+        visual: PairVisual(left: symbols.indexOf(pair.$1), recall: true),
         condition: 'delayed',
         span: _learnedPairs.length,
       );
@@ -238,6 +336,11 @@ class ResearchGameEngine {
       cue: 'Which symbol was paired with $left?',
       options: options,
       correctIndex: options.indexOf(partner),
+      visual: PairVisual(
+        left: symbols.indexOf(left),
+        partner: symbols.indexOf(partner),
+        recall: false,
+      ),
       condition: 'immediate',
       exposureMs: max(800, 1700 - difficulty * 70),
       span: 2 + difficulty ~/ 2,
@@ -257,6 +360,7 @@ class ResearchGameEngine {
       cue: key,
       options: const ['1', '2', '3', '4'],
       correctIndex: values[target] - 1,
+      visual: SymbolKeyVisual(values: values, target: target),
       condition: 'symbol-substitution',
     );
   }
@@ -282,6 +386,7 @@ class ResearchGameEngine {
       cue: 'Choose their final letter positions',
       options: shuffled,
       correctIndex: shuffled.indexOf(correct),
+      visual: TrackingVisual(targets: targets, movement: movement),
       condition: 'multiple-object-tracking',
       exposureMs: max(900, 1900 - difficulty * 70),
       span: count,
@@ -309,6 +414,10 @@ class ResearchGameEngine {
       options: legalMoves.map((move) => move.label).toList(),
       correctIndex: legalMoves.indexWhere(
         (move) => move.from == optimal.from && move.to == optimal.to,
+      ),
+      visual: TowerVisual(
+        pegs: _towerPegs.map(List<int>.unmodifiable).toList(),
+        target: _towerTarget,
       ),
       condition: 'planning',
       span: _towerMinimumMoves.bitLength,
@@ -383,6 +492,7 @@ class ResearchGameEngine {
       cue: 'Classify the number AND count the stars',
       options: shuffled,
       correctIndex: shuffled.indexOf(correct),
+      visual: DualTaskVisual(value: value, stars: targetCount),
       condition: 'dual-task',
     );
   }
@@ -402,6 +512,7 @@ class ResearchGameEngine {
       cue: 'Continue the rule',
       options: shuffled.map((value) => '$value').toList(),
       correctIndex: shuffled.indexOf(answer),
+      visual: SeriesVisual(values: values),
       condition: 'inductive-reasoning',
     );
   }
@@ -417,6 +528,7 @@ class ResearchGameEngine {
       cue: 'Can rotation alone make these match? · $angle°',
       options: const ['SAME', 'DIFFERENT'],
       correctIndex: same ? 0 : 1,
+      visual: RotationVisual(same: same, angle: angle),
       condition: '${same ? 'same' : 'mirror'}-$angle',
     );
   }

@@ -24,6 +24,8 @@ void main() {
       expect(repeated.prompt, trial.prompt, reason: game.name);
       expect(repeated.options, trial.options, reason: game.name);
       expect(repeated.correctIndex, trial.correctIndex, reason: game.name);
+      expect(trial.visual, isA<ResearchVisual>(), reason: game.name);
+      expect(repeated.visual.runtimeType, trial.visual.runtimeType);
     }
   });
 
@@ -50,6 +52,20 @@ void main() {
       (_) => engine.nextTrial().condition,
     ).toSet();
     expect(conditions, containsAll(<String>{'go', 'stop'}));
+  });
+
+  test('memory visual payload preserves the generated zero-based grid', () {
+    final trial = ResearchGameEngine(
+      seed: 12,
+      type: GameType.memoryTiles,
+      difficulty: 4,
+    ).nextTrial();
+    final visual = trial.visual as MemoryGridVisual;
+    final promptCells = trial.prompt.split(',').map(int.parse).toSet();
+    final cueCells = trial.cue.split(',').map(int.parse).toSet();
+
+    expect(visual.before.map((cell) => cell + 1).toSet(), promptCells);
+    expect(visual.after.map((cell) => cell + 1).toSet(), cueCells);
   });
 
   test('object tracking asks for final positions, not visible identities', () {

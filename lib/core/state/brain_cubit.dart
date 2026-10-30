@@ -2,6 +2,7 @@ import 'dart:math';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:uuid/uuid.dart';
 import '../config/app_config.dart';
 import '../models/brain_models.dart';
 import '../storage/brain_repository.dart';
@@ -21,6 +22,7 @@ class BrainCubit extends Cubit<BrainViewState> {
   BrainCubit(this.repository, BrainState initial)
     : super(BrainViewState(initial, 0));
   final BrainRepository repository;
+  static const _uuid = Uuid();
   BrainState get data => state.data;
 
   Future<void> _commit() async {
@@ -160,8 +162,29 @@ class BrainCubit extends Cubit<BrainViewState> {
     await _commit();
   }
 
+  Future<void> startDailyExpedition({
+    Random? random,
+    ExpeditionPlan? selectedPlan,
+  }) async {
+    final today = localDate();
+    if (data.daily.any((summary) => summary.date == today) ||
+        data.draft != null) {
+      return;
+    }
+    final plan =
+        selectedPlan ?? dailyExpeditionSelection(data.history, random: random);
+    data.draft = WorkoutDraft(
+      date: today,
+      order: plan.coreGames,
+      requiredRoundCount: AppSettings.workoutGameCount,
+      bonusGame: plan.bonusGame,
+    );
+    await _commit();
+  }
+
   Future<bool> recordResult(GameResult result) async {
     final recorded = result.copyWith(
+      id: result.id ?? _uuid.v4(),
       completedAt: result.completedAt ?? DateTime.now(),
       isLegacy: false,
     );
@@ -209,6 +232,8 @@ class BrainCubit extends Cubit<BrainViewState> {
           date: draft.date,
           order: draft.order,
           results: [...draft.results, recorded],
+          requiredRoundCount: draft.requiredRoundCount,
+          bonusGame: draft.bonusGame,
         );
       }
     } else if (recorded.mode != GameMode.relaxed) {
@@ -257,7 +282,9 @@ class BrainCubit extends Cubit<BrainViewState> {
 
   Future<DailySummary?> completeWorkout() async {
     final draft = data.draft;
-    if (draft == null || draft.results.length < draft.order.length) return null;
+    if (draft == null || draft.results.length < draft.requiredRoundCount) {
+      return null;
+    }
     int legacyValue(GameType game) =>
         draft.results
             .where((result) => result.type == game)
@@ -301,6 +328,20 @@ class BrainCubit extends Cubit<BrainViewState> {
     data.daily.sort((a, b) => a.date.compareTo(b.date));
     _updateStreak(summary.date);
     data.workouts++;
+    final completedRegions = draft.results
+        .take(draft.requiredRoundCount)
+        .map((result) => result.type.region)
+        .toSet();
+    final nextRegionStars = {
+      ...data.explorerProgress.regionStars,
+      for (final region in completedRegions)
+        region: (data.explorerProgress.regionStars[region] ?? 0) + 1,
+    };
+    data.explorerProgress = data.explorerProgress.copyWith(
+      totalMapStars:
+          data.explorerProgress.totalMapStars + draft.requiredRoundCount,
+      regionStars: nextRegionStars,
+    );
     data.draft = null;
     addXp(100);
     _progressMission('workout', 1);

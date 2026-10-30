@@ -4,13 +4,14 @@ import 'package:brainflex/core/state/brain_cubit.dart';
 import 'package:brainflex/core/storage/app_database.dart';
 import 'package:brainflex/core/storage/brain_repository.dart';
 import 'package:brainflex/features/daily_workout/workout_selection_screen.dart';
+import 'package:brainflex/app/theme/game_visuals.dart';
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  testWidgets('random five selects five unique games and enables start', (
+  testWidgets('daily route contains one stage per region and a bonus', (
     tester,
   ) async {
     tester.view.physicalSize = const Size(320, 700);
@@ -38,14 +39,15 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Random 5'));
-    await tester.pump();
-
-    expect(find.text('5 / 5'), findsOneWidget);
+    expect(find.text('Focus Frontier'), findsWidgets);
+    expect(find.text('Memory Grove'), findsWidgets);
+    expect(find.text('Puzzle Peaks'), findsWidgets);
+    expect(find.text('Optional bonus'), findsOneWidget);
+    expect(find.byKey(const Key('nova-mascot')), findsNothing);
     final start = tester.widget<FilledButton>(
       find
           .ancestor(
-            of: find.text('Start workout'),
+            of: find.text('Start expedition'),
             matching: find.byWidgetPredicate(
               (widget) => widget is FilledButton,
             ),
@@ -57,7 +59,7 @@ void main() {
   });
 
   testWidgets(
-    'selection uses a persistent mobile action and compact progress',
+    'expedition preview uses a persistent mobile action and compact route',
     (tester) async {
       tester.view.physicalSize = const Size(390, 844);
       tester.view.devicePixelRatio = 1;
@@ -84,10 +86,13 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      expect(find.text('Build your daily mix'), findsOneWidget);
-      expect(find.text('Choose 5 games'), findsOneWidget);
-      expect(find.text('Start workout'), findsOneWidget);
-      expect(find.text('0 / 5'), findsOneWidget);
+      expect(find.text("Today's route"), findsOneWidget);
+      expect(
+        find.text('Three short stages, balanced across your map.'),
+        findsOneWidget,
+      );
+      expect(find.text('Start expedition'), findsOneWidget);
+      expect(find.byType(GameThumbnail), findsWidgets);
       expect(tester.takeException(), isNull);
     },
   );

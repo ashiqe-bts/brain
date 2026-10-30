@@ -9,6 +9,7 @@ import '../../core/state/brain_cubit.dart';
 import '../../core/training/training_analytics.dart';
 import '../../core/widgets/common.dart';
 import '../games/game_launcher.dart';
+import '../games/game_experience.dart';
 import '../progress/session_result_screen.dart';
 
 class WorkoutScreen extends StatefulWidget {
@@ -82,12 +83,14 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
       );
       if (!mounted) return;
     }
+    final bonusGame = draft.bonusGame;
     final summary = await cubit.completeWorkout();
     if (summary != null && mounted) {
       await Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (_) => WorkoutResultScreen(summary: summary),
+          builder: (_) =>
+              WorkoutResultScreen(summary: summary, bonusGame: bonusGame),
         ),
       );
     } else if (mounted) {
@@ -199,9 +202,10 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
 }
 
 class WorkoutResultScreen extends StatelessWidget {
-  const WorkoutResultScreen({super.key, required this.summary});
+  const WorkoutResultScreen({super.key, required this.summary, this.bonusGame});
 
   final DailySummary summary;
+  final GameType? bonusGame;
 
   @override
   Widget build(BuildContext context) {
@@ -211,101 +215,95 @@ class WorkoutResultScreen extends StatelessWidget {
         automaticallyImplyLeading: false,
         title: Text(AppText.workout.sessionReview),
       ),
-      body: SafeArea(
-        bottom: false,
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
-          children: [
-            Center(
-              child: Container(
-                width: 72,
-                height: 72,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: context.brain.success.withValues(alpha: .14),
-                  shape: BoxShape.circle,
+      body: Stack(
+        children: [
+          SafeArea(
+            bottom: false,
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
+              children: [
+                Text(
+                  AppText.workout.completeTitle,
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                    fontFamily: 'Fredoka',
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
-                child: Icon(
-                  Icons.check_rounded,
-                  size: 40,
-                  color: context.brain.success,
+                const SizedBox(height: 8),
+                Text(
+                  baselineStatus(data.history).isComplete
+                      ? AppText.workout.compatibleResults
+                      : AppText.readyGameBaselines(
+                          baselineStatus(data.history).readyGames,
+                          activeGames.length,
+                        ),
+                  textAlign: TextAlign.center,
                 ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              AppText.workout.completeTitle,
-              textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                fontFamily: 'Fredoka',
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              baselineStatus(data.history).isComplete
-                  ? AppText.workout.compatibleResults
-                  : AppText.readyGameBaselines(
-                      baselineStatus(data.history).readyGames,
-                      activeGames.length,
-                    ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 24),
-            AppCard(
-              tonal: true,
-              child: Column(
-                children: [
-                  for (final (index, result) in summary.results.indexed) ...[
-                    if (index > 0) const Divider(height: 28),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
+                const SizedBox(height: 24),
+                AppCard(
+                  tonal: true,
+                  child: Column(
+                    children: [
+                      for (final (index, result)
+                          in summary.results.indexed) ...[
+                        if (index > 0) const Divider(height: 28),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            GameIcon(
-                              game: result.type,
-                              size: 26,
-                              decorated: true,
-                            ),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: Text(
-                                result.type.domain,
-                                style: const TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w900,
+                            Row(
+                              children: [
+                                GameIcon(
+                                  game: result.type,
+                                  size: 26,
+                                  decorated: true,
                                 ),
-                              ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Text(
+                                    result.type.domain,
+                                    style: const TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.w900,
+                                    ),
+                                  ),
+                                ),
+                                Text(
+                                  trainingLevel(
+                                    difficulty: result.difficulty,
+                                    score: result.normalized,
+                                  ).toStringAsFixed(1),
+                                  style: const TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w900,
+                                  ),
+                                ),
+                              ],
                             ),
-                            Text(
-                              trainingLevel(
-                                difficulty: result.difficulty,
-                                score: result.normalized,
-                              ).toStringAsFixed(1),
-                              style: const TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.w900,
-                              ),
-                            ),
+                            const SizedBox(height: 8),
+                            Text(_rawMetrics(result)),
+                            const SizedBox(height: 6),
+                            Text(_comparison(result, data)),
+                            const SizedBox(height: 6),
+                            Text(sessionTip(result)),
                           ],
                         ),
-                        const SizedBox(height: 8),
-                        Text(_rawMetrics(result)),
-                        const SizedBox(height: 6),
-                        Text(_comparison(result, data)),
-                        const SizedBox(height: 6),
-                        Text(sessionTip(result)),
                       ],
-                    ),
-                  ],
-                ],
-              ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  AppText.workout.resultDisclaimer,
+                  textAlign: TextAlign.center,
+                ),
+              ],
             ),
-            const SizedBox(height: 8),
-            Text(AppText.workout.resultDisclaimer, textAlign: TextAlign.center),
-          ],
-        ),
+          ),
+          const Positioned.fill(
+            child: CelebrationOverlay(level: CelebrationLevel.daily),
+          ),
+        ],
       ),
       bottomNavigationBar: SafeArea(
         top: false,
@@ -324,18 +322,54 @@ class WorkoutResultScreen extends StatelessWidget {
                 constraints: const BoxConstraints(
                   maxWidth: AppSettings.resultContentWidth,
                 ),
-                child: PrimaryAction(
-                  expanded: true,
-                  color: context.brain.success,
-                  onPressed: () => Navigator.pop(context),
-                  icon: Icons.done_rounded,
-                  label: AppText.workout.done,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (bonusGame != null) ...[
+                      OutlinedButton.icon(
+                        onPressed: () => _playBonus(context, bonusGame!),
+                        icon: const Icon(Icons.auto_awesome_rounded),
+                        label: Text('Optional bonus: ${bonusGame!.title}'),
+                      ),
+                      const SizedBox(height: 8),
+                    ],
+                    PrimaryAction(
+                      expanded: true,
+                      color: context.brain.success,
+                      onPressed: () => Navigator.pop(context),
+                      icon: Icons.done_rounded,
+                      label: AppText.workout.done,
+                    ),
+                  ],
                 ),
               ),
             ),
           ),
         ),
       ),
+    );
+  }
+
+  Future<void> _playBonus(BuildContext context, GameType game) async {
+    final cubit = context.read<BrainCubit>();
+    final difficulty = cubit.data.difficulties[game.name] ?? 1;
+    final result = await launchGameSession(
+      context: context,
+      type: game,
+      mode: GameMode.standard,
+      difficulty: difficulty,
+      personalBest: cubit.personalBest(
+        game,
+        GameMode.standard,
+        difficulty: difficulty,
+      ),
+    );
+    if (result == null || !context.mounted) return;
+    await cubit.recordResult(result);
+    if (!context.mounted) return;
+    await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => SessionResultScreen(result: result)),
     );
   }
 

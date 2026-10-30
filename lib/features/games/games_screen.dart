@@ -5,6 +5,7 @@ import '../../core/models/brain_models.dart';
 import '../../core/state/brain_cubit.dart';
 import '../../core/widgets/common.dart';
 import '../../app/theme/brain_theme.dart';
+import '../../app/theme/expedition_theme.dart';
 import '../../app/theme/game_visuals.dart';
 import 'game_launcher.dart';
 import 'research_basis_sheet.dart';
@@ -17,77 +18,143 @@ class GamesScreen extends StatefulWidget {
   State<GamesScreen> createState() => _GamesScreenState();
 }
 
-class _GamesScreenState extends State<GamesScreen> {
-  SkillDomain? selectedDomain;
+class _RegionHeader extends StatelessWidget {
+  const _RegionHeader({required this.region});
+
+  final ExpeditionRegion region;
 
   @override
   Widget build(BuildContext context) {
-    final domains = activeGames.map((game) => game.skill).toSet().toList();
+    final visual = expeditionRegionVisual(region);
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.fromLTRB(0, 16, 0, 10),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            visual.accent.withValues(alpha: .24),
+            visual.secondary.withValues(alpha: .1),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: visual.accent.withValues(alpha: .5)),
+      ),
+      child: Row(
+        children: [
+          Icon(visual.icon, color: visual.accent, size: 30),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  region.title,
+                  style: const TextStyle(
+                    fontFamily: 'Fredoka',
+                    fontSize: 19,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                Text(visual.tagline),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _GamesScreenState extends State<GamesScreen> {
+  ExpeditionRegion? selectedRegion;
+
+  @override
+  Widget build(BuildContext context) {
+    const regions = ExpeditionRegion.values;
     return Scaffold(
       appBar: AppBar(toolbarHeight: 70, title: Text(AppText.navigation.train)),
       body: SafeArea(
         bottom: false,
-        child: Column(
-          children: [
-            Expanded(
-              child: ListView(
-                padding: const EdgeInsets.fromLTRB(16, 4, 16, 18),
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                Color.lerp(
+                  context.brain.background,
+                  const Color(0xFF9CDBFF),
+                  .13,
+                )!,
+                context.brain.background,
+              ],
+            ),
+          ),
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(16, 4, 16, 18),
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Center(child: PageEyebrow(AppText.train.chooseGame)),
-                  const SizedBox(height: 14),
-                  Text(AppText.train.intro, textAlign: TextAlign.center),
-                  const SizedBox(height: 14),
-                  Semantics(
-                    label: AppText.train.filterSemantics,
-                    child: Wrap(
-                      alignment: WrapAlignment.center,
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: [
-                        FilterChip(
-                          label: Text(AppText.train.all),
-                          selected: selectedDomain == null,
-                          onSelected: (_) =>
-                              setState(() => selectedDomain = null),
-                        ),
-                        for (final domain in domains)
-                          FilterChip(
-                            label: Text(_domainLabel(domain)),
-                            selected: selectedDomain == domain,
-                            onSelected: (_) =>
-                                setState(() => selectedDomain = domain),
-                          ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Center(
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(
-                        maxWidth: AppSettings.trainContentWidth,
-                      ),
-                      child: Column(
-                        children: [
-                          for (final domain in domains)
-                            if (selectedDomain == null ||
-                                selectedDomain == domain) ...[
-                              SectionHeader(_domainLabel(domain)),
-                              _gameGrid(
-                                context,
-                                activeGames
-                                    .where((game) => game.skill == domain)
-                                    .toList(),
-                              ),
-                            ],
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
+                  PageEyebrow(AppText.train.chooseGame),
+                  const SizedBox(height: 6),
+                  Text(AppText.train.intro),
                 ],
               ),
-            ),
-          ],
+              const SizedBox(height: 14),
+              Semantics(
+                label: AppText.train.filterSemantics,
+                child: Wrap(
+                  alignment: WrapAlignment.center,
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    FilterChip(
+                      label: Text(AppText.train.all),
+                      selected: selectedRegion == null,
+                      onSelected: (_) => setState(() => selectedRegion = null),
+                    ),
+                    for (final region in regions)
+                      FilterChip(
+                        avatar: Icon(
+                          expeditionRegionVisual(region).icon,
+                          size: 18,
+                        ),
+                        label: Text(region.title),
+                        selected: selectedRegion == region,
+                        onSelected: (_) =>
+                            setState(() => selectedRegion = region),
+                      ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+              Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(
+                    maxWidth: AppSettings.trainContentWidth,
+                  ),
+                  child: Column(
+                    children: [
+                      for (final region in regions)
+                        if (selectedRegion == null ||
+                            selectedRegion == region) ...[
+                          _RegionHeader(region: region),
+                          _gameGrid(
+                            context,
+                            activeGames
+                                .where((game) => game.region == region)
+                                .toList(),
+                          ),
+                        ],
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+            ],
+          ),
         ),
       ),
     );
@@ -126,7 +193,7 @@ class _GamesScreenState extends State<GamesScreen> {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              GameIcon(game: game, size: 28, decorated: true),
+              GameThumbnail(game: game, semantic: true),
               const SizedBox(width: 14),
               Expanded(
                 child: Column(
@@ -191,9 +258,6 @@ class _GamesScreenState extends State<GamesScreen> {
       ),
     );
   }
-
-  String _domainLabel(SkillDomain domain) =>
-      AppText.skillDomainLabels[domain.name]!;
 
   Future<void> _chooseMode(BuildContext context, GameType game) async {
     final mode = await showModalBottomSheet<GameMode>(
