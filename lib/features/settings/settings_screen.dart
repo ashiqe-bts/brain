@@ -7,6 +7,7 @@ import '../../core/services/notification_service.dart';
 import '../../core/state/brain_cubit.dart';
 import '../../core/widgets/common.dart';
 import '../../app/theme/brain_theme.dart';
+import '../auth/account_card.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -32,6 +33,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
         children: [
           PageEyebrow(AppText.settings.eyebrow),
           const SizedBox(height: 16),
+          AccountCard(header: _header('Account')),
+          const SizedBox(height: 18),
           AppCard(
             child: Column(
               children: [

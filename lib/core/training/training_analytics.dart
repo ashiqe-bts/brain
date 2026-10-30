@@ -192,7 +192,7 @@ BaselineStatus baselineStatus(Iterable<Object> source) {
   );
 }
 
-/// Picks five distinct active games while favoring games with the least
+/// Picks three distinct active games while favoring games with the least
 /// current-rules daily practice. Supplying [random] makes the result
 /// deterministic in tests.
 List<GameType> coverageAwareDailySelection(
@@ -212,6 +212,36 @@ List<GameType> coverageAwareDailySelection(
   final shuffled = [...activeGames]..shuffle(generator);
   shuffled.sort((a, b) => counts[a]!.compareTo(counts[b]!));
   return List.unmodifiable(shuffled.take(AppSettings.workoutGameCount));
+}
+
+ExpeditionPlan dailyExpeditionSelection(
+  Iterable<GameResult> history, {
+  Random? random,
+}) {
+  final generator = random ?? Random();
+  int playCount(GameType game) => history.where((result) {
+    return result.type == game &&
+        result.mode == GameMode.official &&
+        result.rulesVersion == game.rulesVersion &&
+        !result.isLegacy;
+  }).length;
+
+  final core = <GameType>[];
+  for (final region in ExpeditionRegion.values) {
+    final candidates =
+        activeGames.where((game) => game.region == region).toList()
+          ..shuffle(generator)
+          ..sort((a, b) => playCount(a).compareTo(playCount(b)));
+    core.add(candidates.first);
+  }
+  final bonusCandidates =
+      activeGames.where((game) => !core.contains(game)).toList()
+        ..shuffle(generator)
+        ..sort((a, b) => playCount(a).compareTo(playCount(b)));
+  return ExpeditionPlan(
+    coreGames: List.unmodifiable(core),
+    bonusGame: bonusCandidates.first,
+  );
 }
 
 int adaptDifficulty(

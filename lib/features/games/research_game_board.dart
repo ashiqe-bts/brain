@@ -33,6 +33,10 @@ class ResearchGameBoard extends StatelessWidget {
   Widget build(BuildContext context) {
     final isStop = trial.condition == 'stop';
     final revealOptions = !showingStimulus && !isStop;
+    final usesDirectBoard =
+        type == GameType.memoryTiles ||
+        type == GameType.objectTracker ||
+        type == GameType.towerPlanner;
     return GameStage(
       game: type,
       child: Column(
@@ -75,7 +79,7 @@ class ResearchGameBoard extends StatelessWidget {
                 label: AppText.gameplay.tap,
               ),
             )
-          else if (revealOptions || trial.exposureMs == 0)
+          else if ((revealOptions || trial.exposureMs == 0) && !usesDirectBoard)
             Wrap(
               alignment: WrapAlignment.center,
               spacing: 12,
@@ -100,7 +104,7 @@ class ResearchGameBoard extends StatelessWidget {
                 ),
               ),
             )
-          else
+          else if (!usesDirectBoard)
             Text(AppText.gameplay.study),
         ],
       ),
@@ -119,6 +123,9 @@ class ResearchGameBoard extends StatelessWidget {
         accent: context.gameAccent(type),
         movement: trial.movement,
         revealFinal: !showingStimulus,
+        onAnswer: !showingStimulus
+            ? (correct) => onAnswer(_answerFromCorrectness(correct))
+            : null,
       );
     }
     if (visual is MemoryGridVisual) {
@@ -128,6 +135,9 @@ class ResearchGameBoard extends StatelessWidget {
         values: values,
         count: count,
         accent: context.gameAccent(type),
+        onTap: showingStimulus
+            ? null
+            : (tile) => onAnswer(_answerForTile(tile)),
       );
     }
     if (visual is TowerVisual) {
@@ -135,6 +145,8 @@ class ResearchGameBoard extends StatelessWidget {
         pegs: visual.pegs,
         target: visual.target,
         accent: context.gameAccent(type),
+        moves: trial.towerMoves,
+        onMove: onAnswer,
       );
     }
     if (visual is PeripheralVisual && showingStimulus) {
@@ -189,6 +201,19 @@ class ResearchGameBoard extends StatelessWidget {
       ],
     );
   }
+
+  int _answerForTile(int tile) {
+    final exact = trial.options.indexOf('Tile ${tile + 1}');
+    return exact >= 0 ? exact : _answerFromCorrectness(false);
+  }
+
+  int _answerFromCorrectness(bool correct) {
+    if (correct) return trial.correctIndex;
+    return List.generate(trial.options.length, (index) => index).firstWhere(
+      (index) => index != trial.correctIndex,
+      orElse: () => trial.correctIndex,
+    );
+  }
 }
 
 class _MemoryBoard extends StatelessWidget {
@@ -196,11 +221,13 @@ class _MemoryBoard extends StatelessWidget {
     required this.values,
     required this.count,
     required this.accent,
+    this.onTap,
   });
 
   final Set<int> values;
   final int count;
   final Color accent;
+  final ValueChanged<int>? onTap;
 
   @override
   Widget build(BuildContext context) => SizedBox.square(
@@ -217,44 +244,53 @@ class _MemoryBoard extends StatelessWidget {
         final active = values.contains(index);
         return Semantics(
           label: AppText.tileSemantics(index + 1, active),
-          child: AnimatedContainer(
-            duration: MediaQuery.disableAnimationsOf(context)
-                ? Duration.zero
-                : const Duration(milliseconds: 180),
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              gradient: active
-                  ? LinearGradient(
-                      colors: [Color.lerp(accent, Colors.white, .35)!, accent],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    )
-                  : null,
-              color: active ? null : context.brain.hud,
-              border: Border.all(
-                color: active ? accent : context.brain.outline,
-              ),
-              borderRadius: BorderRadius.circular(10),
-              boxShadow: [
-                BoxShadow(
-                  color: active
-                      ? accent.withValues(alpha: .42)
-                      : context.brain.shadow.withValues(alpha: .12),
-                  offset: const Offset(0, 4),
-                  blurRadius: active ? 8 : 0,
+          button: onTap != null,
+          child: InkWell(
+            key: ValueKey('memory-tile-${index + 1}'),
+            onTap: onTap == null ? null : () => onTap!(index),
+            borderRadius: BorderRadius.circular(10),
+            child: AnimatedContainer(
+              duration: MediaQuery.disableAnimationsOf(context)
+                  ? Duration.zero
+                  : const Duration(milliseconds: 180),
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                gradient: active
+                    ? LinearGradient(
+                        colors: [
+                          Color.lerp(accent, Colors.white, .35)!,
+                          accent,
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      )
+                    : null,
+                color: active ? null : context.brain.hud,
+                border: Border.all(
+                  color: active ? accent : context.brain.outline,
                 ),
-              ],
-            ),
-            child: active
-                ? Icon(
-                    Icons.brightness_1_rounded,
-                    color: context.onColor(accent),
-                    size: 16,
-                  )
-                : Text(
-                    '${index + 1}',
-                    style: const TextStyle(fontWeight: FontWeight.w800),
+                borderRadius: BorderRadius.circular(10),
+                boxShadow: [
+                  BoxShadow(
+                    color: active
+                        ? accent.withValues(alpha: .42)
+                        : context.brain.shadow.withValues(alpha: .12),
+                    offset: const Offset(0, 4),
+                    blurRadius: active ? 8 : 0,
                   ),
+                ],
+              ),
+              child: active
+                  ? Icon(
+                      Icons.brightness_1_rounded,
+                      color: context.onColor(accent),
+                      size: 16,
+                    )
+                  : Text(
+                      '${index + 1}',
+                      style: const TextStyle(fontWeight: FontWeight.w800),
+                    ),
+            ),
           ),
         );
       },
@@ -714,25 +750,82 @@ class _RotationBoard extends StatelessWidget {
   );
 }
 
-class _TowerBoard extends StatelessWidget {
+class _TowerBoard extends StatefulWidget {
   const _TowerBoard({
     required this.pegs,
     required this.target,
     required this.accent,
+    required this.moves,
+    required this.onMove,
   });
 
   final List<List<int>> pegs;
   final int target;
   final Color accent;
+  final List<TowerMove> moves;
+  final ValueChanged<int> onMove;
+
+  @override
+  State<_TowerBoard> createState() => _TowerBoardState();
+}
+
+class _TowerBoardState extends State<_TowerBoard> {
+  int? source;
+  String? hint;
+
+  @override
+  void didUpdateWidget(covariant _TowerBoard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.pegs != widget.pegs || oldWidget.target != widget.target) {
+      source = null;
+      hint = null;
+    }
+  }
+
+  void _tapPeg(int peg) {
+    if (source == null) {
+      if (widget.pegs[peg].isEmpty) {
+        setState(() => hint = 'Choose a peg with a top disk.');
+        return;
+      }
+      setState(() {
+        source = peg;
+        hint = 'Now choose a destination peg.';
+      });
+      return;
+    }
+    if (source == peg) {
+      setState(() {
+        source = null;
+        hint = null;
+      });
+      return;
+    }
+    final moveIndex = widget.moves.indexWhere(
+      (move) => move.from == source && move.to == peg,
+    );
+    if (moveIndex >= 0) {
+      setState(() {
+        source = null;
+        hint = null;
+      });
+      widget.onMove(moveIndex);
+      return;
+    }
+    setState(() {
+      source = null;
+      hint = 'That disk cannot go there. Try another move.';
+    });
+  }
 
   @override
   Widget build(BuildContext context) => Column(
     mainAxisSize: MainAxisSize.min,
     children: [
       Text(
-        'BUILD ON PEG ${target + 1}',
+        'BUILD ON PEG ${widget.target + 1}',
         style: TextStyle(
-          color: accent,
+          color: widget.accent,
           fontFamily: 'Fredoka',
           fontWeight: FontWeight.w900,
         ),
@@ -743,69 +836,100 @@ class _TowerBoard extends StatelessWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.end,
           children: List.generate(3, (peg) {
-            final disks = pegs[peg];
-            final targetPeg = peg == target;
+            final disks = widget.pegs[peg];
+            final targetPeg = peg == widget.target;
+            final selected = peg == source;
             return Expanded(
               child: Semantics(
                 label: AppText.pegSemantics(peg + 1, targetPeg),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    for (final disk in disks.reversed)
-                      Container(
-                        width: 30.0 + disk * 22,
-                        height: 18,
-                        margin: const EdgeInsets.only(top: 3),
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [
-                              Color.lerp(accent, Colors.white, .42)!,
-                              accent,
-                              Color.lerp(accent, Colors.black, .2)!,
-                            ],
-                          ),
-                          border: Border.all(color: context.brain.outline),
-                          borderRadius: BorderRadius.circular(8),
-                          boxShadow: [
-                            BoxShadow(
-                              color: accent.withValues(alpha: .28),
-                              offset: const Offset(0, 3),
+                button: true,
+                child: InkWell(
+                  key: ValueKey('tower-peg-$peg'),
+                  onTap: () => _tapPeg(peg),
+                  borderRadius: BorderRadius.circular(16),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: selected
+                          ? widget.accent.withValues(alpha: .12)
+                          : Colors.transparent,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: selected ? widget.accent : Colors.transparent,
+                        width: 2,
+                      ),
+                    ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        for (final disk in disks.reversed)
+                          Container(
+                            width: 30.0 + disk * 22,
+                            height: 18,
+                            margin: const EdgeInsets.only(top: 3),
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [
+                                  Color.lerp(widget.accent, Colors.white, .42)!,
+                                  widget.accent,
+                                  Color.lerp(widget.accent, Colors.black, .2)!,
+                                ],
+                              ),
+                              border: Border.all(color: context.brain.outline),
+                              borderRadius: BorderRadius.circular(8),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: widget.accent.withValues(alpha: .28),
+                                  offset: const Offset(0, 3),
+                                ),
+                              ],
                             ),
-                          ],
+                          ),
+                        Container(
+                          width: 7,
+                          height: 25,
+                          decoration: BoxDecoration(
+                            color: targetPeg
+                                ? context.brain.reward
+                                : context.brain.outline,
+                            borderRadius: const BorderRadius.vertical(
+                              top: Radius.circular(5),
+                            ),
+                          ),
                         ),
-                      ),
-                    Container(
-                      width: 7,
-                      height: 25,
-                      decoration: BoxDecoration(
-                        color: targetPeg
-                            ? context.brain.reward
-                            : context.brain.outline,
-                        borderRadius: const BorderRadius.vertical(
-                          top: Radius.circular(5),
+                        Container(
+                          width: 74,
+                          height: 8,
+                          decoration: BoxDecoration(
+                            color: targetPeg
+                                ? context.brain.reward
+                                : context.brain.outline,
+                            borderRadius: BorderRadius.circular(5),
+                          ),
                         ),
-                      ),
+                        const SizedBox(height: 3),
+                        Text(
+                          '${peg + 1}',
+                          style: const TextStyle(fontWeight: FontWeight.w900),
+                        ),
+                      ],
                     ),
-                    Container(
-                      width: 74,
-                      height: 8,
-                      decoration: BoxDecoration(
-                        color: targetPeg
-                            ? context.brain.reward
-                            : context.brain.outline,
-                        borderRadius: BorderRadius.circular(5),
-                      ),
-                    ),
-                    const SizedBox(height: 3),
-                    Text(
-                      '${peg + 1}',
-                      style: const TextStyle(fontWeight: FontWeight.w900),
-                    ),
-                  ],
+                  ),
                 ),
               ),
             );
           }),
+        ),
+      ),
+      SizedBox(
+        height: 20,
+        child: Text(
+          hint ?? 'Tap a source peg, then a destination.',
+          style: TextStyle(
+            color: hint?.startsWith('That') == true
+                ? context.brain.danger
+                : context.brain.textMuted,
+            fontWeight: FontWeight.w700,
+          ),
         ),
       ),
     ],
@@ -1149,12 +1273,14 @@ class _TrackingField extends StatefulWidget {
     required this.accent,
     required this.movement,
     required this.revealFinal,
+    this.onAnswer,
   });
 
   final int targetCount;
   final Color accent;
   final List<int> movement;
   final bool revealFinal;
+  final ValueChanged<bool>? onAnswer;
 
   @override
   State<_TrackingField> createState() => _TrackingFieldState();
@@ -1164,6 +1290,7 @@ class _TrackingFieldState extends State<_TrackingField> {
   bool moved = false;
   bool showTargets = true;
   Timer? labelTimer;
+  final selected = <int>{};
 
   static const starts = <Alignment>[
     Alignment(-.9, -.75),
@@ -1207,76 +1334,118 @@ class _TrackingFieldState extends State<_TrackingField> {
   @override
   Widget build(BuildContext context) {
     final reduceMotion = MediaQuery.disableAnimationsOf(context);
-    return SizedBox(
-      width: double.infinity,
-      height: 150,
-      child: Stack(
-        children: List.generate(6, (index) {
-          final target = index < widget.targetCount;
-          return AnimatedAlign(
-            duration: reduceMotion
-                ? Duration.zero
-                : const Duration(milliseconds: 1200),
-            curve: Curves.easeInOut,
-            alignment: moved ? ends[widget.movement[index]] : starts[index],
-            child: AnimatedContainer(
-              duration: reduceMotion
-                  ? Duration.zero
-                  : const Duration(milliseconds: 220),
-              width: 34,
-              height: 34,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: showTargets && target
-                      ? [
-                          Color.lerp(widget.accent, Colors.white, .5)!,
-                          widget.accent,
-                          Color.lerp(widget.accent, Colors.black, .2)!,
-                        ]
-                      : [
-                          Color.lerp(
-                            context.brain.surfaceHigh,
-                            Colors.white,
-                            .18,
-                          )!,
-                          context.brain.surfaceHigh,
-                          Color.lerp(
-                            context.brain.surfaceHigh,
-                            Colors.black,
-                            .12,
-                          )!,
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        SizedBox(
+          width: double.infinity,
+          height: 150,
+          child: Stack(
+            children: List.generate(6, (index) {
+              final target = index < widget.targetCount;
+              final chosen = selected.contains(index);
+              return AnimatedAlign(
+                duration: reduceMotion
+                    ? Duration.zero
+                    : const Duration(milliseconds: 1200),
+                curve: Curves.easeInOut,
+                alignment: moved ? ends[widget.movement[index]] : starts[index],
+                child: Semantics(
+                  label:
+                      'Firefly ${String.fromCharCode(65 + widget.movement[index])}',
+                  selected: chosen,
+                  button: widget.revealFinal,
+                  child: InkWell(
+                    key: ValueKey('firefly-$index'),
+                    onTap: !widget.revealFinal
+                        ? null
+                        : () => setState(() {
+                            if (chosen) {
+                              selected.remove(index);
+                            } else if (selected.length < widget.targetCount) {
+                              selected.add(index);
+                            }
+                          }),
+                    customBorder: const CircleBorder(),
+                    child: AnimatedContainer(
+                      duration: reduceMotion
+                          ? Duration.zero
+                          : const Duration(milliseconds: 220),
+                      width: 42,
+                      height: 42,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: showTargets && target || chosen
+                              ? [
+                                  Color.lerp(widget.accent, Colors.white, .5)!,
+                                  widget.accent,
+                                  Color.lerp(widget.accent, Colors.black, .2)!,
+                                ]
+                              : [
+                                  Color.lerp(
+                                    context.brain.surfaceHigh,
+                                    Colors.white,
+                                    .18,
+                                  )!,
+                                  context.brain.surfaceHigh,
+                                  Color.lerp(
+                                    context.brain.surfaceHigh,
+                                    Colors.black,
+                                    .12,
+                                  )!,
+                                ],
+                        ),
+                        border: Border.all(
+                          color: chosen ? Colors.white : context.brain.outline,
+                          width: chosen ? 3 : 2,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: showTargets && target || chosen
+                                ? widget.accent.withValues(alpha: .5)
+                                : context.brain.shadow.withValues(alpha: .2),
+                            offset: const Offset(0, 4),
+                            blurRadius: showTargets && target || chosen ? 9 : 2,
+                          ),
                         ],
-                ),
-                border: Border.all(color: context.brain.outline, width: 2),
-                boxShadow: [
-                  BoxShadow(
-                    color: showTargets && target
-                        ? widget.accent.withValues(alpha: .5)
-                        : context.brain.shadow.withValues(alpha: .2),
-                    offset: const Offset(0, 4),
-                    blurRadius: showTargets && target ? 9 : 2,
+                      ),
+                      child: widget.revealFinal
+                          ? Text(
+                              String.fromCharCode(65 + widget.movement[index]),
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w900,
+                              ),
+                            )
+                          : showTargets
+                          ? Text(
+                              '${index + 1}',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w900,
+                              ),
+                            )
+                          : null,
+                    ),
                   ),
-                ],
-              ),
-              child: widget.revealFinal
-                  ? Text(
-                      String.fromCharCode(65 + widget.movement[index]),
-                      style: const TextStyle(fontWeight: FontWeight.w900),
-                    )
-                  : showTargets
-                  ? Text(
-                      '${index + 1}',
-                      style: const TextStyle(fontWeight: FontWeight.w900),
-                    )
-                  : null,
-            ),
-          );
-        }),
-      ),
+                ),
+              );
+            }),
+          ),
+        ),
+        if (widget.revealFinal)
+          FilledButton.icon(
+            onPressed: selected.length != widget.targetCount
+                ? null
+                : () => widget.onAnswer?.call(
+                    selected.every((index) => index < widget.targetCount),
+                  ),
+            icon: const Icon(Icons.done_all_rounded),
+            label: const Text('Confirm fireflies'),
+          ),
+      ],
     );
   }
 }

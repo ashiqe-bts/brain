@@ -41,19 +41,36 @@ class ColorClashBoard extends StatelessWidget {
             ),
             child: GameDepthPanel(
               accent: context.clashColor(trial.colorIndex),
-              child: Text(
-                colorNames[trial.wordIndex],
-                style: TextStyle(
-                  fontFamily: 'Fredoka',
-                  fontSize: 54,
-                  fontWeight: FontWeight.w900,
-                  color: context.clashColor(trial.colorIndex),
-                  shadows: [
-                    Shadow(
-                      color: context
-                          .clashColor(trial.colorIndex)
-                          .withValues(alpha: .25),
-                      offset: const Offset(0, 4),
+              child: TweenAnimationBuilder<double>(
+                duration: MediaQuery.disableAnimationsOf(context)
+                    ? Duration.zero
+                    : const Duration(milliseconds: 220),
+                tween: Tween(begin: .88, end: 1),
+                builder: (context, value, child) =>
+                    Transform.scale(scale: value, child: child),
+                child: Stack(
+                  alignment: Alignment.topCenter,
+                  children: [
+                    Text(
+                      colorNames[trial.wordIndex],
+                      style: TextStyle(
+                        fontFamily: 'Fredoka',
+                        fontSize: 54,
+                        fontWeight: FontWeight.w900,
+                        color: context.clashColor(trial.colorIndex),
+                        shadows: [
+                          Shadow(
+                            color: context
+                                .clashColor(trial.colorIndex)
+                                .withValues(alpha: .25),
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const Padding(
+                      padding: EdgeInsets.only(top: 3),
+                      child: Text('••', style: TextStyle(color: Colors.white)),
                     ),
                   ],
                 ),
@@ -112,15 +129,36 @@ class MathBlitzBoard extends StatelessWidget {
         const SizedBox(height: 28),
         Semantics(
           label: AppText.gameStimulus(trial.expression),
-          child: GameDepthPanel(
-            accent: context.gameAccent(GameType.mathBlitz),
-            child: Text(
-              trial.expression,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontFamily: 'Fredoka',
-                fontSize: 42,
-                fontWeight: FontWeight.w900,
+          child: GestureDetector(
+            key: const ValueKey('equation-swipe-card'),
+            onHorizontalDragEnd: (details) {
+              final velocity = details.primaryVelocity ?? 0;
+              if (velocity.abs() < 180) return;
+              onAnswer(velocity > 0);
+            },
+            child: GameDepthPanel(
+              accent: context.gameAccent(GameType.mathBlitz),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    trial.expression,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontFamily: 'Fredoka',
+                      fontSize: 42,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    '← FALSE     swipe     TRUE →',
+                    style: TextStyle(
+                      color: context.brain.textMuted,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ],
               ),
             ),
           ),

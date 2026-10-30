@@ -33,7 +33,48 @@ class StoredDailyRecords extends Table {
   Set<Column<Object>> get primaryKey => {localDate};
 }
 
-@DriftDatabase(tables: [AppSnapshots, StoredGameRecords, StoredDailyRecords])
+class ProfileSnapshots extends Table {
+  TextColumn get ownerId => text()();
+  TextColumn get value => text()();
+  DateTimeColumn get updatedAt => dateTime()();
+  @override
+  Set<Column<Object>> get primaryKey => {ownerId};
+}
+
+@TableIndex(
+  name: 'profile_game_records_owner_played_at',
+  columns: {#ownerId, #playedAtMs},
+)
+class ProfileGameRecords extends Table {
+  TextColumn get recordId => text()();
+  TextColumn get ownerId => text()();
+  TextColumn get gameType => text()();
+  IntColumn get playedAtMs => integer()();
+  TextColumn get payload => text()();
+  DateTimeColumn get updatedAt => dateTime()();
+  @override
+  Set<Column<Object>> get primaryKey => {ownerId, recordId};
+}
+
+class ProfileDailyRecords extends Table {
+  TextColumn get ownerId => text()();
+  TextColumn get localDate => text()();
+  TextColumn get payload => text()();
+  DateTimeColumn get updatedAt => dateTime()();
+  @override
+  Set<Column<Object>> get primaryKey => {ownerId, localDate};
+}
+
+@DriftDatabase(
+  tables: [
+    AppSnapshots,
+    StoredGameRecords,
+    StoredDailyRecords,
+    ProfileSnapshots,
+    ProfileGameRecords,
+    ProfileDailyRecords,
+  ],
+)
 class AppDatabase extends _$AppDatabase {
   AppDatabase()
     : super(
@@ -48,7 +89,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.e);
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -59,6 +100,11 @@ class AppDatabase extends _$AppDatabase {
           'CREATE INDEX IF NOT EXISTS game_records_type_played_at '
           'ON stored_game_records (game_type, played_at_ms)',
         );
+      }
+      if (from < 3) {
+        await m.createTable(profileSnapshots);
+        await m.createTable(profileGameRecords);
+        await m.createTable(profileDailyRecords);
       }
     },
   );

@@ -12,7 +12,7 @@ The product promise is deliberately narrow: BrainFlex helps users practise and m
 2. Compare like with like: the same task, rules version, difficulty, and scored conditions.
 3. Treat small fluctuations as normal, not as improvement or decline.
 4. Keep participation rewards separate from cognitive performance.
-5. Keep all personal information on the device.
+5. Store data locally first and sync only account progress through Firebase.
 6. Make every task usable without relying on colour alone.
 7. Keep the experience strictly “you vs you”; never rank users against peers.
 
@@ -22,7 +22,9 @@ The product promise is deliberately narrow: BrainFlex helps users practise and m
 - Local scheduled reminders are Android-only. Chrome explicitly describes reminders as unavailable.
 - First launch begins with a value-first welcome, then requires a trimmed 1–30-character Unicode display name without line breaks or control characters. It does not require a sample game interaction.
 - Existing onboarded users without a valid name see the name prompt once without losing progress.
-- The name remains local, is editable in Settings, and Home greets the user with `Hey, {name}` above the date.
+- Guest mode uses Firebase Anonymous Auth when online and remains usable locally when offline.
+- Guests can link Google or email/password without losing progress; email accounts show pending status until verified but may continue training.
+- The name is editable in Settings, follows a linked account, and Home greets the user with `Hey, {name}` above the date.
 
 ## 4. Navigation and core flows
 
@@ -139,7 +141,7 @@ Thresholds belong to versioned game configuration and require boundary tests.
 
 ## 9. Storage, privacy, and migration
 
-Drift game-session rows are the source of truth for dated history. History queries are indexed by game and completion time and must be bounded or paginated. Gameplay must not decode the full database or scan all historical rows.
+Drift is the immediate offline source of truth. Authenticated progress synchronizes idempotently to owner-scoped Firestore documents; history queries are indexed and bounded. Gameplay never waits for the network or scans all historical rows.
 
 Migration from the original product must preserve settings, onboarding, reminders, themes, streaks, XP, participation levels, achievements, workouts, daily summaries, and meaningful game results. Timestamped records are reconstructed where possible. Undated snapshot-only results remain eligible for historical best-result display but are excluded from time-based trends. A pre-migration state snapshot is retained until the new state saves successfully.
 
@@ -147,7 +149,7 @@ State also stores the nullable local display name and completed tutorial keys in
 
 Unrecognized legacy snapshot fields are ignored after migration and are not exposed in the product.
 
-There are no accounts, backend, cloud synchronization, advertising SDKs, or product telemetry. On web, local data uses browser-managed storage; clearing site data removes it.
+Firebase Authentication supports anonymous, Google, and verified email/password identities. Firestore stores profile and training progress under the authenticated UID; Cloud Functions perform safe guest-account transfer and complete account deletion. Firestore rules prevent cross-user access. Themes, feedback/accessibility preferences, and reminder schedules remain device-local. There are no advertising SDKs or product telemetry.
 
 ## 10. Accessibility
 
@@ -176,4 +178,4 @@ Automated coverage includes every engine and scorer, seeded generation, rotation
 
 ## 12. Out of scope
 
-This release does not include leaderboards, social competition, AI coaching, accounts, cloud sync, a backend, ads, age norms, diagnosis, clinical claims, or scored gameplay modifiers.
+This release does not include leaderboards, social competition, AI coaching, ads, age norms, diagnosis, clinical claims, or scored gameplay modifiers.

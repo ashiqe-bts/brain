@@ -2,12 +2,12 @@ import 'dart:async';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../app/theme/brain_theme.dart';
 import '../../core/config/app_config.dart';
 import '../../core/models/brain_models.dart';
+import '../../core/services/game_feedback_service.dart';
 import '../../core/state/brain_cubit.dart';
 import '../../core/training/game_catalog.dart';
 import '../../core/training/training_analytics.dart';
@@ -44,6 +44,7 @@ class _ResearchGameScreenState extends State<ResearchGameScreen>
   late final GameDefinition definition;
   final sessionWatch = Stopwatch();
   final trialWatch = Stopwatch();
+  final feedback = GameFeedbackService();
   Timer? timer;
   Timer? delayTimer;
   GameLifecycle lifecycle = GameLifecycle.countdown;
@@ -97,6 +98,7 @@ class _ResearchGameScreenState extends State<ResearchGameScreen>
     WidgetsBinding.instance.removeObserver(this);
     timer?.cancel();
     delayTimer?.cancel();
+    unawaited(feedback.dispose());
     super.dispose();
   }
 
@@ -104,6 +106,7 @@ class _ResearchGameScreenState extends State<ResearchGameScreen>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.paused ||
         state == AppLifecycleState.inactive) {
+      unawaited(feedback.stop());
       _pause();
     }
   }
@@ -209,11 +212,14 @@ class _ResearchGameScreenState extends State<ResearchGameScreen>
       if (trial!.condition == 'stop') falseStarts++;
     }
     final cubit = context.read<BrainCubit>();
-    if (cubit.data.sound && !automatic) {
-      SystemSound.play(SystemSoundType.click);
-    }
-    if (cubit.data.haptics && !automatic) {
-      ok ? HapticFeedback.lightImpact() : HapticFeedback.mediumImpact();
+    if (!automatic) {
+      unawaited(
+        feedback.emit(
+          ok ? GameFeedbackEvent.correct : GameFeedbackEvent.incorrect,
+          soundEnabled: cubit.data.sound,
+          hapticsEnabled: cubit.data.haptics,
+        ),
+      );
     }
     setState(() => lastAnswerCorrect = ok);
     delayTimer = Timer(const Duration(milliseconds: 260), _nextTrial);

@@ -83,12 +83,14 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
       );
       if (!mounted) return;
     }
+    final bonusGame = draft.bonusGame;
     final summary = await cubit.completeWorkout();
     if (summary != null && mounted) {
       await Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (_) => WorkoutResultScreen(summary: summary),
+          builder: (_) =>
+              WorkoutResultScreen(summary: summary, bonusGame: bonusGame),
         ),
       );
     } else if (mounted) {
@@ -200,9 +202,10 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
 }
 
 class WorkoutResultScreen extends StatelessWidget {
-  const WorkoutResultScreen({super.key, required this.summary});
+  const WorkoutResultScreen({super.key, required this.summary, this.bonusGame});
 
   final DailySummary summary;
+  final GameType? bonusGame;
 
   @override
   Widget build(BuildContext context) {
@@ -219,23 +222,6 @@ class WorkoutResultScreen extends StatelessWidget {
             child: ListView(
               padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
               children: [
-                Center(
-                  child: Container(
-                    width: 72,
-                    height: 72,
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      color: context.brain.success.withValues(alpha: .14),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      Icons.check_rounded,
-                      size: 40,
-                      color: context.brain.success,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
                 Text(
                   AppText.workout.completeTitle,
                   textAlign: TextAlign.center,
@@ -336,18 +322,54 @@ class WorkoutResultScreen extends StatelessWidget {
                 constraints: const BoxConstraints(
                   maxWidth: AppSettings.resultContentWidth,
                 ),
-                child: PrimaryAction(
-                  expanded: true,
-                  color: context.brain.success,
-                  onPressed: () => Navigator.pop(context),
-                  icon: Icons.done_rounded,
-                  label: AppText.workout.done,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (bonusGame != null) ...[
+                      OutlinedButton.icon(
+                        onPressed: () => _playBonus(context, bonusGame!),
+                        icon: const Icon(Icons.auto_awesome_rounded),
+                        label: Text('Optional bonus: ${bonusGame!.title}'),
+                      ),
+                      const SizedBox(height: 8),
+                    ],
+                    PrimaryAction(
+                      expanded: true,
+                      color: context.brain.success,
+                      onPressed: () => Navigator.pop(context),
+                      icon: Icons.done_rounded,
+                      label: AppText.workout.done,
+                    ),
+                  ],
                 ),
               ),
             ),
           ),
         ),
       ),
+    );
+  }
+
+  Future<void> _playBonus(BuildContext context, GameType game) async {
+    final cubit = context.read<BrainCubit>();
+    final difficulty = cubit.data.difficulties[game.name] ?? 1;
+    final result = await launchGameSession(
+      context: context,
+      type: game,
+      mode: GameMode.standard,
+      difficulty: difficulty,
+      personalBest: cubit.personalBest(
+        game,
+        GameMode.standard,
+        difficulty: difficulty,
+      ),
+    );
+    if (result == null || !context.mounted) return;
+    await cubit.recordResult(result);
+    if (!context.mounted) return;
+    await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => SessionResultScreen(result: result)),
     );
   }
 

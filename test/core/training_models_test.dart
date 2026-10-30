@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:brainflex/core/config/app_config.dart';
 import 'package:brainflex/core/models/brain_models.dart';
 import 'package:brainflex/core/training/game_catalog.dart';
 import 'package:brainflex/core/training/training_analytics.dart';
@@ -32,10 +33,18 @@ void main() {
   });
 
   group('research-informed game catalog', () {
-    test('contains fifteen active and two archived games', () {
-      expect(activeGames, hasLength(15));
-      expect(activeGames.toSet(), hasLength(15));
-      expect(archivedGames, {GameType.reflexTap, GameType.visualSearch});
+    test('contains ten active and seven archived games', () {
+      expect(activeGames, hasLength(10));
+      expect(activeGames.toSet(), hasLength(10));
+      expect(archivedGames, {
+        GameType.reflexTap,
+        GameType.visualSearch,
+        GameType.peripheralFocus,
+        GameType.arrowGuard,
+        GameType.symbolSprint,
+        GameType.dualTaskDash,
+        GameType.logicSeries,
+      });
       expect(activeGames, isNot(contains(GameType.reflexTap)));
       expect(activeGames, isNot(contains(GameType.visualSearch)));
     });
@@ -209,13 +218,14 @@ void main() {
       }
 
       final status = baselineStatus(history);
-      expect(status.completedRounds, 45);
-      expect(status.requiredRounds, 45);
+      final required = activeGames.length * AppSettings.baselineSessionCount;
+      expect(status.completedRounds, required);
+      expect(status.requiredRounds, required);
       expect(status.isComplete, isTrue);
       expect(status.forGame(GameType.colorClash).isComplete, isTrue);
 
-      final incomplete = baselineStatus(history.take(44));
-      expect(incomplete.completedRounds, 44);
+      final incomplete = baselineStatus(history.take(required - 1));
+      expect(incomplete.completedRounds, required - 1);
       expect(incomplete.isComplete, isFalse);
     });
 
@@ -241,20 +251,20 @@ void main() {
       expect(status.isComplete, isFalse);
     });
 
-    test('coverage-aware random five favors least-trained games', () {
-      final trained = activeGames.take(10).toSet();
+    test('coverage-aware daily route favors least-trained games', () {
+      final trained = activeGames.take(4).toSet();
       final history = [
         for (final game in trained) _result(day: 1, normalized: 80, type: game),
       ];
 
       final selection = coverageAwareDailySelection(history, random: Random(7));
 
-      expect(selection, hasLength(5));
-      expect(selection.toSet(), hasLength(5));
+      expect(selection, hasLength(3));
+      expect(selection.toSet(), hasLength(3));
       expect(selection, everyElement(isNot(isIn(trained))));
     });
 
-    test('coverage-aware random five ignores incompatible history', () {
+    test('coverage-aware daily route ignores incompatible history', () {
       final game = activeGames.first;
       final history = [
         _result(day: 1, normalized: 80, type: game, mode: GameMode.relaxed),
@@ -270,7 +280,7 @@ void main() {
       final second = coverageAwareDailySelection(history, random: Random(11));
 
       expect(first, second);
-      expect(first.toSet(), hasLength(5));
+      expect(first.toSet(), hasLength(3));
     });
   });
 

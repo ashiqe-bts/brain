@@ -27,7 +27,7 @@ void main() {
     expect(find.byKey(gameStageKey), findsOneWidget);
     expect(find.text('BOARD'), findsOneWidget);
     expect(
-      find.bySemanticsLabel(RegExp('Memory Tiles game board')),
+      find.bySemanticsLabel(RegExp('Glow Garden game board')),
       findsOneWidget,
     );
     semantics.dispose();

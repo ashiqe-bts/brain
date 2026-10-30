@@ -8,6 +8,7 @@ import '../../core/models/brain_models.dart';
 import '../../core/services/notification_service.dart';
 import '../../core/state/brain_cubit.dart';
 import '../../core/widgets/common.dart';
+import '../auth/email_auth_screen.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -107,7 +108,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             label: AppText.onboarding.getStarted,
             icon: Icons.arrow_forward_rounded,
             expanded: !wide,
-            onPressed: _next,
+            onPressed: _openAuthGateway,
           ),
           const SizedBox(height: 28),
           Align(
@@ -198,6 +199,16 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       );
     },
   );
+
+  Future<void> _openAuthGateway() async {
+    final completed = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const EmailAuthScreen(allowGuestContinuation: true),
+      ),
+    );
+    if (completed == true && mounted) _next();
+  }
 
   Widget _setupFrame({
     required String eyebrow,

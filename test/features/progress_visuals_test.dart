@@ -76,6 +76,7 @@ void main() {
 
     expect(find.byKey(dailyCelebrationKey), findsOneWidget);
     expect(find.bySemanticsLabel('Daily workout complete'), findsOneWidget);
+    expect(find.byKey(const Key('nova-mascot')), findsNothing);
   });
 
   testWidgets('insights includes combined progress without an overall score', (

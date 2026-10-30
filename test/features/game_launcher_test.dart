@@ -35,7 +35,7 @@ void main() {
     await tester.tap(find.text('LAUNCH'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Math Blitz tutorial'), findsOneWidget);
+    expect(find.text('Number Forge tutorial'), findsOneWidget);
     await tester.pageBack();
     await tester.pumpAndSettle();
 
@@ -57,7 +57,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(cubit.hasCompletedTutorial(GameType.mathBlitz), isTrue);
-    expect(find.text('Math Blitz tutorial'), findsNothing);
+    expect(find.text('Number Forge tutorial'), findsNothing);
     await tester.pageBack();
     await tester.pumpAndSettle();
     await tester.tap(find.text('Leave'));
@@ -65,7 +65,7 @@ void main() {
     await tester.tap(find.text('LAUNCH'));
     await tester.pump();
 
-    expect(find.text('Math Blitz tutorial'), findsNothing);
+    expect(find.text('Number Forge tutorial'), findsNothing);
     expect(cubit.data.history, isEmpty);
     await tester.pumpWidget(const SizedBox.shrink());
   });

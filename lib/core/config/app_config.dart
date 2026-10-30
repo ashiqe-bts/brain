@@ -23,20 +23,23 @@ const activeGames = <GameType>[
   GameType.mathBlitz,
   GameType.memoryTiles,
   GameType.signalStop,
-  GameType.peripheralFocus,
   GameType.nBackNavigator,
   GameType.ruleSwitch,
-  GameType.arrowGuard,
   GameType.pairLink,
-  GameType.symbolSprint,
   GameType.objectTracker,
   GameType.towerPlanner,
-  GameType.dualTaskDash,
-  GameType.logicSeries,
   GameType.spatialRotation,
 ];
 
-const archivedGames = <GameType>{GameType.reflexTap, GameType.visualSearch};
+const archivedGames = <GameType>{
+  GameType.reflexTap,
+  GameType.visualSearch,
+  GameType.peripheralFocus,
+  GameType.arrowGuard,
+  GameType.symbolSprint,
+  GameType.dualTaskDash,
+  GameType.logicSeries,
+};
 
 enum GameMode { standard, relaxed, personalBest, official }
 
@@ -50,7 +53,8 @@ extension GameContentPresentation on GameType {
 }
 
 abstract final class AppSettings {
-  static const workoutGameCount = 5;
+  static const workoutGameCount = 3;
+  static const expeditionRegionCount = 3;
   static const baselineSessionCount = 3;
   static const trendWindowSize = 3;
   static const minimumTrendSessions = 6;
@@ -117,9 +121,9 @@ abstract final class AppText {
   static const metricClassificationAccuracy = 'Classification accuracy';
   static const metricCountingAccuracy = 'Counting accuracy';
   static const navigation = (
-    today: 'Today',
-    train: 'Train',
-    insights: 'Insights',
+    today: 'Expedition',
+    train: 'Games',
+    insights: 'Journal',
     settings: 'Settings',
   );
   static const onboarding = (
@@ -138,13 +142,13 @@ abstract final class AppText {
     profileEyebrow: 'Your profile',
     profileTitle: 'What should we call you?',
     profileBody:
-        'Your display name stays on this device and can be changed later.',
+        'Your display name is saved with your profile and can be changed later.',
     returningProfileBody:
-        'Your progress is still here. This name stays only on this device.',
+        'Your progress is still here. Add a name for this profile.',
     routineEyebrow: 'Your routine',
     routineTitle: 'Practice on your schedule',
     routineBody:
-        'A single optional reminder can help you return. Your results remain on this device.',
+        'A single optional reminder can help you return. Progress syncs when an account and connection are available.',
     remindersUnavailable: 'Reminders unavailable in Chrome',
     remindersAndroidOnly: 'Daily reminders are supported on Android only.',
     dailyReminder: 'Daily reminder',
@@ -168,12 +172,12 @@ abstract final class AppText {
     complete: 'COMPLETE',
     dailyResetComplete: 'Daily reset complete',
     resumeTitle: 'Pick up where you left off',
-    readyTitle: 'Ready for your daily reset?',
-    completeBody: 'Nice work. Come back tomorrow for a fresh mix.',
-    savedSelection: 'Your selection is saved until the workout is complete.',
-    duration: '5 games • about 5 minutes',
-    startWorkout: "Start today's workout",
-    continueWorkout: 'Continue workout',
+    readyTitle: "Today's brain-world expedition",
+    completeBody: 'Route complete. A fresh path arrives tomorrow.',
+    savedSelection: 'Your route is saved until the expedition is complete.',
+    duration: '3 stages • 5–7 minutes',
+    startWorkout: 'Start expedition',
+    continueWorkout: 'Continue expedition',
     personalBaselineReady: 'Personal baseline ready',
     buildingBaseline: 'Building your personal baseline',
     baselineReadyBody:
@@ -181,21 +185,21 @@ abstract final class AppText {
     collect: 'Collect',
   );
   static const workout = (
-    dailyWorkout: 'Daily workout',
-    buildMix: 'Build your daily mix',
-    chooseGames: 'Choose 5 games',
-    randomFive: 'Random 5',
-    reshuffleFive: 'Reshuffle 5',
-    start: 'Start workout',
-    dailyPractice: 'Daily practice',
-    dailyReset: 'Your five-game daily reset',
-    resume: 'Resume practice',
-    sessionReview: 'Session review',
-    completeTitle: 'Daily reset complete',
+    dailyWorkout: 'Daily expedition',
+    buildMix: "Today's route",
+    chooseGames: 'Three short stages, balanced across your map.',
+    randomFive: 'Create route',
+    reshuffleFive: 'New route',
+    start: 'Start expedition',
+    dailyPractice: 'Expedition in progress',
+    dailyReset: 'Three worlds, one short daily journey',
+    resume: 'Resume expedition',
+    sessionReview: 'Expedition review',
+    completeTitle: 'Expedition complete!',
     done: 'Done for today',
     resultDisclaimer:
         'These results describe performance in practiced BrainFlex tasks, not IQ, a medical assessment, or proof of everyday cognitive change.',
-    finish: 'Finish workout',
+    finish: 'Finish expedition',
     compatibleResults: 'Results are compared only with compatible sessions.',
   );
   static const gameplay = (
@@ -234,9 +238,9 @@ abstract final class AppText {
     channelDescription: 'One gentle daily workout reminder',
   );
   static const missions = (
-    workout: "Complete today's workout",
+    workout: "Complete today's expedition",
     improvement: 'Improve on one of your results',
-    chooseUniqueGames: 'Choose five unique games',
+    chooseUniqueGames: 'Choose three unique games',
     chooseActiveGames: 'Choose active games only',
   );
   static const achievements = (
@@ -249,13 +253,13 @@ abstract final class AppText {
     perfectionist: 'Perfectionist',
   );
   static const settings = (
-    eyebrow: 'Your preferences stay on this device',
+    eyebrow: 'Your profile and device preferences',
     profile: 'Profile',
     addName: 'Add your name',
-    storedLocally: 'Stored only on this device',
+    storedLocally: 'Synced with your account when connected',
     appearance: 'Appearance',
-    light: 'Light',
-    dark: 'Dark',
+    light: 'Expedition Day',
+    dark: 'Expedition Night',
     highContrast: 'High contrast',
     reducedMotion: 'Reduced motion',
     reducedMotionBody: 'Use fades instead of large movement',
@@ -268,25 +272,25 @@ abstract final class AppText {
     streakWordingBody: 'Replaces the normal reminder; it does not add another',
     about: 'About',
     privacy: 'Privacy',
-    privacySubtitle: 'Your progress stays on this device',
+    privacySubtitle: 'Local-first with optional secure sync',
     medicalTitle: 'Mental exercise, not medicine',
     medicalBody:
         'BrainFlex tracks performance in its trained tasks. It does not measure IQ, diagnose conditions, or make health claims.',
     version: '1.0.0',
-    legalese: 'Private, offline cognitive practice.',
+    legalese: 'Private, offline-first cognitive practice.',
     editName: 'Edit your name',
     yourName: 'Your name',
     cancel: 'Cancel',
     save: 'Save',
     privacyTitle: 'Your training data stays yours.',
     privacyStorage:
-        'BrainFlex does not require an account. Session history, personal baselines, progress, and settings are stored locally on your device. There is no backend, cloud sync, advertising SDK, product analytics service, or user-generated content.',
+        'BrainFlex works as a guest and stores progress locally first. When Firebase is configured, a protected anonymous account syncs training progress; linking Google or a verified email lets that progress follow you across devices. Reminder and accessibility preferences stay on this device. BrainFlex does not include advertising or product analytics.',
     privacySessions:
         'Standard and daily sessions contribute to personal trends. Relaxed practice is kept separate so it cannot distort measured progress.',
     privacyNotifications:
         'Local notification permission is optional. Reminder schedules are managed by your operating system and can be disabled at any time in BrainFlex or system settings.',
     privacyDeletion:
-        'Deleting the app clears its local BrainFlex data unless your operating system independently restores an app backup.',
+        'Account settings can permanently delete the Firebase account and its cloud progress. Deleting the app clears local BrainFlex data unless your operating system independently restores an app backup.',
   );
   static const train = (
     chooseGame: 'Choose a practice game',
@@ -319,7 +323,7 @@ abstract final class AppText {
   );
   static const progress = (
     combined: 'Combined progress',
-    profile: 'Fifteen-game profile',
+    profile: 'Ten-game training journal',
     filterSemantics: 'Filter insights by cognitive domain',
     weeklyReview: 'Weekly review',
     recentSessions: 'Recent sessions',
@@ -624,19 +628,19 @@ class TutorialStep {
 const gameContent = <GameType, GameContent>{
   GameType.colorClash: GameContent(
     type: GameType.colorClash,
-    title: 'Color Clash',
+    title: 'Prism Rush',
     domain: 'Focus',
     semanticLabel: 'Color palette',
   ),
   GameType.mathBlitz: GameContent(
     type: GameType.mathBlitz,
-    title: 'Math Blitz',
+    title: 'Number Forge',
     domain: 'Calculation',
     semanticLabel: 'Calculator',
   ),
   GameType.memoryTiles: GameContent(
     type: GameType.memoryTiles,
-    title: 'Memory Tiles',
+    title: 'Glow Garden',
     domain: 'Memory',
     semanticLabel: 'Memory grid',
   ),
@@ -654,7 +658,7 @@ const gameContent = <GameType, GameContent>{
   ),
   GameType.signalStop: GameContent(
     type: GameType.signalStop,
-    title: 'Signal Stop',
+    title: 'Launch Control',
     domain: 'Response inhibition',
     semanticLabel: 'Stop signal',
   ),
@@ -666,13 +670,13 @@ const gameContent = <GameType, GameContent>{
   ),
   GameType.nBackNavigator: GameContent(
     type: GameType.nBackNavigator,
-    title: 'N-Back Navigator',
+    title: 'Orbit Recall',
     domain: 'Working memory',
     semanticLabel: 'Working memory history',
   ),
   GameType.ruleSwitch: GameContent(
     type: GameType.ruleSwitch,
-    title: 'Rule Switch',
+    title: 'Switchyard',
     domain: 'Cognitive flexibility',
     semanticLabel: 'Switching rules',
   ),
@@ -684,7 +688,7 @@ const gameContent = <GameType, GameContent>{
   ),
   GameType.pairLink: GameContent(
     type: GameType.pairLink,
-    title: 'Pair Link',
+    title: 'Pair Portals',
     domain: 'Associative memory',
     semanticLabel: 'Linked pair',
   ),
@@ -696,13 +700,13 @@ const gameContent = <GameType, GameContent>{
   ),
   GameType.objectTracker: GameContent(
     type: GameType.objectTracker,
-    title: 'Object Tracker',
+    title: 'Firefly Tracker',
     domain: 'Divided attention',
     semanticLabel: 'Tracking target',
   ),
   GameType.towerPlanner: GameContent(
     type: GameType.towerPlanner,
-    title: 'Tower Planner',
+    title: 'Totem Towers',
     domain: 'Planning',
     semanticLabel: 'Planning tree',
   ),
@@ -720,7 +724,7 @@ const gameContent = <GameType, GameContent>{
   ),
   GameType.spatialRotation: GameContent(
     type: GameType.spatialRotation,
-    title: 'Spatial Rotation',
+    title: 'Crystal Rotation',
     domain: 'Spatial reasoning',
     semanticLabel: 'Spatial rotation',
   ),

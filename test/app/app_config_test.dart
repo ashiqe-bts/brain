@@ -6,7 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   group('AppSettings', () {
     test('product settings preserve the established behavior', () {
-      expect(AppSettings.workoutGameCount, 5);
+      expect(AppSettings.workoutGameCount, 3);
       expect(AppSettings.baselineSessionCount, 3);
       expect(AppSettings.trendWindowSize, 3);
       expect(AppSettings.maximumDisplayNameCharacters, 30);

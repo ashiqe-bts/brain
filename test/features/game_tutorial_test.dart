@@ -199,6 +199,31 @@ Future<void> _finishCurrentResearchStep(WidgetTester tester) async {
     await tester.pump(Duration(milliseconds: board.trial.exposureMs));
     board = tester.widget<ResearchGameBoard>(find.byType(ResearchGameBoard));
   }
+  if (board.type == GameType.memoryTiles) {
+    final tile = int.parse(
+      board.trial.options[board.trial.correctIndex].split(' ').last,
+    );
+    await tester.tap(find.byKey(ValueKey('memory-tile-$tile')));
+    await tester.pump(const Duration(milliseconds: 700));
+    return;
+  }
+  if (board.type == GameType.objectTracker) {
+    for (var index = 0; index < board.trial.span; index++) {
+      await tester.tap(find.byKey(ValueKey('firefly-$index')));
+      await tester.pump();
+    }
+    await tester.tap(find.text('Confirm fireflies'));
+    await tester.pump(const Duration(milliseconds: 700));
+    return;
+  }
+  if (board.type == GameType.towerPlanner) {
+    final move = board.trial.towerMoves[board.trial.correctIndex];
+    await tester.tap(find.byKey(ValueKey('tower-peg-${move.from}')));
+    await tester.pump();
+    await tester.tap(find.byKey(ValueKey('tower-peg-${move.to}')));
+    await tester.pump(const Duration(milliseconds: 700));
+    return;
+  }
   final answer = find.widgetWithText(
     FilledButton,
     board.trial.options[board.trial.correctIndex],
